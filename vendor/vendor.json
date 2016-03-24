@@ -8,6 +8,11 @@
 			"revisionTime": "2015-12-05T10:49:59+01:00"
 		},
 		{
+			"path": "github.com/keybase/client/go/protocol",
+			"revision": "92fbb047c7929f580c6e7fa12a0461f74aa08fd3",
+			"revisionTime": "2016-03-23T16:49:37-07:00"
+		},
+		{
 			"path": "github.com/keybase/go-logging",
 			"revision": "f3c7c3c1605e29ebcce430bb1e0d048faf4081ce",
 			"revisionTime": "2016-03-23T15:35:38-07:00"
