@@ -20,7 +20,7 @@ import (
 
 type processUpdate func(update *keybase1.Update, path string)
 
-func NewTestUpdater(t *testing.T, options keybase1.UpdateOptions, p processUpdate) (*Updater, error) {
+func newTestUpdater(t *testing.T, options keybase1.UpdateOptions, p processUpdate) (*Updater, error) {
 	updateSource, err := newTestUpdateSource(p)
 	if err != nil {
 		return nil, err
@@ -170,7 +170,7 @@ func NewDefaultTestUpdateConfig() keybase1.UpdateOptions {
 }
 
 func TestUpdater(t *testing.T) {
-	u, err := NewTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
+	u, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func TestUpdater(t *testing.T) {
 }
 
 func TestUpdateCheckErrorIfLowerVersion(t *testing.T) {
-	u, err := NewTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
+	u, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,12 +214,15 @@ func TestUpdateCheckErrorIfLowerVersion(t *testing.T) {
 func TestChangeUpdateFailSignature(t *testing.T) {
 	changeAsset := func(u *keybase1.Update, path string) {
 		// Write new file over existing (fix digest but not signature)
-		createTestUpdateFile(path, u.Version)
+		_, err := createTestUpdateFile(path, u.Version)
+		if err != nil {
+			t.Fatal(err)
+		}
 		digest, _ := libkb.DigestForFileAtPath(path)
 		t.Logf("Wrote a new update file: %s (%s)", path, digest)
 		u.Asset.Digest = digest
 	}
-	updater, err := NewTestUpdater(t, NewDefaultTestUpdateConfig(), changeAsset)
+	updater, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), changeAsset)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +236,10 @@ func TestChangeUpdateFailSignature(t *testing.T) {
 func randString(n int) string {
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
-	rand.Read(bytes)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		panic(fmt.Sprintf("Read errored: %s", err))
+	}
 	for i, b := range bytes {
 		bytes[i] = alphanum[b%byte(len(alphanum))]
 	}
