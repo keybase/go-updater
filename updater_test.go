@@ -39,7 +39,7 @@ func (u testUpdateUI) UpdateQuit(_ context.Context, _ keybase1.UpdateQuitArg) (k
 	return keybase1.UpdateQuitRes{Quit: false}, nil
 }
 
-func (u testUpdateUI) GetUpdateUI() (libkb.UpdateUI, error) {
+func (u testUpdateUI) GetUpdateUI() (UpdateUI, error) {
 	return u, nil
 }
 
@@ -153,6 +153,10 @@ func (c testConfig) GetRunModeAsString() string {
 
 func (c testConfig) GetMountDir() string {
 	return filepath.Join(os.Getenv("HOME"), "keybase.test")
+}
+
+func (c testConfig) GetUpdateDefaultInstructions() (string, error) {
+	return "", nil
 }
 
 func NewDefaultTestUpdateConfig() keybase1.UpdateOptions {

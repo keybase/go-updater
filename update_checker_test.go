@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/logger"
 	"github.com/keybase/client/go/protocol"
 	"golang.org/x/net/context"
@@ -47,7 +46,7 @@ func (u testUpdateCheckUI) UpdateQuit(_ context.Context, _ keybase1.UpdateQuitAr
 	return keybase1.UpdateQuitRes{Quit: false}, nil
 }
 
-func (u testUpdateCheckUI) GetUpdateUI() (libkb.UpdateUI, error) {
+func (u testUpdateCheckUI) GetUpdateUI() (UpdateUI, error) {
 	return u, nil
 }
 
