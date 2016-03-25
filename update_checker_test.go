@@ -17,7 +17,7 @@ import (
 // prompt that checks continue. This is safe because the updater is
 // singleflighted.
 func TestUpdateCheckerIsAsync(t *testing.T) {
-	updater, err := NewTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
+	updater, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func (u testUpdateCheckUI) UpdateAppInUse(context.Context, keybase1.UpdateAppInU
 }
 
 func TestUpdateCheckerSince(t *testing.T) {
-	updater, err := NewTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
+	updater, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,6 +81,9 @@ func TestUpdateCheckerSince(t *testing.T) {
 	}
 	time.Sleep(300 * time.Millisecond)
 	checked, err = checker.Check(false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !checked {
 		t.Fatal("Should have checked (3)")
 	}
