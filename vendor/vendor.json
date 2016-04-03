@@ -3,24 +3,14 @@
 	"ignore": "test",
 	"package": [
 		{
-			"path": "github.com/blang/semver",
-			"revision": "aea32c919a18e5ef4537bbd283ff29594b1b0165",
-			"revisionTime": "2015-12-05T10:49:59+01:00"
-		},
-		{
 			"path": "github.com/keybase/client/go/protocol",
-			"revision": "92fbb047c7929f580c6e7fa12a0461f74aa08fd3",
-			"revisionTime": "2016-03-23T16:49:37-07:00"
-		},
-		{
-			"path": "github.com/keybase/go-logging",
-			"revision": "f3c7c3c1605e29ebcce430bb1e0d048faf4081ce",
-			"revisionTime": "2016-03-23T15:35:38-07:00"
+			"revision": "8ac9934275b6775f2aa2cc14efe271cfe2617495",
+			"revisionTime": "2016-04-03T15:41:36-07:00"
 		},
 		{
 			"path": "github.com/keybase/saltpack",
-			"revision": "5603532c2e160b291d2c383328496d63a877bb1f",
-			"revisionTime": "2016-03-20T20:32:40-04:00"
+			"revision": "3f752afeda53a6e28d4875b3aeb29bf0e1ad74d6",
+			"revisionTime": "2016-03-29T14:41:00-07:00"
 		}
 	]
 }
