@@ -23,7 +23,7 @@ func createTestUpdateFile(path string, version string) (name string, err error) 
 	if err != nil {
 		return
 	}
-	defer zipFile.Close()
+	defer func() { _ = zipFile.Close() }()
 
 	w := zip.NewWriter(zipFile)
 	f, err := w.Create("Test/Test.txt")
