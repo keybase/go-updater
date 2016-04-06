@@ -14,41 +14,30 @@ import (
 
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/logger"
-	keybase1 "github.com/keybase/client/go/protocol"
-	"golang.org/x/net/context"
+	keybase1 "github.com/keybase/go-updater/protocol"
 )
 
 type processUpdate func(update *keybase1.Update, path string)
 
-func newTestUpdater(t *testing.T, options keybase1.UpdateOptions, p processUpdate) (*Updater, error) {
+func newTestUpdater(t *testing.T, p processUpdate) (*Updater, error) {
 	updateSource, err := newTestUpdateSource(p)
 	if err != nil {
 		return nil, err
 	}
 	config := &testConfig{}
-	return NewUpdater(options, updateSource, config, logger.NewTestLogger(t)), nil
+	return NewUpdater(updateSource, config, logger.NewTestLogger(t)), nil
 }
 
-type testUpdateUI struct{}
-
-func (u testUpdateUI) UpdatePrompt(_ context.Context, _ keybase1.UpdatePromptArg) (keybase1.UpdatePromptRes, error) {
-	return keybase1.UpdatePromptRes{Action: keybase1.UpdateAction_UPDATE}, nil
+type testUpdateUI struct {
+	options keybase1.UpdateOptions
 }
 
-func (u testUpdateUI) UpdateQuit(_ context.Context, _ keybase1.UpdateQuitArg) (keybase1.UpdateQuitRes, error) {
-	return keybase1.UpdateQuitRes{Quit: false}, nil
+func (u testUpdateUI) UpdatePrompt(_ keybase1.Update, _ keybase1.UpdatePromptOptions) (keybase1.UpdatePromptResponse, error) {
+	return keybase1.UpdatePromptResponse{Action: keybase1.UpdateActionPerformUpdate}, nil
 }
 
 func (u testUpdateUI) GetUpdateUI() (UpdateUI, error) {
 	return u, nil
-}
-
-func (u testUpdateUI) AfterUpdateApply(willRestart bool) error {
-	return nil
-}
-
-func (u testUpdateUI) UpdateAppInUse(context.Context, keybase1.UpdateAppInUseArg) (keybase1.UpdateAppInUseRes, error) {
-	return keybase1.UpdateAppInUseRes{Action: keybase1.UpdateAppInUseAction_CANCEL}, nil
 }
 
 func (u testUpdateUI) Verify(r io.Reader, signature string) error {
@@ -60,6 +49,10 @@ func (u testUpdateUI) Verify(r io.Reader, signature string) error {
 		return fmt.Errorf("Verify failed")
 	}
 	return nil
+}
+
+func (u testUpdateUI) UpdateOptions() (keybase1.UpdateOptions, error) {
+	return u.options, nil
 }
 
 type testUpdateSource struct {
@@ -96,7 +89,7 @@ func (u testUpdateSource) FindUpdate(config keybase1.UpdateOptions) (*keybase1.U
 
 		update.Asset = &keybase1.Asset{
 			Name:      assetName,
-			Url:       fmt.Sprintf("file://%s", path),
+			URL:       fmt.Sprintf("file://%s", path),
 			Digest:    digest,
 			Signature: digest, // Use digest as signature in test
 		}
@@ -118,48 +111,11 @@ func (c testConfig) GetUpdatePreferenceAuto() (bool, bool) {
 	return false, false
 }
 
-func (c testConfig) GetUpdatePreferenceSnoozeUntil() keybase1.Time {
-	return keybase1.Time(0)
-}
-
-func (c testConfig) GetUpdateLastChecked() keybase1.Time {
-	return c.lastChecked
-}
-
-func (c testConfig) GetUpdatePreferenceSkip() string {
-	return ""
-}
-
 func (c *testConfig) SetUpdatePreferenceAuto(b bool) error {
 	return nil
 }
 
-func (c *testConfig) SetUpdatePreferenceSkip(v string) error {
-	return nil
-}
-
-func (c *testConfig) SetUpdatePreferenceSnoozeUntil(t keybase1.Time) error {
-	return nil
-}
-
-func (c *testConfig) SetUpdateLastChecked(t keybase1.Time) error {
-	c.lastChecked = t
-	return nil
-}
-
-func (c testConfig) GetRunModeAsString() string {
-	return "test"
-}
-
-func (c testConfig) GetMountDir() string {
-	return filepath.Join(os.Getenv("HOME"), "keybase.test")
-}
-
-func (c testConfig) GetUpdateDefaultInstructions() (string, error) {
-	return "", nil
-}
-
-func NewDefaultTestUpdateConfig() keybase1.UpdateOptions {
+func newDefaultTestUpdateOptions() keybase1.UpdateOptions {
 	return keybase1.UpdateOptions{
 		Version:             "1.0.0",
 		Platform:            runtime.GOOS,
@@ -170,11 +126,11 @@ func NewDefaultTestUpdateConfig() keybase1.UpdateOptions {
 }
 
 func TestUpdater(t *testing.T) {
-	u, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
+	u, err := newTestUpdater(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	update, err := u.Update(testUpdateUI{}, false, false)
+	update, err := u.Update(testUpdateUI{newDefaultTestUpdateOptions()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,13 +152,14 @@ func TestUpdater(t *testing.T) {
 }
 
 func TestUpdateCheckErrorIfLowerVersion(t *testing.T) {
-	u, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
+	u, err := newTestUpdater(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	u.options.Version = "100000000.0.0"
+	options := newDefaultTestUpdateOptions()
+	options.Version = "100000000.0.0"
 
-	update, err := u.checkForUpdate(true, false, false)
+	update, err := u.checkForUpdate(options, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,11 +179,11 @@ func TestChangeUpdateFailSignature(t *testing.T) {
 		t.Logf("Wrote a new update file: %s (%s)", path, digest)
 		u.Asset.Digest = digest
 	}
-	updater, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), changeAsset)
+	updater, err := newTestUpdater(t, changeAsset)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = updater.Update(testUpdateUI{}, false, false)
+	_, err = updater.Update(testUpdateUI{newDefaultTestUpdateOptions()})
 	t.Logf("Err: %s\n", err)
 	if err == nil {
 		t.Fatal("Should have failed")

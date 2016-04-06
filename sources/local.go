@@ -12,7 +12,7 @@ import (
 	"os"
 
 	"github.com/keybase/client/go/logger"
-	keybase1 "github.com/keybase/client/go/protocol"
+	keybase1 "github.com/keybase/go-updater/protocol"
 )
 
 // LocalUpdateSource finds releases/updates from custom url feed (used primarily for testing)
@@ -20,12 +20,14 @@ type LocalUpdateSource struct {
 	log logger.Logger
 }
 
+// NewLocalUpdateSource returns local update source
 func NewLocalUpdateSource(log logger.Logger) LocalUpdateSource {
 	return LocalUpdateSource{
 		log: log,
 	}
 }
 
+// Description is local update source description
 func (k LocalUpdateSource) Description() string {
 	return "Local"
 }
@@ -58,6 +60,7 @@ func readFile(path string) (string, error) {
 	return string(data), nil
 }
 
+// FindUpdate returns update for options
 func (k LocalUpdateSource) FindUpdate(options keybase1.UpdateOptions) (update *keybase1.Update, err error) {
 	digest, err := digest(options.URL)
 	if err != nil {
@@ -75,7 +78,7 @@ func (k LocalUpdateSource) FindUpdate(options keybase1.UpdateOptions) (update *k
 		Name:    fmt.Sprintf("v%s", options.Version),
 		Asset: &keybase1.Asset{
 			Name:      fmt.Sprintf("Keybase-%s.zip", options.Version),
-			Url:       options.URL,
+			URL:       options.URL,
 			Digest:    digest,
 			Signature: signature,
 		},

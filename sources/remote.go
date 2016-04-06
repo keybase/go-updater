@@ -11,71 +11,41 @@ import (
 
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/logger"
-	keybase1 "github.com/keybase/client/go/protocol"
+	keybase1 "github.com/keybase/go-updater/protocol"
 )
 
 // RemoteUpdateSource finds releases/updates from custom url feed (used primarily for testing)
 type RemoteUpdateSource struct {
-	log             logger.Logger
-	defaultURI      string
-	defaultPlatform string
-	defaultEnv      string
-	defaultChannel  string
+	defaultURI string
+	log        logger.Logger
 }
 
 // NewRemoteUpdateSource builds remote update source without defaults. The url used is passed
 // via options instead.
-func NewRemoteUpdateSource(log logger.Logger) RemoteUpdateSource {
+func NewRemoteUpdateSource(defaultURI string, log logger.Logger) RemoteUpdateSource {
 	return RemoteUpdateSource{
-		log: log,
+		defaultURI: defaultURI,
+		log:        log,
 	}
 }
 
-// NewRemoteUpdateSourceForOptions builds a remote update source that looks like
-//   {defaultURI}/update-{defaultPlatform}-{defaultEnv}-{defaultChannel}.json
-//
-// For example, for OS X production releases, it might look like
-//   https://s3.amazonaws.com/prerelease.keybase.io/update-darwin-prod.json
-// Test channel:
-//   https://s3.amazonaws.com/prerelease.keybase.io/update-darwin-prod-test.json
-func NewRemoteUpdateSourceForOptions(log logger.Logger, defaultURI string, defaultPlatform string, defaultEnv string, defaultChannel string) RemoteUpdateSource {
-	return RemoteUpdateSource{
-		log:             log,
-		defaultURI:      defaultURI,
-		defaultPlatform: defaultPlatform,
-		defaultEnv:      defaultEnv,
-		defaultChannel:  defaultChannel,
-	}
-}
-
+// Description returns update source description
 func (r RemoteUpdateSource) Description() string {
-	if r.defaultURI != "" {
-		return fmt.Sprintf("Remote (%s)", r.defaultURI)
-	}
 	return "Remote"
 }
 
-func (r RemoteUpdateSource) defaultSourceURL(options keybase1.UpdateOptions) string {
-	platform := r.defaultPlatform
-	if options.Platform != "" {
-		platform = options.Platform
+func (r RemoteUpdateSource) sourceURL(options keybase1.UpdateOptions) string {
+	params := libkb.JoinPredicate([]string{options.Platform, options.Env, options.Channel}, "-", func(s string) bool { return s != "" })
+	url := options.URL
+	if url == "" {
+		url = r.defaultURI
 	}
-
-	params := libkb.JoinPredicate([]string{platform, r.defaultEnv, r.defaultChannel}, "-", func(s string) bool { return s != "" })
-	return fmt.Sprintf("%s/update-%s.json", r.defaultURI, params)
+	return fmt.Sprintf("%s/update-%s.json", url, params)
 }
 
+// FindUpdate returns update for options
 func (r RemoteUpdateSource) FindUpdate(options keybase1.UpdateOptions) (update *keybase1.Update, err error) {
-	sourceURL := ""
-	if options.URL != "" {
-		sourceURL = options.URL
-	} else if r.defaultURI != "" {
-		sourceURL = r.defaultSourceURL(options)
-	}
-	if sourceURL == "" {
-		err = fmt.Errorf("No source URL for remote")
-		return
-	}
+	sourceURL := r.sourceURL(options)
 	req, err := http.NewRequest("GET", sourceURL, nil)
 	client := &http.Client{}
 	r.log.Info("Request %#v", sourceURL)

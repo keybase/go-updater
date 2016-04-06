@@ -5,16 +5,10 @@
 
 package updater
 
-import "fmt"
-
 func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath string) error {
 	return nil
 }
 
-func openApplication(applicationPath string) error {
-	return fmt.Errorf("Open application not supported on this platform")
-}
-
-func (u *Updater) applyUpdate(localPath string) error {
+func (u *Updater) applyUpdate(localPath string, destinationPath string) (err error) {
 	return nil
 }

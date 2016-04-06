@@ -18,16 +18,17 @@ import (
 	"github.com/blang/semver"
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/logger"
-	"github.com/keybase/client/go/lsof"
-	keybase1 "github.com/keybase/client/go/protocol"
 	zip "github.com/keybase/client/go/tools/zip"
+	keybase1 "github.com/keybase/go-updater/protocol"
 	"github.com/keybase/go-updater/sources"
 	"golang.org/x/net/context"
 )
 
+// Version is the updater version
+const Version = "0.2.1"
+
 // Updater knows how to find and apply updates
 type Updater struct {
-	options      keybase1.UpdateOptions
 	source       sources.UpdateSource
 	config       Config
 	log          logger.Logger
@@ -37,29 +38,20 @@ type Updater struct {
 
 // UpdateUI defines the interface to UI components
 type UpdateUI interface {
-	keybase1.UpdateUiInterface
+	keybase1.UpdateUI
 }
 
 // Context defines state during an update session
 type Context interface {
 	GetUpdateUI() (UpdateUI, error)
-	AfterUpdateApply(willRestart bool) error
+	UpdateOptions() (keybase1.UpdateOptions, error)
 	Verify(r io.Reader, signature string) error
 }
 
 // Config defines configuration for the Updater
 type Config interface {
 	GetUpdatePreferenceAuto() (bool, bool)
-	GetUpdatePreferenceSnoozeUntil() keybase1.Time
-	GetUpdatePreferenceSkip() string
-	GetUpdateLastChecked() keybase1.Time
 	SetUpdatePreferenceAuto(b bool) error
-	SetUpdatePreferenceSkip(v string) error
-	SetUpdatePreferenceSnoozeUntil(t keybase1.Time) error
-	SetUpdateLastChecked(t keybase1.Time) error
-	GetRunModeAsString() string
-	GetMountDir() string
-	GetUpdateDefaultInstructions() (string, error)
 }
 
 // CanceledError is for when an update is canceled
@@ -78,50 +70,20 @@ func NewCanceledError(message string) CanceledError {
 }
 
 // NewUpdater constructs an Updater
-func NewUpdater(options keybase1.UpdateOptions, source sources.UpdateSource, config Config, log logger.Logger) *Updater {
-	log.Debug("New updater with options: %#v", options)
+func NewUpdater(source sources.UpdateSource, config Config, log logger.Logger) *Updater {
 	return &Updater{
-		options: options,
-		source:  source,
-		config:  config,
-		log:     log,
+		source: source,
+		config: config,
+		log:    log,
 	}
 }
 
-// Options returns current updater options
-func (u *Updater) Options() keybase1.UpdateOptions {
-	return u.options
-}
-
-func (u *Updater) checkForUpdate(skipAssetDownload bool, force bool, requested bool) (update *keybase1.Update, err error) {
-	u.log.Info("Checking for update, current version is %s", u.options.Version)
-
-	if u.options.Force {
-		force = true
-	}
-
-	// Don't snooze if the user requested/wants an update (check) or we're forcing a check
-	if !requested && !force {
-		if snz := u.config.GetUpdatePreferenceSnoozeUntil(); snz > 0 {
-			snoozeUntil := keybase1.FromTime(snz)
-			if time.Now().Before(snoozeUntil) {
-				u.log.Info("Snoozing until %s", snoozeUntil)
-				return nil, nil
-			}
-			u.log.Debug("Snooze expired at %s", snoozeUntil)
-			// Clear out the snooze
-			u.config.SetUpdatePreferenceSnoozeUntil(keybase1.Time(0))
-		}
-	}
-
-	currentSemVersion, err := semver.Make(u.options.Version)
-	if err != nil {
-		return
-	}
+func (u *Updater) checkForUpdate(options keybase1.UpdateOptions, skipAssetDownload bool) (update *keybase1.Update, err error) {
+	u.log.Info("Checking for update, current version is %s", options.Version)
 
 	u.log.Info("Using updater source: %s", u.source.Description())
-	u.log.Debug("Using options: %#v", u.options)
-	update, err = u.source.FindUpdate(u.options)
+	u.log.Debug("Using options: %#v", options)
+	update, err = u.source.FindUpdate(options)
 	if err != nil || update == nil {
 		return
 	}
@@ -132,44 +94,21 @@ func (u *Updater) checkForUpdate(skipAssetDownload bool, force bool, requested b
 		return
 	}
 
-	// Update instruction might be empty, if so we'll fill in with the default
-	// instructions for the platform.
-	if update.Instructions == nil || *update.Instructions == "" {
-		instructions, cerr := u.config.GetUpdateDefaultInstructions()
-		if cerr != nil {
-			u.log.Errorf("Error trying to get update instructions: %s", cerr)
-		}
-		if instructions == "" {
-			instructions = u.options.DefaultInstructions
-		}
-		if instructions != "" {
-			u.log.Debug("Using default platform instructions: %s", instructions)
-			update.Instructions = &instructions
-		} else {
-			u.log.Debug("No instructions set for update")
-		}
-	}
-
-	if skipVersion := u.config.GetUpdatePreferenceSkip(); len(skipVersion) != 0 {
-		u.log.Debug("Update preference: skip %s", skipVersion)
-		if vers, verr := semver.Make(skipVersion); verr != nil {
-			u.log.Warning("Bad 'skipVersion' in config file: %q", skipVersion)
-		} else if vers.GE(updateSemVersion) {
-			u.log.Info("Skipping updated version via config preference: %q", update.Version)
-			return nil, nil
-		}
+	currentSemVersion, err := semver.Make(options.Version)
+	if err != nil {
+		return
 	}
 
 	if updateSemVersion.EQ(currentSemVersion) {
 		// Versions are the same, we are up to date
 		u.log.Info("Update matches current version: %s = %s", updateSemVersion, currentSemVersion)
-		if !force {
+		if !options.Force {
 			update = nil
 			return
 		}
 	} else if updateSemVersion.LT(currentSemVersion) {
 		u.log.Info("Update is older version: %s < %s", updateSemVersion, currentSemVersion)
-		if !force {
+		if !options.Force {
 			update = nil
 			return
 		}
@@ -193,7 +132,7 @@ func computeEtag(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	hash := md5.New()
 	if _, err := io.Copy(hash, file); err != nil {
@@ -219,7 +158,7 @@ func (u *Updater) checkDigest(digest string, localPath string) error {
 }
 
 func (u *Updater) downloadAsset(asset keybase1.Asset) (fpath string, cached bool, err error) {
-	url, err := url.Parse(asset.Url)
+	url, err := url.Parse(asset.URL)
 	if err != nil {
 		return
 	}
@@ -234,7 +173,7 @@ func (u *Updater) downloadAsset(asset keybase1.Asset) (fpath string, cached bool
 	if url.Scheme == "file" {
 		// This is only used for testing, where "file://" is hardcoded.
 		// "file:\\" doesn't work on Windows here.
-		localpath := asset.Url[7:]
+		localpath := asset.URL[7:]
 
 		err = copyFile(localpath, fpath)
 		if err != nil {
@@ -276,7 +215,7 @@ func (u *Updater) downloadAsset(asset keybase1.Asset) (fpath string, cached bool
 		err = fmt.Errorf("No response")
 		return
 	}
-	defer libkb.DiscardAndCloseBody(resp)
+	defer func() { _ = libkb.DiscardAndCloseBody(resp) }()
 	if resp.StatusCode == http.StatusNotModified {
 		u.log.Info("Using cached file: %s", fpath)
 		cached = true
@@ -325,7 +264,7 @@ func (u *Updater) save(savePath string, resp http.Response) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	u.log.Info("Downloading to %s", savePath)
 	n, err := io.Copy(file, resp.Body)
@@ -362,19 +301,19 @@ func (u *Updater) unpack(filename string) (string, error) {
 }
 
 func (u *Updater) ensureAssetExists(asset keybase1.Asset) error {
-	if !strings.HasPrefix(asset.Url, "http://") && !strings.HasPrefix(asset.Url, "https://") {
+	if !strings.HasPrefix(asset.URL, "http://") && !strings.HasPrefix(asset.URL, "https://") {
 		u.log.Debug("Skipping re-check for non-http asset")
 		return nil
 	}
 	u.log.Debug("Checking asset still exists") // In case the update was revoked
-	resp, err := http.Head(asset.Url)
+	resp, err := http.Head(asset.URL)
 	if err != nil {
 		return err
 	}
 	if resp == nil {
 		return fmt.Errorf("No response")
 	}
-	defer libkb.DiscardAndCloseBody(resp)
+	defer func() { _ = libkb.DiscardAndCloseBody(resp) }()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Update is no longer available (%d)", resp.StatusCode)
 	}
@@ -422,24 +361,24 @@ func (u *Updater) applyFile(src string, dest string) (err error) {
 }
 
 // Update checks, downloads and performs an update.
-func (u *Updater) Update(ctx Context, force bool, requested bool) (update *keybase1.Update, err error) {
+func (u *Updater) Update(ctx Context) (update *keybase1.Update, err error) {
 	var skipped bool
-	update, skipped, err = u.updateSingleFlight(ctx, force, requested)
+	update, skipped, err = u.updateSingleFlight(ctx)
 	// Retry if skipped via singleflight
 	if skipped {
-		update, _, err = u.updateSingleFlight(ctx, force, requested)
+		update, _, err = u.updateSingleFlight(ctx)
 	}
 	return
 }
 
-func (u *Updater) updateSingleFlight(ctx Context, force bool, requested bool) (*keybase1.Update, bool, error) {
+func (u *Updater) updateSingleFlight(ctx Context) (*keybase1.Update, bool, error) {
 	if u.cancelPrompt != nil {
 		u.log.Info("Canceling update that was waiting on a prompt")
 		u.cancelPrompt()
 	}
 
 	do := func() (interface{}, error) {
-		return u.update(ctx, force, requested)
+		return u.update(ctx)
 	}
 	any, cached, err := u.callGroup.Do("update", do)
 	if cached {
@@ -454,8 +393,12 @@ func (u *Updater) updateSingleFlight(ctx Context, force bool, requested bool) (*
 	return update, false, err
 }
 
-func (u *Updater) update(ctx Context, force bool, requested bool) (update *keybase1.Update, err error) {
-	update, err = u.checkForUpdate(false, force, requested)
+func (u *Updater) update(ctx Context) (update *keybase1.Update, err error) {
+	options, err := ctx.UpdateOptions()
+	if err != nil {
+		return
+	}
+	update, err = u.checkForUpdate(options, false)
 	if err != nil {
 		return
 	}
@@ -480,33 +423,17 @@ func (u *Updater) update(ctx Context, force bool, requested bool) (update *keyba
 		return
 	}
 
-	err = u.checkInUse(ctx, *update)
-	if err != nil {
-		return
-	}
-
 	err = u.ensureAssetExists(*update.Asset)
 	if err != nil {
 		return
 	}
 
-	applyError := u.apply(ctx, *update)
-
-	updateQuitResponse, err := u.checkRestart(ctx, *update, statusFromError(applyError))
-	if applyError != nil {
-		err = applyError
-		return
-	}
+	err = u.apply(ctx, options.DestinationPath, *update)
 	if err != nil {
 		return
 	}
 
-	err = ctx.AfterUpdateApply(updateQuitResponse.Quit)
-	if err != nil {
-		return
-	}
-
-	_, err = u.restart(ctx, updateQuitResponse)
+	_, err = u.restart(ctx)
 
 	if update.Asset != nil {
 		u.cleanup([]string{unzipDestination(update.Asset.LocalPath), update.Asset.LocalPath})
@@ -515,13 +442,13 @@ func (u *Updater) update(ctx Context, force bool, requested bool) (update *keyba
 	return
 }
 
-func (u *Updater) apply(ctx Context, update keybase1.Update) (err error) {
+func (u *Updater) apply(ctx Context, destinationPath string, update keybase1.Update) (err error) {
 	err = u.verifySignature(ctx, update)
 	if err != nil {
 		return
 	}
 
-	err = u.applyUpdate(update.Asset.LocalPath)
+	err = u.applyUpdate(update.Asset.LocalPath, destinationPath)
 	return
 }
 
@@ -555,31 +482,29 @@ func (u *Updater) promptForUpdateAction(ctx Context, update keybase1.Update) (er
 	// If automatically apply not set, default to true
 	alwaysAutoInstall := !autoSet
 
-	updatePromptArg := keybase1.UpdatePromptArg{
-		Update: update,
-		Options: keybase1.UpdatePromptOptions{
-			AlwaysAutoInstall: alwaysAutoInstall,
-		},
+	promptOptions := keybase1.UpdatePromptOptions{
+		AlwaysAutoInstall: alwaysAutoInstall,
 	}
-	updateContext, canceler := context.WithCancel(context.Background())
+
+	_, canceler := context.WithCancel(context.Background())
 	u.cancelPrompt = canceler
-	updatePromptResponse, err := updateUI.UpdatePrompt(updateContext, updatePromptArg)
+	updatePromptResponse, err := updateUI.UpdatePrompt(update, promptOptions)
 	u.cancelPrompt = nil
 	if err != nil {
 		return
 	}
 
 	u.log.Debug("Update prompt response: %#v", updatePromptResponse)
-	u.config.SetUpdatePreferenceAuto(updatePromptResponse.AlwaysAutoInstall)
+	err = u.config.SetUpdatePreferenceAuto(updatePromptResponse.AlwaysAutoInstall)
+	if err != nil {
+		u.log.Warning("Error setting auto preference: %s", err)
+	}
 	switch updatePromptResponse.Action {
-	case keybase1.UpdateAction_UPDATE:
-	case keybase1.UpdateAction_SKIP:
-		err = NewCanceledError("Skipped update")
-		u.config.SetUpdatePreferenceSkip(update.Version)
-	case keybase1.UpdateAction_SNOOZE:
+	case keybase1.UpdateActionPerformUpdate:
+		// Continue
+	case keybase1.UpdateActionSnooze:
 		err = NewCanceledError("Snoozed update")
-		u.config.SetUpdatePreferenceSnoozeUntil(updatePromptResponse.SnoozeUntil)
-	case keybase1.UpdateAction_CANCEL:
+	case keybase1.UpdateActionCancel:
 		err = NewCanceledError("Canceled by user")
 	default:
 		err = NewCanceledError("Canceled by service")
@@ -605,128 +530,7 @@ func (u *Updater) applyZip(localPath string, destinationPath string) (err error)
 	return
 }
 
-func (u *Updater) promptForAppInUse(ctx Context, update keybase1.Update, processes []lsof.Process) error {
-	updateUI, err := u.updateUI(ctx)
-	if err != nil {
-		return err
-	}
-
-	updateAppInUseArg := keybase1.UpdateAppInUseArg{
-		Update:    update,
-		Processes: toKeybaseProcess(processes),
-	}
-	updateContext, canceler := context.WithCancel(context.Background())
-	u.cancelPrompt = canceler
-	updateInUseResponse, err := updateUI.UpdateAppInUse(updateContext, updateAppInUseArg)
-	u.cancelPrompt = nil
-	if err != nil {
-		return err
-	}
-
-	u.log.Debug("Update (app in use) response: %#v", updateInUseResponse)
-	switch updateInUseResponse.Action {
-	case keybase1.UpdateAppInUseAction_CANCEL:
-		return NewCanceledError("Canceled by user")
-	case keybase1.UpdateAppInUseAction_FORCE:
-		// Continue
-	case keybase1.UpdateAppInUseAction_KILL_PROCESSES:
-		panic("Unimplemented") // TODO: Kill processes
-	default:
-		return NewCanceledError("Canceled by service")
-	}
-	return nil
-}
-
-func toKeybaseProcess(processes []lsof.Process) []keybase1.Process {
-	kbProcesses := []keybase1.Process{}
-	for _, p := range processes {
-		fileDescriptors := []keybase1.FileDescriptor{}
-		for _, f := range p.FileDescriptors {
-			fileDescriptors = append(fileDescriptors, keybase1.FileDescriptor{Name: f.Name})
-		}
-		kbProcesses = append(kbProcesses, keybase1.Process{Pid: p.PID, Command: p.Command, FileDescriptors: fileDescriptors})
-	}
-	return kbProcesses
-}
-
-func (u *Updater) checkInUse(ctx Context, update keybase1.Update) error {
-	mountDir := u.config.GetMountDir()
-	u.log.Debug("Mount dir: %s", mountDir)
-	if mountDir == "" {
-		return nil
-	}
-	if _, serr := os.Stat(mountDir); os.IsNotExist(serr) {
-		u.log.Debug("%s doesn't exist", mountDir)
-		return nil
-	}
-
-	u.log.Debug("Checking mount (lsof)")
-	processes, err := lsof.MountPoint(mountDir)
-	if err != nil {
-		// If there is an error in lsof it's likely because the mount is in a bad
-		// state. This usually means we're ok to continue.
-		// TODO(gabe): Investigate this more
-		u.log.Warning("Continuing despite error in lsof: %s", err)
-	}
-	if len(processes) != 0 {
-		u.log.Debug("Prompting app in use")
-		err = u.promptForAppInUse(ctx, update, processes)
-		if err != nil {
-			u.log.Debug("Error prompting")
-			return err
-		}
-	}
-	return nil
-}
-
-func (u *Updater) checkRestart(ctx Context, update keybase1.Update, status keybase1.Status) (updateQuitResponse keybase1.UpdateQuitRes, err error) {
-	if ctx == nil {
-		err = fmt.Errorf("No update UI available")
-		return
-	}
-
-	u.log.Debug("Asking if it safe to quit the app")
-	updateUI, err := u.updateUI(ctx)
-	if err != nil {
-		return
-	}
-	arg := keybase1.UpdateQuitArg{
-		Update: update,
-		Status: status,
-	}
-	updateQuitResponse, err = updateUI.UpdateQuit(context.TODO(), arg)
-	return
-}
-
-func (u *Updater) restart(ctx Context, updateQuitResponse keybase1.UpdateQuitRes) (didQuit bool, err error) {
-	if !updateQuitResponse.Quit {
-		u.log.Warning("App quit (for restart) was canceled or unsupported after update")
-		return
-	}
-
-	if updateQuitResponse.Pid == 0 {
-		err = fmt.Errorf("Invalid PID: %d", updateQuitResponse.Pid)
-		return
-	}
-
-	u.log.Debug("App reported its PID as %d", updateQuitResponse.Pid)
-	p, err := os.FindProcess(updateQuitResponse.Pid)
-	if err != nil {
-		return
-	}
-	u.log.Debug("Killing app")
-	err = p.Kill()
-	if err != nil {
-		return
-	}
-	didQuit = true
-
-	u.log.Debug("Opening app at %s", updateQuitResponse.ApplicationPath)
-	err = openApplication(updateQuitResponse.ApplicationPath)
-	if err != nil {
-		return
-	}
-
+func (u *Updater) restart(ctx Context) (didQuit bool, err error) {
 	return
 }
 
@@ -756,12 +560,12 @@ func copyFile(sourcePath string, destinationPath string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 	out, err := os.Create(destinationPath)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 	_, err = io.Copy(out, in)
 	cerr := out.Close()
 	if err != nil {
@@ -775,7 +579,7 @@ func (u *Updater) verifySignature(ctx Context, update keybase1.Update) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	if update.Asset.Signature == "" {
 		u.log.Warning("No signature to verify")
 		// TODO: Return error here to enable signature verification
@@ -804,18 +608,4 @@ func (u *Updater) waitForUI(ctx Context, wait time.Duration) (updateUI UpdateUI,
 		i++
 	}
 	return nil, fmt.Errorf("No UI available for updater")
-}
-
-func statusFromError(err error) keybase1.Status {
-	if err == nil {
-		return keybase1.StatusOK("")
-	}
-
-	switch err.(type) {
-	case CanceledError:
-		// Canceled errors aren't really errors
-		return keybase1.StatusOK(err.Error())
-	default:
-		return keybase1.FromError(err).Status()
-	}
 }

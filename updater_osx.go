@@ -68,13 +68,7 @@ func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath
 	return nil
 }
 
-func openApplication(applicationPath string) error {
-	_, err := exec.Command("/usr/bin/open", applicationPath).Output()
-	return err
-}
-
-func (u *Updater) applyUpdate(localPath string) (err error) {
-	destinationPath := u.options.DestinationPath
+func (u *Updater) applyUpdate(localPath string, destinationPath string) (err error) {
 	err = u.applyZip(localPath, destinationPath)
 	if err != nil {
 		return
