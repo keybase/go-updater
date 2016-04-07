@@ -6,6 +6,7 @@
 package updater
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"os/user"
@@ -68,9 +69,20 @@ func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath
 	return nil
 }
 
-func openApplication(applicationPath string) error {
-	_, err := exec.Command("/usr/bin/open", applicationPath).Output()
-	return err
+func (u *Updater) openApplication(applicationPath string) error {
+	tryOpen := func() error {
+		out, err := exec.Command("/usr/bin/open", applicationPath).Output()
+		if err != nil {
+			return fmt.Errorf("%s; %s", err, out)
+		}
+		return nil
+	}
+	if err := tryOpen(); err != nil {
+		u.log.Errorf("Open error, trying again in a few seconds; %s", err)
+		time.Sleep(3 * time.Second)
+		return tryOpen()
+	}
+	return nil
 }
 
 func (u *Updater) applyUpdate(localPath string) (err error) {
