@@ -73,12 +73,12 @@ func (u *Updater) openApplication(applicationPath string) error {
 	tryOpen := func() error {
 		out, err := exec.Command("/usr/bin/open", applicationPath).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("%s; %s", err, string(out))
+			return fmt.Errorf("Open error: %s; %s", err, string(out))
 		}
 		return nil
 	}
 	if err := tryOpen(); err != nil {
-		u.log.Errorf("Open error, trying again in a few seconds; %s", err)
+		u.log.Errorf("Open error (trying again in a few seconds): %s", err)
 		time.Sleep(3 * time.Second)
 		return tryOpen()
 	}
