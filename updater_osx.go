@@ -71,9 +71,9 @@ func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath
 
 func (u *Updater) openApplication(applicationPath string) error {
 	tryOpen := func() error {
-		out, err := exec.Command("/usr/bin/open", applicationPath).Output()
+		out, err := exec.Command("/usr/bin/open", applicationPath).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("%s; %s", err, out)
+			return fmt.Errorf("%s; %s", err, string(out))
 		}
 		return nil
 	}
@@ -94,9 +94,9 @@ func (u *Updater) applyUpdate(localPath string) (err error) {
 
 	// Update spotlight, ignore (but log) errors
 	u.log.Debug("Updating spotlight: %s", destinationPath)
-	mdimportOut, mdierr := exec.Command("/usr/bin/mdimport", destinationPath).Output()
+	mdimportOut, mdierr := exec.Command("/usr/bin/mdimport", destinationPath).CombinedOutput()
 	if mdierr != nil {
-		u.log.Errorf("Error trying to update spotlight: %s; %s", mdierr, mdimportOut)
+		u.log.Errorf("Error trying to update spotlight: %s; %s", mdierr, string(mdimportOut))
 	}
 	return
 }
