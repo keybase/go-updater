@@ -77,10 +77,13 @@ func (u *Updater) openApplication(applicationPath string) error {
 		}
 		return nil
 	}
-	if err := tryOpen(); err != nil {
-		u.log.Errorf("Open error (trying again in a few seconds): %s", err)
-		time.Sleep(3 * time.Second)
-		return tryOpen()
+	for i := 0; i < 10; i++ {
+		err := tryOpen()
+		if err == nil {
+			break
+		}
+		u.log.Errorf("Open error (trying again in a second): %s", err)
+		time.Sleep(1 * time.Second)
 	}
 	return nil
 }
