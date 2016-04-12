@@ -61,30 +61,3 @@ func (u testUpdateCheckUI) Verify(r io.Reader, signature string) error {
 func (u testUpdateCheckUI) UpdateAppInUse(context.Context, keybase1.UpdateAppInUseArg) (keybase1.UpdateAppInUseRes, error) {
 	return keybase1.UpdateAppInUseRes{Action: keybase1.UpdateAppInUseAction_CANCEL}, nil
 }
-
-func TestUpdateCheckerSince(t *testing.T) {
-	updater, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	checker := newUpdateChecker(updater, testUpdateCheckUI{}, logger.NewTestLogger(t), time.Second, 300*time.Millisecond)
-	if err != nil {
-		t.Fatal(err)
-	}
-	checked, err := checker.Check(false, false)
-	if !checked {
-		t.Fatal("Should have checked (1)")
-	}
-	checked, err = checker.Check(false, false)
-	if checked {
-		t.Fatal("Should not have checked (2)")
-	}
-	time.Sleep(300 * time.Millisecond)
-	checked, err = checker.Check(false, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !checked {
-		t.Fatal("Should have checked (3)")
-	}
-}
