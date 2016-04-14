@@ -37,10 +37,11 @@ func TestRunCommandEcho(t *testing.T) {
 
 func TestRunCommandTimeout(t *testing.T) {
 	start := time.Now()
-	out, err := RunCommand("sleep", []string{"10"}, time.Second, log)
+	timeout := 10 * time.Millisecond
+	out, err := RunCommand("sleep", []string{"10"}, timeout, log)
 	elapsed := time.Since(start)
 	t.Logf("We elapsed %s", elapsed)
-	if elapsed < time.Second {
+	if elapsed < timeout {
 		t.Error("We didn't actually sleep more than a second")
 	}
 	assert.Equal(t, out, "", "Should have empty output")
@@ -109,14 +110,14 @@ func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
 func TestRunJSONCommandTimeout(t *testing.T) {
 	log := logging.Logger{Module: "test"}
 	var testValOut testObj
-	err := RunJSONCommand("sleep", []string{"10"}, &testValOut, time.Second, log)
+	err := RunJSONCommand("sleep", []string{"10"}, &testValOut, 10*time.Millisecond, log)
 	assert.NotNil(t, err, "Should have errored")
 	assert.Equal(t, err.Error(), "Error running command: signal: killed")
 }
 
 // TestTimeoutProcessKilled checks to make sure process is killed after timeout
 func TestTimeoutProcessKilled(t *testing.T) {
-	out, process, err := runCommand("sleep", []string{"10"}, true, time.Second, log)
+	out, process, err := runCommand("sleep", []string{"10"}, true, 10*time.Millisecond, log)
 	assert.Equal(t, out, []byte{}, "Should have empty output")
 	assert.NotNil(t, err, "Should have errored")
 	findProcess, _ := os.FindProcess(process.Pid)
