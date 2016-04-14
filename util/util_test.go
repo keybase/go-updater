@@ -18,6 +18,7 @@ func TestJoinPredicate(t *testing.T) {
 
 func TestRandString(t *testing.T) {
 	s, err := RandString("prefix", 20)
+	t.Logf("Rand string: %s", s)
 	if err != nil {
 		t.Fatal(err)
 	}

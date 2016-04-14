@@ -26,10 +26,7 @@ func RandString(prefix string, numbytes int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	str := base32.StdEncoding.EncodeToString(buf)
-	if prefix != "" {
-		str = strings.Join([]string{prefix, str}, "")
-	}
+	str := prefix + base32.StdEncoding.EncodeToString(buf)
 	return str, nil
 }
 

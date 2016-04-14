@@ -4,7 +4,6 @@
 package util
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -31,7 +30,7 @@ func NewFile(name string, data []byte, perm os.FileMode) File {
 
 // Save file
 func (f File) Save(log logging.Logger) error {
-	return SafeWriteToFile(f, f.perm, log)
+	return safeWriteToFile(f, f.perm, log)
 }
 
 // GetFilename returns the file name for SafeWriter
@@ -45,8 +44,8 @@ func (f File) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// SafeWriteToFile to safely write to a file. Use mode=0 for default permissions.
-func SafeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
+// safeWriteToFile to safely write to a file. Use mode=0 for default permissions.
+func safeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
 	fn := t.GetFilename()
 	log.Debugf("Writing to %s", fn)
 	tmpfn, tmp, err := OpenTempFile(fn, "", mode)
@@ -54,36 +53,40 @@ func SafeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
 	if err != nil {
 		return err
 	}
-
 	_, err = t.WriteTo(tmp)
-	if err == nil {
-		err = tmp.Close()
-		if err == nil {
-			err = os.Rename(tmpfn, fn)
-		} else {
-			log.Errorf("Error closing temporary file %s: %s", tmpfn, err)
-			_ = os.Remove(tmpfn)
-		}
-	} else {
+	if err != nil {
 		log.Errorf("Error writing temporary file %s: %s", tmpfn, err)
 		_ = tmp.Close()
 		_ = os.Remove(tmpfn)
+		return err
+	}
+	err = tmp.Close()
+	if err != nil {
+		log.Errorf("Error closing temporary file %s: %s", tmpfn, err)
+		_ = os.Remove(tmpfn)
+		return err
 	}
 	log.Debugf("Wrote to %s", fn)
-	return err
+	err = os.Rename(tmpfn, fn)
+	if err != nil {
+		log.Errorf("Error renaming temporary file %s to %s: %s", tmpfn, fn, err)
+		_ = os.Remove(tmpfn)
+		return err
+	}
+	return nil
 }
 
-// OpenTempFile creates an opened termporary file. Use mode=0 for default
+// OpenTempFile creates an opened temporary file. Use mode=0 for default
 // permission (0600).
 //
 //   OpenTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
 //   OpenTempFile(path.Join(os.TempDir(), "foo"), "", 0) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
 //
 func OpenTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.File, error) {
-	if prefix == "" {
-		return "", nil, fmt.Errorf("Prefix was an empty string")
+	if prefix != "" {
+		prefix = prefix + "."
 	}
-	filename, err := RandString(fmt.Sprintf("%s.", prefix), 20)
+	filename, err := RandString(prefix, 20)
 	if err != nil {
 		return "", nil, err
 	}
