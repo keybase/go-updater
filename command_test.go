@@ -69,10 +69,11 @@ func TestRunCommandTimeout(t *testing.T) {
 func TestRunCommandBadTimeout(t *testing.T) {
 	out, err := RunCommand("sleep", []string{"1"}, -time.Second, log)
 	if out != "" {
-		t.Errorf("Unexpected output: %s", out)
+		t.Errorf("Unexpected output")
 	}
-	if err != nil {
-		t.Errorf("Should proceed with run command even with bad timeout: %s", err)
+	t.Logf("Error: %s", err)
+	if err == nil {
+		t.Errorf("Bad timeout should error")
 	}
 }
 

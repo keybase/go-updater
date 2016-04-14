@@ -30,6 +30,9 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 	if command == "" {
 		return nil, nil, fmt.Errorf("No command")
 	}
+	if timeout < 0 {
+		return nil, nil, fmt.Errorf("Invalid timeout: %s", timeout)
+	}
 	cmd := exec.Command(command, args...)
 	if cmd == nil {
 		return nil, nil, fmt.Errorf("No command")
