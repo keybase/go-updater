@@ -31,6 +31,10 @@ const (
 	UpdateSignatureError UpdateErrorType = "signature"
 )
 
+func (t UpdateErrorType) String() string {
+	return string(t)
+}
+
 // UpdateError is an update error with a type/category for reporting
 type UpdateError struct {
 	errorType UpdateErrorType
@@ -44,7 +48,7 @@ func NewUpdateError(errorType UpdateErrorType, err error) error {
 
 // TypeString returns a unique short string to denote the error type
 func (e UpdateError) TypeString() string {
-	return string(e.errorType)
+	return e.errorType.String()
 }
 
 // Error returns description for an UpdateError
