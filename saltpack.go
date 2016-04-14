@@ -18,56 +18,33 @@ type naclSignature [ed25519.SignatureSize]byte
 
 const kidNaclEddsa = 0x20
 
-// KID is a key identifier
-type KID string
-
-const (
-	// KIDLen is KID length in bytes
-	KIDLen = 35
-	// KIDSuffix is KID suffix (byte)
-	KIDSuffix = 0x0a
-	// KIDVersion is current version of KID
-	KIDVersion = 0x1
-)
-
-// KIDFromRawKey returns KID from bytes by type
-func KIDFromRawKey(b []byte, keyType byte) KID {
-	tmp := []byte{KIDVersion, keyType}
-	tmp = append(tmp, b...)
-	tmp = append(tmp, byte(KIDSuffix))
-	return KIDFromSlice(tmp)
-}
-
-// KIDFromSlice returns KID from bytes
-func KIDFromSlice(b []byte) KID {
-	return KID(hex.EncodeToString(b))
-}
-
-// Equal returns true if KID's are equal
-func (k KID) Equal(v KID) bool {
-	return k == v
-}
-
 // SaltpackVerifyDetached verifies a message signature
-func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs []KID, log logging.Logger) error {
+func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs []string, log logging.Logger) error {
 	if reader == nil {
 		return fmt.Errorf("Saltpack Error: No reader")
 	}
 	checkSender := func(key saltpack.SigningPublicKey) error {
-		kid := SigningPublicKeyToKeybaseKID(key)
-		log.Infof("Signed by %s", kid)
-		if kidIsIn(kid, validKIDs) {
+		if key == nil {
+			return fmt.Errorf("No key")
+		}
+		kid := key.ToKID()
+		if kid == nil {
+			return fmt.Errorf("No KID for key")
+		}
+		skid := hex.EncodeToString(kid)
+		log.Infof("Signed by %s", skid)
+		if kidIsIn(skid, validKIDs) {
 			log.Debug("Valid KID")
 			return nil
 		}
-		return fmt.Errorf("Unknown signer KID: %s", kid)
+		return fmt.Errorf("Unknown signer KID: %s", skid)
 	}
 	return SaltpackVerifyDetachedCheckSender(reader, []byte(signature), checkSender)
 }
 
-func kidIsIn(k KID, list []KID) bool {
+func kidIsIn(k string, list []string) bool {
 	for _, h := range list {
-		if h.Equal(k) {
+		if h == k {
 			return true
 		}
 	}
@@ -123,13 +100,4 @@ func (s saltSignerPublic) Verify(msg, sig []byte) error {
 
 func (k naclSigningKeyPublic) Verify(msg []byte, sig *naclSignature) bool {
 	return ed25519.Verify((*[ed25519.PublicKeySize]byte)(&k), msg, (*[ed25519.SignatureSize]byte)(sig))
-}
-
-// SigningPublicKeyToKeybaseKID returns a KID for a public key
-func SigningPublicKeyToKeybaseKID(k saltpack.SigningPublicKey) (ret KID) {
-	if k == nil {
-		return ret
-	}
-	p := k.ToKID()
-	return KIDFromRawKey(p, kidNaclEddsa)
 }

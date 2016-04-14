@@ -10,8 +10,8 @@ import (
 	"github.com/keybase/go-logging"
 )
 
-var validCodeSigningKIDs = []KID{
-	"01209092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a10a", // keybot (device)
+var validCodeSigningKIDs = []string{
+	"9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", // keybot (device)
 }
 
 const message1 = "This is a test message\n"
@@ -50,13 +50,13 @@ func TestSaltpackVerifyNoValidIDs(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have errored")
 	}
-	if err.Error() != "Unknown signer KID: 01209092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a10a" {
+	if err.Error() != "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1" {
 		t.Errorf("Unexpected error output")
 	}
 }
 
 func TestSaltpackVerifyBadValidIDs(t *testing.T) {
-	var badCodeSigningKIDs = []KID{"whatever"}
+	var badCodeSigningKIDs = []string{"whatever"}
 
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, badCodeSigningKIDs, log)
@@ -64,7 +64,7 @@ func TestSaltpackVerifyBadValidIDs(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have errored")
 	}
-	if err.Error() != "Unknown signer KID: 01209092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a10a" {
+	if err.Error() != "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1" {
 		t.Errorf("Unexpected error output")
 	}
 }
