@@ -10,41 +10,29 @@ import (
 	"time"
 
 	"github.com/keybase/go-logging"
+	"github.com/stretchr/testify/assert"
 )
 
 var log = logging.Logger{Module: "test"}
 
 func TestEmptyRunCommand(t *testing.T) {
 	out, err := RunCommand("", nil, time.Second, log)
-	if out != "" {
-		t.Errorf("Unexpected output: %s", out)
-	}
+	assert.Equal(t, out, "", "Should have empty output")
 	t.Logf("Error: %s", err)
-	if err == nil {
-		t.Fatal("Should have errored")
-	}
+	assert.NotNil(t, err, "Should have errored")
 }
 
 func TestInvalidRunCommand(t *testing.T) {
 	out, err := RunCommand("invalidexecutable", nil, time.Second, log)
-	if out != "" {
-		t.Errorf("Unexpected output: %s", out)
-	}
+	assert.Equal(t, out, "", "Should have empty output")
 	t.Logf("Error: %s", err)
-	if err == nil {
-		t.Fatal("Should have errored")
-	}
+	assert.NotNil(t, err, err)
 }
 
 func TestRunCommandEcho(t *testing.T) {
 	out, err := RunCommand("echo", []string{"arg1", "arg2"}, time.Second, log)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expected := "arg1 arg2\n"
-	if out != expected {
-		t.Errorf("Unexpected output: %q != %q", out, expected)
-	}
+	assert.Nil(t, err, "Should have errored")
+	assert.Equal(t, out, "arg1 arg2\n")
 }
 
 func TestRunCommandTimeout(t *testing.T) {
@@ -55,26 +43,16 @@ func TestRunCommandTimeout(t *testing.T) {
 	if elapsed < time.Second {
 		t.Error("We didn't actually sleep more than a second")
 	}
-	if out != "" {
-		t.Errorf("Unexpected output: %s", out)
-	}
-	if err == nil {
-		t.Fatal("Expected timeout error")
-	}
-	if err.Error() != "Error running command: signal: killed" {
-		t.Errorf("Expected signal killed error, got %#v", err)
-	}
+	assert.Equal(t, out, "", "Should have empty output")
+	assert.NotNil(t, err, "Should have errored")
+	assert.Equal(t, err.Error(), "Error running command: signal: killed")
 }
 
 func TestRunCommandBadTimeout(t *testing.T) {
 	out, err := RunCommand("sleep", []string{"1"}, -time.Second, log)
-	if out != "" {
-		t.Errorf("Unexpected output")
-	}
+	assert.Equal(t, out, "", "Should have empty output")
 	t.Logf("Error: %s", err)
-	if err == nil {
-		t.Errorf("Bad timeout should error")
-	}
+	assert.NotNil(t, err, "Should have errored")
 }
 
 type testObj struct {
@@ -109,9 +87,7 @@ var testVal = testObj{
 func TestRunJSONCommand(t *testing.T) {
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON}, &testValOut, time.Second, log)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err, err)
 	t.Logf("Out: %#v", testValOut)
 	if !reflect.DeepEqual(testVal, testValOut) {
 		t.Errorf("Invalid object: %#v", testValOut)
@@ -123,9 +99,7 @@ func TestRunJSONCommand(t *testing.T) {
 func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON + "bad input"}, &testValOut, time.Second, log)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err, err)
 	t.Logf("Out: %#v", testValOut)
 	if !reflect.DeepEqual(testVal, testValOut) {
 		t.Errorf("Invalid object: %#v", testValOut)
@@ -136,27 +110,17 @@ func TestRunJSONCommandTimeout(t *testing.T) {
 	log := logging.Logger{Module: "test"}
 	var testValOut testObj
 	err := RunJSONCommand("sleep", []string{"10"}, &testValOut, time.Second, log)
-	if err == nil {
-		t.Fatal("Expected timeout error")
-	}
-	if err.Error() != "Error running command: signal: killed" {
-		t.Errorf("Expected signal killed error, got %#v", err)
-	}
+	assert.NotNil(t, err, "Should have errored")
+	assert.Equal(t, err.Error(), "Error running command: signal: killed")
 }
 
 // TestTimeoutProcessKilled checks to make sure process is killed after timeout
 func TestTimeoutProcessKilled(t *testing.T) {
 	out, process, err := runCommand("sleep", []string{"10"}, true, time.Second, log)
-	if out == nil {
-		t.Errorf("Expected empty output")
-	}
-	if err == nil {
-		t.Fatal("Expected timeout error")
-	}
+	assert.Equal(t, out, []byte{}, "Should have empty output")
+	assert.NotNil(t, err, "Should have errored")
 	findProcess, _ := os.FindProcess(process.Pid)
 	// This should error since killing a non-existant process should error
 	perr := findProcess.Kill()
-	if perr == nil {
-		t.Errorf("Process should be killed already: %s", perr)
-	}
+	assert.NotNil(t, perr, "Should have errored killing since killing non-existant process should error")
 }
