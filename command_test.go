@@ -12,9 +12,13 @@ import (
 	"github.com/keybase/go-logging"
 )
 
+var log = logging.Logger{Module: "test"}
+
 func TestEmptyRunCommand(t *testing.T) {
-	log := logging.Logger{Module: "test"}
-	_, err := RunCommand("", nil, time.Second, log)
+	out, err := RunCommand("", nil, time.Second, log)
+	if out != "" {
+		t.Errorf("Unexpected output: %s", out)
+	}
 	t.Logf("Error: %s", err)
 	if err == nil {
 		t.Fatal("Should have errored")
@@ -22,8 +26,10 @@ func TestEmptyRunCommand(t *testing.T) {
 }
 
 func TestInvalidRunCommand(t *testing.T) {
-	log := logging.Logger{Module: "test"}
-	_, err := RunCommand("invalidexecutable", nil, time.Second, log)
+	out, err := RunCommand("invalidexecutable", nil, time.Second, log)
+	if out != "" {
+		t.Errorf("Unexpected output: %s", out)
+	}
 	t.Logf("Error: %s", err)
 	if err == nil {
 		t.Fatal("Should have errored")
@@ -31,7 +37,6 @@ func TestInvalidRunCommand(t *testing.T) {
 }
 
 func TestRunCommandEcho(t *testing.T) {
-	log := logging.Logger{Module: "test"}
 	out, err := RunCommand("echo", []string{"arg1", "arg2"}, time.Second, log)
 	if err != nil {
 		t.Fatal(err)
@@ -43,8 +48,16 @@ func TestRunCommandEcho(t *testing.T) {
 }
 
 func TestRunCommandTimeout(t *testing.T) {
-	log := logging.Logger{Module: "test"}
-	_, err := RunCommand("sleep", []string{"10"}, time.Second, log)
+	start := time.Now()
+	out, err := RunCommand("sleep", []string{"10"}, time.Second, log)
+	elapsed := time.Since(start)
+	t.Logf("We elapsed %s", elapsed)
+	if elapsed < time.Second {
+		t.Error("We didn't actually sleep more than a second")
+	}
+	if out != "" {
+		t.Errorf("Unexpected output: %s", out)
+	}
 	if err == nil {
 		t.Fatal("Expected timeout error")
 	}
@@ -53,16 +66,34 @@ func TestRunCommandTimeout(t *testing.T) {
 	}
 }
 
+func TestRunCommandBadTimeout(t *testing.T) {
+	out, err := RunCommand("sleep", []string{"1"}, -time.Second, log)
+	if out != "" {
+		t.Errorf("Unexpected output: %s", out)
+	}
+	if err != nil {
+		t.Errorf("Should proceed with run command even with bad timeout: %s", err)
+	}
+}
+
 type testObj struct {
-	StringVar string `json:"stringVar"`
-	NumberVar int    `json:"numberVar"`
-	BoolVar   bool   `json:"boolVar"`
+	StringVar string        `json:"stringVar"`
+	NumberVar int           `json:"numberVar"`
+	BoolVar   bool          `json:"boolVar"`
+	ObjectVar testNestedObj `json:"objectVar"`
+}
+
+type testNestedObj struct {
+	FloatVar float64 `json:"floatVar"`
 }
 
 const testJSON = `{
   "stringVar": "hi",
   "numberVar": 1,
-  "boolVar": true
+  "boolVar": true,
+  {
+    "floatVar": 1.23
+  }
 }`
 
 var testVal = testObj{
@@ -72,7 +103,6 @@ var testVal = testObj{
 }
 
 func TestRunJSONCommand(t *testing.T) {
-	log := logging.Logger{Module: "test"}
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON}, &testValOut, time.Second, log)
 	if err != nil {
@@ -87,7 +117,6 @@ func TestRunJSONCommand(t *testing.T) {
 // TestRunJSONCommandAddingInvalidInput tests valid JSON input with invalid input after.
 // We still succeed in this case since we got valid input to start.
 func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
-	log := logging.Logger{Module: "test"}
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON + "bad input"}, &testValOut, time.Second, log)
 	if err != nil {
@@ -106,19 +135,22 @@ func TestRunJSONCommandTimeout(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected timeout error")
 	}
-	if err.Error() != "Error in result: EOF" {
-		t.Errorf("Expected EOF error, got %#v", err)
+	if err.Error() != "Error running command: signal: killed" {
+		t.Errorf("Expected signal killed error, got %#v", err)
 	}
 }
 
-// TestTimeoutProcessState checks to make sure process is killed after timeout
-func TestTimeoutProcessState(t *testing.T) {
-	log := logging.Logger{Module: "test"}
-	_, process, err := runCommand("sleep", []string{"10"}, time.Second, log)
+// TestTimeoutProcessKilled checks to make sure process is killed after timeout
+func TestTimeoutProcessKilled(t *testing.T) {
+	out, process, err := runCommand("sleep", []string{"10"}, true, time.Second, log)
+	if out != nil {
+		t.Errorf("Unexpected output: %s", string(out))
+	}
 	if err == nil {
 		t.Fatal("Expected timeout error")
 	}
 	findProcess, _ := os.FindProcess(process.Pid)
+	// This should error since killing a non-existant process should error
 	perr := findProcess.Kill()
 	if perr == nil {
 		t.Errorf("Process should be killed already: %s", perr)

@@ -4,6 +4,7 @@
 package updater
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -26,50 +27,54 @@ func timerWithTimeout(timeout time.Duration, cmd *exec.Cmd, log logging.Logger) 
 
 // RunCommand runs a command and returns the combined stdout/err output
 func RunCommand(command string, args []string, timeout time.Duration, log logging.Logger) (string, error) {
-	out, _, err := runCommand(command, args, timeout, log)
-	return out, err
+	out, _, err := runCommand(command, args, true, timeout, log)
+	if out == nil {
+		return "", err
+	}
+	return string(out), err
 }
 
-func runCommand(command string, args []string, timeout time.Duration, log logging.Logger) (string, *os.Process, error) {
+// runCommand runs a command and returns the output. If combinedOutput is true,
+// combined stdout/stderr output is returned, otherwise only stdout is returned.
+func runCommand(command string, args []string, combinedOutput bool, timeout time.Duration, log logging.Logger) ([]byte, *os.Process, error) {
 	log.Debugf("Command: %s %s", command, args)
+	if command == "" {
+		return nil, nil, fmt.Errorf("No command")
+	}
 	cmd := exec.Command(command, args...)
 	if cmd == nil {
-		return "", nil, fmt.Errorf("No command")
+		return nil, nil, fmt.Errorf("No command")
 	}
 	timer := timerWithTimeout(timeout, cmd, log)
 	if timer != nil {
 		defer timer.Stop()
 	}
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return string(out), cmd.Process, fmt.Errorf("Error running command: %s", err)
+	var out []byte
+	var err error
+	if combinedOutput {
+		// Both stdout and stderr
+		out, err = cmd.CombinedOutput()
+	} else {
+		// Only stdout
+		out, err = cmd.Output()
 	}
-	return string(out), cmd.Process, nil
+	if err != nil {
+		return out, cmd.Process, fmt.Errorf("Error running command: %s", err)
+	}
+	return out, cmd.Process, nil
 }
 
 // RunJSONCommand runs a command (with timeout) expecting JSON output with result interface
 func RunJSONCommand(command string, args []string, result interface{}, timeout time.Duration, log logging.Logger) error {
-	log.Debugf("Command: %s %s", command, args)
-	cmd := exec.Command(command, args...)
-	if cmd == nil {
-		return fmt.Errorf("No command")
-	}
-	stdout, err := cmd.StdoutPipe()
+	out, _, err := runCommand(command, args, false, timeout, log)
 	if err != nil {
-		return fmt.Errorf("Error getting stdout: %s", err)
+		return err
 	}
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("Error starting: %s", err)
+	if out == nil {
+		return fmt.Errorf("No output")
 	}
-	timer := timerWithTimeout(timeout, cmd, log)
-	if timer != nil {
-		defer timer.Stop()
-	}
-	if err := json.NewDecoder(stdout).Decode(&result); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(out)).Decode(&result); err != nil {
 		return fmt.Errorf("Error in result: %s", err)
-	}
-	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("Error waiting: %s", err)
 	}
 	return nil
 }
