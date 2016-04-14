@@ -91,7 +91,7 @@ const testJSON = `{
   "stringVar": "hi",
   "numberVar": 1,
   "boolVar": true,
-  {
+  "objectVar": {
     "floatVar": 1.23
   }
 }`
@@ -100,6 +100,9 @@ var testVal = testObj{
 	StringVar: "hi",
 	NumberVar: 1,
 	BoolVar:   true,
+	ObjectVar: testNestedObj{
+		FloatVar: 1.23,
+	},
 }
 
 func TestRunJSONCommand(t *testing.T) {
@@ -143,8 +146,8 @@ func TestRunJSONCommandTimeout(t *testing.T) {
 // TestTimeoutProcessKilled checks to make sure process is killed after timeout
 func TestTimeoutProcessKilled(t *testing.T) {
 	out, process, err := runCommand("sleep", []string{"10"}, true, time.Second, log)
-	if out != nil {
-		t.Errorf("Unexpected output: %s", string(out))
+	if out == nil {
+		t.Errorf("Expected empty output")
 	}
 	if err == nil {
 		t.Fatal("Expected timeout error")
