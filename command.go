@@ -14,17 +14,6 @@ import (
 	"github.com/keybase/go-logging"
 )
 
-func timerWithTimeout(timeout time.Duration, cmd *exec.Cmd, log logging.Logger) *time.Timer {
-	return time.AfterFunc(timeout, func() {
-		if cmd != nil && cmd.Process != nil {
-			log.Warningf("Command timed out, killing")
-			if err := cmd.Process.Kill(); err != nil {
-				log.Warningf("Error trying to kill process: %s", err)
-			}
-		}
-	})
-}
-
 // RunCommand runs a command and returns the combined stdout/err output
 func RunCommand(command string, args []string, timeout time.Duration, log logging.Logger) (string, error) {
 	out, _, err := runCommand(command, args, true, timeout, log)
@@ -45,7 +34,14 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 	if cmd == nil {
 		return nil, nil, fmt.Errorf("No command")
 	}
-	timer := timerWithTimeout(timeout, cmd, log)
+	timer := time.AfterFunc(timeout, func() {
+		if cmd != nil && cmd.Process != nil {
+			log.Warningf("Command timed out, killing")
+			if err := cmd.Process.Kill(); err != nil {
+				log.Warningf("Error trying to kill process: %s", err)
+			}
+		}
+	})
 	if timer != nil {
 		defer timer.Stop()
 	}
