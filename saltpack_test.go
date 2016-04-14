@@ -10,8 +10,8 @@ import (
 	"github.com/keybase/go-logging"
 )
 
-var validCodeSigningKIDs = []string{
-	"9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", // keybot (device)
+var validCodeSigningKIDs = map[string]bool{
+	"9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1": true, // keybot (device)
 }
 
 const message1 = "This is a test message\n"
@@ -56,7 +56,9 @@ func TestSaltpackVerifyNoValidIDs(t *testing.T) {
 }
 
 func TestSaltpackVerifyBadValidIDs(t *testing.T) {
-	var badCodeSigningKIDs = []string{"whatever"}
+	var badCodeSigningKIDs = map[string]bool{
+		"whatever": true,
+	}
 
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, badCodeSigningKIDs, log)

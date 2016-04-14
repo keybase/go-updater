@@ -19,7 +19,7 @@ type naclSignature [ed25519.SignatureSize]byte
 const kidNaclEddsa = 0x20
 
 // SaltpackVerifyDetached verifies a message signature
-func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs []string, log logging.Logger) error {
+func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[string]bool, log logging.Logger) error {
 	if reader == nil {
 		return fmt.Errorf("Saltpack Error: No reader")
 	}
@@ -33,22 +33,13 @@ func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs []stri
 		}
 		skid := hex.EncodeToString(kid)
 		log.Infof("Signed by %s", skid)
-		if kidIsIn(skid, validKIDs) {
+		if validKIDs[skid] {
 			log.Debug("Valid KID")
 			return nil
 		}
 		return fmt.Errorf("Unknown signer KID: %s", skid)
 	}
 	return SaltpackVerifyDetachedCheckSender(reader, []byte(signature), checkSender)
-}
-
-func kidIsIn(k string, list []string) bool {
-	for _, h := range list {
-		if h == k {
-			return true
-		}
-	}
-	return false
 }
 
 // SaltpackVerifyDetachedCheckSender verifies a message signature
