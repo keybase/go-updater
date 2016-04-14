@@ -66,13 +66,13 @@ func safeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
 		_ = os.Remove(tmpfn)
 		return err
 	}
-	log.Debugf("Wrote to %s", fn)
 	err = os.Rename(tmpfn, fn)
 	if err != nil {
 		log.Errorf("Error renaming temporary file %s to %s: %s", tmpfn, fn, err)
 		_ = os.Remove(tmpfn)
 		return err
 	}
+	log.Debugf("Wrote to %s", fn)
 	return nil
 }
 
