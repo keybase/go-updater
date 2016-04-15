@@ -21,18 +21,28 @@ import (
 	"github.com/keybase/client/go/lsof"
 	keybase1 "github.com/keybase/client/go/protocol"
 	zip "github.com/keybase/client/go/tools/zip"
-	"github.com/keybase/go-updater/sources"
 	"golang.org/x/net/context"
 )
+
+// Version is the updater version
+const Version = "0.2.1"
 
 // Updater knows how to find and apply updates
 type Updater struct {
 	options      keybase1.UpdateOptions
-	source       sources.UpdateSource
+	source       UpdateSource
 	config       Config
 	log          logger.Logger
 	callGroup    Group
 	cancelPrompt context.CancelFunc
+}
+
+// UpdateSource defines where the updater can find updates
+type UpdateSource interface {
+	// Description is a short description about the update source
+	Description() string
+	// FindUpdate finds an update given options
+	FindUpdate(options keybase1.UpdateOptions) (*keybase1.Update, error)
 }
 
 // UpdateUI defines the interface to UI components
@@ -78,7 +88,7 @@ func NewCanceledError(message string) CanceledError {
 }
 
 // NewUpdater constructs an Updater
-func NewUpdater(options keybase1.UpdateOptions, source sources.UpdateSource, config Config, log logger.Logger) *Updater {
+func NewUpdater(options keybase1.UpdateOptions, source UpdateSource, config Config, log logger.Logger) *Updater {
 	log.Debug("New updater with options: %#v", options)
 	return &Updater{
 		options: options,
