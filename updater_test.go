@@ -15,8 +15,11 @@ import (
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/logger"
 	keybase1 "github.com/keybase/client/go/protocol"
+	"github.com/keybase/go-logging"
 	"golang.org/x/net/context"
 )
+
+var log = logging.Logger{Module: "test"}
 
 type processUpdate func(update *keybase1.Update, path string)
 

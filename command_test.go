@@ -9,11 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/stretchr/testify/assert"
 )
-
-var log = logging.Logger{Module: "test"}
 
 func TestEmptyRunCommand(t *testing.T) {
 	out, err := RunCommand("", nil, time.Second, log)

@@ -6,8 +6,6 @@ package updater
 import (
 	"bytes"
 	"testing"
-
-	"github.com/keybase/go-logging"
 )
 
 var validCodeSigningKIDs = map[string]bool{
@@ -24,8 +22,6 @@ const signature1 = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
   Dgme7xtCaR4QRl2 hchPpr65lKLKSFy YVZcF2xUVN3gjpM vPFUMwg0JTBAG8x
   Z. END KEYBASE SALTPACK DETACHED SIGNATURE.
 `
-
-var log = logging.Logger{Module: "test"}
 
 func TestSaltpackVerify(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
