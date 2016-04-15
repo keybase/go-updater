@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gabriel/testify/assert"
 	"github.com/keybase/go-logging"
+	"github.com/stretchr/testify/assert"
 )
 
 var log = logging.Logger{Module: "test"}

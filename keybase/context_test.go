@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/gabriel/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestContext(t *testing.T) {
