@@ -6,6 +6,7 @@ package util
 import (
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/keybase/go-logging"
 )
@@ -99,4 +100,34 @@ func OpenTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.F
 	}
 	file, err := os.OpenFile(filename, flags, mode)
 	return filename, file, err
+}
+
+// FileExists returns whether the given file or directory exists or not
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+// MakeParentDirs ensures parent directory exist for path
+func MakeParentDirs(path string) error {
+	// 2nd return value here is filename (not an error), which is not needed
+	dir, _ := filepath.Split(path)
+	exists, err := FileExists(dir)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		err = os.MkdirAll(dir, 0700)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

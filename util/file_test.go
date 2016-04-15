@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gabriel/testify/assert"
 	"github.com/keybase/go-logging"
 )
 
@@ -22,4 +23,19 @@ func TestNewFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestMakeParentDirs(t *testing.T) {
+	dir := filepath.Join(os.TempDir(), "TestMakeParentDirs")
+	defer os.Remove(dir)
+
+	file := filepath.Join(dir, "testfile")
+	defer os.Remove(file)
+
+	err := MakeParentDirs(file)
+	assert.Nil(t, err, "%s", err)
+
+	exists, err := FileExists(dir)
+	assert.Nil(t, err, "%s", err)
+	assert.True(t, exists, "File doesn't exist")
 }

@@ -46,8 +46,6 @@ type UpdateOptions struct {
 	Platform string `codec:"platform" json:"platform"`
 	// DestinationPath is where to apply the update to)
 	DestinationPath string `codec:"destinationPath" json:"destinationPath"`
-	// Source is the updater source type (keybase, s3)
-	Source string `codec:"source" json:"source"`
 	// URL can override where the updater looks
 	URL string `codec:"URL" json:"URL"`
 	// Channel is an alternative channel to get updates from (test, prerelease)
@@ -62,6 +60,10 @@ type UpdateOptions struct {
 	Force bool `codec:"force" json:"force"`
 	// SignaturePath is path to signature file to verify against
 	SignaturePath string `codec:"signaturePath" json:"signaturePath"`
+	// OSVersion is the version of the OS
+	OSVersion string `json:"osVersion"`
+	// UpdaterVersion is the version of the updater service
+	UpdaterVersion string `json:"updaterVersion"`
 }
 
 // UpdateAction is the update action requested by the user
