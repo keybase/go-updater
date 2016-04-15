@@ -109,7 +109,6 @@ func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
 }
 
 func TestRunJSONCommandTimeout(t *testing.T) {
-	log := logging.Logger{Module: "test"}
 	var testValOut testObj
 	err := RunJSONCommand("sleep", []string{"10"}, &testValOut, 10*time.Millisecond, log)
 	if assert.NotNil(t, err, "Should have errored") {
