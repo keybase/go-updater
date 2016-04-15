@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -25,6 +26,8 @@ func RunCommand(command string, args []string, timeout time.Duration, log loggin
 
 // runCommand runs a command and returns the output. If combinedOutput is true,
 // combined stdout/stderr output is returned, otherwise only stdout is returned.
+// We will send TERM signal and wait 1 second or timeout, whichever is less,
+// before calling KILL.
 func runCommand(command string, args []string, combinedOutput bool, timeout time.Duration, log logging.Logger) ([]byte, *os.Process, error) {
 	log.Debugf("Command: %s %s", command, args)
 	if command == "" {
@@ -37,30 +40,52 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 	if cmd == nil {
 		return nil, nil, fmt.Errorf("No command")
 	}
-	timer := time.AfterFunc(timeout, func() {
-		if cmd != nil && cmd.Process != nil {
-			log.Warningf("Command timed out, killing")
-			if err := cmd.Process.Kill(); err != nil {
-				log.Warningf("Error trying to kill process: %s", err)
-			}
-		}
-	})
-	if timer != nil {
-		defer timer.Stop()
-	}
-	var out []byte
-	var err error
-	if combinedOutput {
-		// Both stdout and stderr
-		out, err = cmd.CombinedOutput()
-	} else {
-		// Only stdout
-		out, err = cmd.Output()
-	}
+	// Run the command and spawn a goroutine to wait for it
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err := cmd.Start()
 	if err != nil {
-		return out, cmd.Process, fmt.Errorf("Error running command: %s", err)
+		return nil, nil, err
 	}
-	return out, cmd.Process, nil
+	doneCh := make(chan error)
+	go func() {
+		doneCh <- cmd.Wait()
+		close(doneCh)
+	}()
+	// Wait for the command to finish or time out
+	select {
+	case cmdErr := <-doneCh:
+		return buf.Bytes(), cmd.Process, cmdErr
+	case <-time.After(timeout):
+		// Timed out
+	}
+	// If no process, nothing to kill
+	if cmd.Process == nil {
+		return buf.Bytes(), nil, fmt.Errorf("Error running command: no process")
+	}
+
+	// Signal the process to terminate gracefully
+	// Wait a second or timeout for termination, whichever less
+	termWait := time.Second
+	if timeout < termWait {
+		termWait = timeout
+	}
+	log.Warningf("Command timed out, terminating (will wait %s before killing)", termWait)
+	cmd.Process.Signal(syscall.SIGTERM)
+	select {
+	case <-doneCh:
+		log.Warningf("Terminated")
+	case <-time.After(termWait):
+		// Bring out the big guns
+		log.Warningf("Command failed to terminate, killing")
+		if err := cmd.Process.Kill(); err != nil {
+			log.Warningf("Error trying to kill process: %s", err)
+		} else {
+			log.Warningf("Killed process")
+		}
+	}
+	return buf.Bytes(), cmd.Process, fmt.Errorf("Error running command: timed out")
 }
 
 // RunJSONCommand runs a command (with timeout) expecting JSON output with result interface

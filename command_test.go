@@ -26,7 +26,7 @@ func TestInvalidRunCommand(t *testing.T) {
 	out, err := RunCommand("invalidexecutable", nil, time.Second, log)
 	assert.Equal(t, out, "", "Should have empty output")
 	t.Logf("Error: %s", err)
-	assert.NotNil(t, err, err)
+	assert.NotNil(t, err, "%s", err)
 }
 
 func TestRunCommandEcho(t *testing.T) {
@@ -45,8 +45,9 @@ func TestRunCommandTimeout(t *testing.T) {
 		t.Error("We didn't actually sleep more than a second")
 	}
 	assert.Equal(t, out, "", "Should have empty output")
-	assert.NotNil(t, err, "Should have errored")
-	assert.Equal(t, err.Error(), "Error running command: signal: killed")
+	if assert.NotNil(t, err, "Should have errored") {
+		assert.Equal(t, err.Error(), "Error running command: timed out")
+	}
 }
 
 func TestRunCommandBadTimeout(t *testing.T) {
@@ -88,7 +89,7 @@ var testVal = testObj{
 func TestRunJSONCommand(t *testing.T) {
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON}, &testValOut, time.Second, log)
-	assert.Nil(t, err, err)
+	assert.Nil(t, err, "%s", err)
 	t.Logf("Out: %#v", testValOut)
 	if !reflect.DeepEqual(testVal, testValOut) {
 		t.Errorf("Invalid object: %#v", testValOut)
@@ -100,7 +101,7 @@ func TestRunJSONCommand(t *testing.T) {
 func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON + "bad input"}, &testValOut, time.Second, log)
-	assert.Nil(t, err, err)
+	assert.Nil(t, err, "%s", err)
 	t.Logf("Out: %#v", testValOut)
 	if !reflect.DeepEqual(testVal, testValOut) {
 		t.Errorf("Invalid object: %#v", testValOut)
@@ -111,8 +112,9 @@ func TestRunJSONCommandTimeout(t *testing.T) {
 	log := logging.Logger{Module: "test"}
 	var testValOut testObj
 	err := RunJSONCommand("sleep", []string{"10"}, &testValOut, 10*time.Millisecond, log)
-	assert.NotNil(t, err, "Should have errored")
-	assert.Equal(t, err.Error(), "Error running command: signal: killed")
+	if assert.NotNil(t, err, "Should have errored") {
+		assert.Equal(t, err.Error(), "Error running command: timed out")
+	}
 }
 
 // TestTimeoutProcessKilled checks to make sure process is killed after timeout
