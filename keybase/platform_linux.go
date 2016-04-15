@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gabriel/go-updater"
+	"github.com/keybase/go-updater"
 )
 
 func (c config) destinationPath() string {
