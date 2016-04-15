@@ -8,15 +8,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/agl/ed25519"
 	"github.com/keybase/go-logging"
 	"github.com/keybase/saltpack"
+	"github.com/keybase/saltpack/basic"
 )
-
-type naclSigningKeyPublic [ed25519.PublicKeySize]byte
-type naclSignature [ed25519.SignatureSize]byte
-
-const kidNaclEddsa = 0x20
 
 // SaltpackVerifyDetached verifies a message signature
 func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[string]bool, log logging.Logger) error {
@@ -44,7 +39,7 @@ func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[st
 
 // SaltpackVerifyDetachedCheckSender verifies a message signature
 func SaltpackVerifyDetachedCheckSender(message io.Reader, signature []byte, checkSender func(saltpack.SigningPublicKey) error) error {
-	kr := keyring{}
+	kr := basic.NewKeyring()
 	var skey saltpack.SigningPublicKey
 	var err error
 	skey, _, err = saltpack.Dearmor62VerifyDetachedReader(message, string(signature), kr)
@@ -57,38 +52,4 @@ func SaltpackVerifyDetachedCheckSender(message io.Reader, signature []byte, chec
 	}
 
 	return nil
-}
-
-type keyring struct{}
-
-func (e keyring) LookupSigningPublicKey(kid []byte) saltpack.SigningPublicKey {
-	var k naclSigningKeyPublic
-	copy(k[:], kid)
-	return saltSignerPublic{key: k}
-}
-
-type saltSignerPublic struct {
-	key naclSigningKeyPublic
-}
-
-func (s saltSignerPublic) ToKID() []byte {
-	return s.key[:]
-}
-
-func (s saltSignerPublic) Verify(msg, sig []byte) error {
-	if len(sig) != ed25519.SignatureSize {
-		return fmt.Errorf("signature size: %d, expected %d", len(sig), ed25519.SignatureSize)
-	}
-
-	var fixed naclSignature
-	copy(fixed[:], sig)
-	if !s.key.Verify(msg, &fixed) {
-		return fmt.Errorf("Bad signature")
-	}
-
-	return nil
-}
-
-func (k naclSigningKeyPublic) Verify(msg []byte, sig *naclSignature) bool {
-	return ed25519.Verify((*[ed25519.PublicKeySize]byte)(&k), msg, (*[ed25519.SignatureSize]byte)(sig))
 }

@@ -6,11 +6,6 @@
 			"path": "github.com/keybase/client/go/protocol",
 			"revision": "8ac9934275b6775f2aa2cc14efe271cfe2617495",
 			"revisionTime": "2016-04-03T15:41:36-07:00"
-		},
-		{
-			"path": "github.com/keybase/saltpack",
-			"revision": "3f752afeda53a6e28d4875b3aeb29bf0e1ad74d6",
-			"revisionTime": "2016-03-29T14:41:00-07:00"
 		}
 	]
 }
