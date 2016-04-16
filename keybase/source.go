@@ -52,7 +52,7 @@ func (k UpdateSource) Description() string {
 }
 
 // FindUpdate returns update for updater and options
-func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (update *updater.Update, err error) {
+func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update, error) {
 	if options.URL != "" {
 		return nil, fmt.Errorf("Custom URLs not supported for this update source")
 	}
@@ -72,6 +72,9 @@ func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (update *updater
 	urlString := u.String()
 
 	req, err := http.NewRequest("GET", urlString, nil)
+	if err != nil {
+		return nil, err
+	}
 	client := &http.Client{
 		Timeout: time.Minute,
 	}
@@ -79,26 +82,23 @@ func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (update *updater
 	resp, err := client.Do(req)
 	defer func() { _ = util.DiscardAndCloseBody(resp) }()
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Keybase returned bad HTTP status %v", resp.Status)
-		return
+		return nil, fmt.Errorf("Keybase returned bad HTTP status %v", resp.Status)
 	}
 
 	var reader io.Reader = resp.Body
 	var res updateResponse
 	if err = json.NewDecoder(reader).Decode(&res); err != nil {
-		err = fmt.Errorf("Invalid API response %s", err)
-		return
+		return nil, fmt.Errorf("Invalid API response %s", err)
 	}
 
 	if res.Status.Code != 0 {
-		err = fmt.Errorf("API returned error response: %#v", res)
-	} else {
-		k.log.Debugf("Received update: %#v", res.Update)
-		update = &res.Update
+		return nil, fmt.Errorf("API returned error response: %#v", res)
 	}
-	return
+
+	k.log.Debugf("Received update: %#v", res.Update)
+	return &res.Update, nil
 }

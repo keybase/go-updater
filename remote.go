@@ -44,7 +44,7 @@ func (r RemoteUpdateSource) sourceURL(options UpdateOptions) string {
 }
 
 // FindUpdate returns update for options
-func (r RemoteUpdateSource) FindUpdate(options UpdateOptions) (update *Update, err error) {
+func (r RemoteUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
 	sourceURL := r.sourceURL(options)
 	req, err := http.NewRequest("GET", sourceURL, nil)
 	client := &http.Client{
@@ -54,23 +54,20 @@ func (r RemoteUpdateSource) FindUpdate(options UpdateOptions) (update *Update, e
 	resp, err := client.Do(req)
 	defer func() { _ = util.DiscardAndCloseBody(resp) }()
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("Updater remote returned bad status %v", resp.Status)
-		return
+		return nil, err
 	}
 
 	var reader io.Reader = resp.Body
-	var obj Update
-	if err = json.NewDecoder(reader).Decode(&obj); err != nil {
-		err = fmt.Errorf("Bad updater remote response %s", err)
-		return
+	var update Update
+	if err = json.NewDecoder(reader).Decode(&update); err != nil {
+		return nil, fmt.Errorf("Bad updater remote response %s", err)
 	}
-	update = &obj
 
 	r.log.Debugf("Received update %#v", update)
-
-	return
+	return &update, nil
 }
