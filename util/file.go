@@ -4,8 +4,11 @@
 package util
 
 import (
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/keybase/go-logging"
 )
@@ -44,48 +47,47 @@ func (f File) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// safeWriteToFile to safely write to a file. Use mode=0 for default permissions.
+// safeWriteToFile to safely write to a file
 func safeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
-	fn := t.GetFilename()
-	log.Debugf("Writing to %s", fn)
-	tmpfn, tmp, err := OpenTempFile(fn, "", mode)
-	log.Debugf("Temporary file generated: %s", tmpfn)
+	filename := t.GetFilename()
+	if filename == "" {
+		return fmt.Errorf("No filename")
+	}
+	log.Debugf("Writing to %s", filename)
+	tempFilename, tempFile, err := openTempFile(filename+"-", "", mode)
+	log.Debugf("Temporary file generated: %s", tempFilename)
 	if err != nil {
 		return err
 	}
-	_, err = t.WriteTo(tmp)
+	_, err = t.WriteTo(tempFile)
 	if err != nil {
-		log.Errorf("Error writing temporary file %s: %s", tmpfn, err)
-		_ = tmp.Close()
-		_ = os.Remove(tmpfn)
+		log.Errorf("Error writing temporary file %s: %s", tempFilename, err)
+		_ = tempFile.Close()
+		_ = os.Remove(tempFilename)
 		return err
 	}
-	err = tmp.Close()
+	err = tempFile.Close()
 	if err != nil {
-		log.Errorf("Error closing temporary file %s: %s", tmpfn, err)
-		_ = os.Remove(tmpfn)
+		log.Errorf("Error closing temporary file %s: %s", tempFilename, err)
+		_ = os.Remove(tempFilename)
 		return err
 	}
-	err = os.Rename(tmpfn, fn)
+	err = os.Rename(tempFilename, filename)
 	if err != nil {
-		log.Errorf("Error renaming temporary file %s to %s: %s", tmpfn, fn, err)
-		_ = os.Remove(tmpfn)
+		log.Errorf("Error renaming temporary file %s to %s: %s", tempFilename, filename, err)
+		_ = os.Remove(tempFilename)
 		return err
 	}
-	log.Debugf("Wrote to %s", fn)
+	log.Debugf("Wrote to %s", filename)
 	return nil
 }
 
-// OpenTempFile creates an opened temporary file. Use mode=0 for default
-// permission (0600).
+// openTempFile creates an opened temporary file.
 //
 //   OpenTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
 //   OpenTempFile(path.Join(os.TempDir(), "foo"), "", 0) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
 //
-func OpenTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.File, error) {
-	if prefix != "" {
-		prefix = prefix + "."
-	}
+func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.File, error) {
 	filename, err := RandString(prefix, 20)
 	if err != nil {
 		return "", nil, err
@@ -99,4 +101,39 @@ func OpenTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.F
 	}
 	file, err := os.OpenFile(filename, flags, mode)
 	return filename, file, err
+}
+
+// FileExists returns whether the given file or directory exists or not
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+// TempPath returns a temporary unique file path
+func TempPath(prefix string) (string, error) {
+	filename, err := RandString(prefix, 20)
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(os.TempDir(), filename)
+	return path, nil
+}
+
+// WriteTempFile creates a temp file with data
+func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error) {
+	path, err := TempPath(prefix)
+	if err != nil {
+		return "", err
+	}
+	err = ioutil.WriteFile(path, data, mode)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }
