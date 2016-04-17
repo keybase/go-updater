@@ -1,7 +1,7 @@
 // Copyright 2015 Keybase, Inc. All rights reserved. Use of
 // this source code is governed by the included BSD license.
 
-package sources
+package updater
 
 import (
 	"crypto/sha256"
@@ -11,21 +11,25 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/keybase/client/go/logger"
-	keybase1 "github.com/keybase/client/go/protocol"
+	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater/util"
 )
 
-// LocalUpdateSource finds releases/updates from custom url feed (used primarily for testing)
+// LocalUpdateSource finds releases/updates from a path (used primarily for testing)
 type LocalUpdateSource struct {
-	log logger.Logger
+	path string
+	log  logging.Logger
 }
 
-func NewLocalUpdateSource(log logger.Logger) LocalUpdateSource {
+// NewLocalUpdateSource returns local update source
+func NewLocalUpdateSource(path string, log logging.Logger) LocalUpdateSource {
 	return LocalUpdateSource{
-		log: log,
+		path: path,
+		log:  log,
 	}
 }
 
+// Description is local update source description
 func (k LocalUpdateSource) Description() string {
 	return "Local"
 }
@@ -35,7 +39,7 @@ func digest(URL string) (digest string, err error) {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer util.Close(f)
 	hasher := sha256.New()
 	if _, ioerr := io.Copy(hasher, f); ioerr != nil {
 		err = ioerr
@@ -50,7 +54,7 @@ func readFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer sigFile.Close()
+	defer util.Close(sigFile)
 	data, err := ioutil.ReadAll(sigFile)
 	if err != nil {
 		return "", err
@@ -58,8 +62,11 @@ func readFile(path string) (string, error) {
 	return string(data), nil
 }
 
-func (k LocalUpdateSource) FindUpdate(options keybase1.UpdateOptions) (update *keybase1.Update, err error) {
-	digest, err := digest(options.URL)
+// FindUpdate returns update for options
+func (k LocalUpdateSource) FindUpdate(options UpdateOptions) (update *Update, err error) {
+	url := fmt.Sprintf("file://%s", k.path)
+
+	digest, err := digest(url)
 	if err != nil {
 		return nil, err
 	}
@@ -70,12 +77,12 @@ func (k LocalUpdateSource) FindUpdate(options keybase1.UpdateOptions) (update *k
 			return nil, err
 		}
 	}
-	return &keybase1.Update{
+	return &Update{
 		Version: options.Version,
 		Name:    fmt.Sprintf("v%s", options.Version),
-		Asset: &keybase1.Asset{
+		Asset: &Asset{
 			Name:      fmt.Sprintf("Keybase-%s.zip", options.Version),
-			Url:       options.URL,
+			URL:       url,
 			Digest:    digest,
 			Signature: signature,
 		},

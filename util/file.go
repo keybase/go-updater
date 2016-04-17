@@ -82,10 +82,22 @@ func safeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
 	return nil
 }
 
+// Close closes a file and ignores the error.
+// This satisfies lint checks when using with defer and you don't care if there
+// is an error, so instead of:
+//   defer func() { _ = f.Close() }()
+//   defer Close(f)
+func Close(f *os.File) {
+	if f == nil {
+		return
+	}
+	_ = f.Close()
+}
+
 // openTempFile creates an opened temporary file.
 //
-//   OpenTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
-//   OpenTempFile(path.Join(os.TempDir(), "foo"), "", 0) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
+//   openTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
+//   openTempFile(path.Join(os.TempDir(), "foo"), "", 0) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
 //
 func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.File, error) {
 	filename, err := RandString(prefix, 20)
