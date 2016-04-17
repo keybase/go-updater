@@ -8,7 +8,6 @@ import (
 
 	"github.com/keybase/client/go/logger"
 	keybase1 "github.com/keybase/client/go/protocol"
-	"github.com/keybase/go-updater/sources"
 )
 
 // UpdateChecker runs updates checks every check duration
@@ -94,16 +93,10 @@ func (u UpdateChecker) Count() int {
 
 // DefaultCheckDuration is default for how often to check for updates (e.g. daily)
 func DefaultCheckDuration() time.Duration {
-	if sources.IsPrerelease {
-		return time.Hour
-	}
-	return 24 * time.Hour
+	return time.Hour
 }
 
 // DefaultTickDuration is how often to call check (should be less than checkDuration or snooze min)
 func DefaultTickDuration() time.Duration {
-	if sources.IsPrerelease {
-		return 15 * time.Minute
-	}
-	return time.Hour
+	return 15 * time.Minute
 }
