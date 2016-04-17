@@ -80,7 +80,7 @@ func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update
 	}
 	k.log.Infof("Request %#v", urlString)
 	resp, err := client.Do(req)
-	defer func() { _ = util.DiscardAndCloseBody(resp) }()
+	defer util.DiscardAndCloseBodyIgnoreError(resp)
 	if err != nil {
 		return nil, err
 	}

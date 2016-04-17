@@ -52,7 +52,7 @@ func (r RemoteUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
 	}
 	r.log.Infof("Request %#v", sourceURL)
 	resp, err := client.Do(req)
-	defer func() { _ = util.DiscardAndCloseBody(resp) }()
+	defer util.DiscardAndCloseBodyIgnoreError(resp)
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater/util"
 )
 
 // LocalUpdateSource finds releases/updates from a path (used primarily for testing)
@@ -38,7 +39,7 @@ func digest(URL string) (digest string, err error) {
 	if err != nil {
 		return
 	}
-	defer func() { _ = f.Close() }()
+	defer util.Close(f)
 	hasher := sha256.New()
 	if _, ioerr := io.Copy(hasher, f); ioerr != nil {
 		err = ioerr
@@ -53,7 +54,7 @@ func readFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = sigFile.Close() }()
+	defer util.Close(sigFile)
 	data, err := ioutil.ReadAll(sigFile)
 	if err != nil {
 		return "", err
