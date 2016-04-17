@@ -41,25 +41,25 @@ type Update struct {
 // UpdateOptions are options used to find an update
 type UpdateOptions struct {
 	// Version is the current version of the app
-	Version string `codec:"version" json:"version"`
+	Version string `json:"version"`
 	// Platform is the os type (darwin, windows, linux)
-	Platform string `codec:"platform" json:"platform"`
+	Platform string `json:"platform"`
 	// DestinationPath is where to apply the update to)
-	DestinationPath string `codec:"destinationPath" json:"destinationPath"`
+	DestinationPath string `json:"destinationPath"`
 	// URL can override where the updater looks
-	URL string `codec:"URL" json:"URL"`
+	URL string `json:"URL"`
 	// Channel is an alternative channel to get updates from (test, prerelease)
-	Channel string `codec:"channel" json:"channel"`
+	Channel string `json:"channel"`
 	// Env is an enviroment or run mode (prod, staging, devel)
-	Env string `codec:"env" json:"env"`
+	Env string `json:"env"`
 	// InstallID is an identifier that the client can send with requests
-	InstallID string `codec:"installId" json:"installId"`
+	InstallID string `json:"installId"`
 	// Arch is an architecure description (x64, i386, arm)
-	Arch string `codec:"arch" json:"arch"`
+	Arch string `json:"arch"`
 	// Force is whether to apply the update, even if older or same version
-	Force bool `codec:"force" json:"force"`
+	Force bool `json:"force"`
 	// SignaturePath is path to signature file to verify against
-	SignaturePath string `codec:"signaturePath" json:"signaturePath"`
+	SignaturePath string `json:"signaturePath"`
 	// OSVersion is the version of the OS
 	OSVersion string `json:"osVersion"`
 	// UpdaterVersion is the version of the updater service

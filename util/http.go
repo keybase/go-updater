@@ -39,3 +39,12 @@ func DiscardAndCloseBody(resp *http.Response) error {
 	}
 	return discardAndClose(resp.Body)
 }
+
+// DiscardAndCloseBodyIgnoreError calls DiscardAndCloseBody.
+// This satisfies lint checks when using with defer and you don't care if there
+// is an error, so instead of:
+//   defer func() { _ = DiscardAndCloseBody(resp) }()
+//   defer DiscardAndCloseBodyIgnoreError(resp)
+func DiscardAndCloseBodyIgnoreError(resp *http.Response) {
+	_ = DiscardAndCloseBody(resp)
+}
