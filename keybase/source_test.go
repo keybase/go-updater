@@ -9,12 +9,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/stretchr/testify/assert"
 )
-
-var log = logging.Logger{Module: "test"}
 
 const updateJSONResponse = `{
 	"status": {
