@@ -29,11 +29,9 @@ func appBundleForPath(path string) string {
 		return ""
 	}
 	paths := strings.SplitN(path, ".app", 2)
-	if len(paths) == 0 {
+	// If no match, return ""
+	if len(paths) <= 1 {
 		return ""
-	}
-	if len(paths) == 1 {
-		return paths[0]
 	}
 	return paths[0] + ".app"
 }

@@ -12,11 +12,11 @@ import (
 )
 
 func TestAppBundleForPath(t *testing.T) {
-	assert.Equal(t, appBundleForPath(""), "")
-	assert.Equal(t, "foo", appBundleForPath("foo"))
+	assert.Equal(t, "", appBundleForPath(""))
+	assert.Equal(t, "", appBundleForPath("foo"))
 	assert.Equal(t, "/Applications/Keybase.app", appBundleForPath("/Applications/Keybase.app"))
 	assert.Equal(t, "/Applications/Keybase.app", appBundleForPath("/Applications/Keybase.app/Contents/SharedSupport/bin/keybase"))
 	assert.Equal(t, "/Applications/Keybase.app", appBundleForPath("/Applications/Keybase.app/Contents/Resources/Foo.app/Contents/MacOS/Foo"))
-	assert.Equal(t, "/Applications/Keybase.ap", appBundleForPath("/Applications/Keybase.ap"))
+	assert.Equal(t, "", appBundleForPath("/Applications/Keybase.ap"))
 	assert.Equal(t, "/Applications/Keybase.app", appBundleForPath("/Applications/Keybase.app/"))
 }
