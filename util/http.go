@@ -8,6 +8,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+
+	"github.com/keybase/go-logging"
 )
 
 func discardAndClose(rc io.ReadCloser) error {
@@ -38,6 +41,25 @@ func DiscardAndCloseBody(resp *http.Response) error {
 		return fmt.Errorf("Nothing to discard (http.Response was nil)")
 	}
 	return discardAndClose(resp.Body)
+}
+
+// SaveHTTPResponse saves an http.Response to path
+func SaveHTTPResponse(resp *http.Response, savePath string, mode os.FileMode, log logging.Logger) error {
+	if resp == nil {
+		return fmt.Errorf("No response")
+	}
+	file, err := os.OpenFile(savePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
+	if err != nil {
+		return err
+	}
+	defer Close(file)
+
+	log.Infof("Downloading to %s", savePath)
+	n, err := io.Copy(file, resp.Body)
+	if err == nil {
+		log.Infof("Downloaded %d bytes", n)
+	}
+	return err
 }
 
 // DiscardAndCloseBodyIgnoreError calls DiscardAndCloseBody.
