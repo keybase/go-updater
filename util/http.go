@@ -52,7 +52,7 @@ func SaveHTTPResponse(resp *http.Response, savePath string, mode os.FileMode, lo
 	if err != nil {
 		return err
 	}
-	defer func() { _ = file.Close() }()
+	defer Close(file)
 
 	log.Infof("Downloading to %s", savePath)
 	n, err := io.Copy(file, resp.Body)

@@ -17,7 +17,7 @@ func ComputeEtag(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = file.Close() }()
+	defer Close(file)
 
 	hash := md5.New()
 	if _, err := io.Copy(hash, file); err != nil {

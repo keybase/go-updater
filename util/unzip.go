@@ -39,7 +39,8 @@ func UnzipOver(filename string, destinationPath string, log logging.Logger) erro
 	return Unzip(filename, destinationPath, log)
 }
 
-// Unzip unpacks a zip file to a destination
+// Unzip unpacks a zip file to a destination.
+// See https://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang/20357902
 func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
 	r, err := zip.OpenReader(sourcePath)
 	if err != nil {
@@ -47,7 +48,7 @@ func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
 	}
 	defer func() {
 		if err := r.Close(); err != nil {
-			log.Warningf("Error in unzip closing file: %s", err)
+			log.Warningf("Error in unzip closing zip file: %s", err)
 		}
 	}()
 
@@ -61,7 +62,7 @@ func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
 		}
 		defer func() {
 			if err := rc.Close(); err != nil {
-				panic(err)
+				log.Warningf("Error in unzip closing file: %s", err)
 			}
 		}()
 
@@ -91,7 +92,7 @@ func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
 			if err != nil {
 				return err
 			}
-			defer fileCopy.Close()
+			defer Close(fileCopy)
 
 			_, err = io.Copy(fileCopy, rc)
 			if err != nil {
