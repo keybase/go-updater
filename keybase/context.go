@@ -62,7 +62,7 @@ func (c context) BeforeApply() error {
 
 // AfterApply is called before an update is applied
 func (c context) AfterApply() error {
-	output, err := updater.RunCommand(c.config.pathToKeybase, []string{"update", "notify", "after-apply"}, 10*time.Second, c.log)
+	output, err := updater.RunCommand(c.config.pathToKeybase, []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
 	if err != nil {
 		return fmt.Errorf("Error in after apply: %s (%s)", err, output)
 	}
