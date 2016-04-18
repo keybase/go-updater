@@ -20,9 +20,7 @@ func TestNewFile(t *testing.T) {
 
 	f := NewFile(filename, []byte("somedata"), 0)
 	err := f.Save(log)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestMakeParentDirs(t *testing.T) {
@@ -30,12 +28,16 @@ func TestMakeParentDirs(t *testing.T) {
 	defer os.Remove(dir)
 
 	file := filepath.Join(dir, "testfile")
-	defer os.Remove(file)
+	defer RemoveFileAtPath(file)
 
 	err := MakeParentDirs(file)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 
 	exists, err := FileExists(dir)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	assert.True(t, exists, "File doesn't exist")
+
+	// Test making dir that already exists
+	err = MakeParentDirs(file)
+	assert.NoError(t, err)
 }
