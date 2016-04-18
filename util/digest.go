@@ -35,7 +35,7 @@ func DigestForFileAtPath(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer Close(f)
 	return Digest(f)
 }
 

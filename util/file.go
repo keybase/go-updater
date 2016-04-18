@@ -87,7 +87,7 @@ func safeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
 // is an error, so instead of:
 //   defer func() { _ = f.Close() }()
 //   defer Close(f)
-func Close(f *os.File) {
+func Close(f io.Closer) {
 	if f == nil {
 		return
 	}

@@ -72,7 +72,10 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 		termWait = timeout
 	}
 	log.Warningf("Command timed out, terminating (will wait %s before killing)", termWait)
-	cmd.Process.Signal(syscall.SIGTERM)
+	err = cmd.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Warningf("Error sending terminate: %s", err)
+	}
 	select {
 	case <-doneCh:
 		log.Warningf("Terminated")

@@ -16,7 +16,7 @@ var log = logging.Logger{Module: "test"}
 
 func TestNewFile(t *testing.T) {
 	filename := filepath.Join(os.TempDir(), "TestNewFile")
-	defer os.Remove(filename)
+	defer RemoveFileAtPath(filename)
 
 	f := NewFile(filename, []byte("somedata"), 0600)
 	err := f.Save(log)
