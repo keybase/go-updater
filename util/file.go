@@ -4,6 +4,7 @@
 package util
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -136,7 +137,7 @@ func FileExists(path string) (bool, error) {
 }
 
 // MakeParentDirs ensures parent directory exist for path
-func MakeParentDirs(path string) error {
+func MakeParentDirs(path string, mode os.FileMode) error {
 	// 2nd return value here is filename (not an error), which is not needed
 	dir, _ := filepath.Split(path)
 	exists, err := FileExists(dir)
@@ -145,7 +146,8 @@ func MakeParentDirs(path string) error {
 	}
 
 	if !exists {
-		err = os.MkdirAll(dir, 0700)
+		fmt.Printf("Creating: %s\n", dir)
+		err = os.MkdirAll(dir, mode)
 		if err != nil {
 			return err
 		}
