@@ -14,18 +14,28 @@ import (
 	"github.com/keybase/go-updater"
 )
 
-// destinationPath returns the app bundle path where this executable is located.
-// Currently we only support `/Applications/Keybase.app`.
+// destinationPath returns the app bundle path where this executable is located
 func (c config) destinationPath() string {
 	path, err := osext.Executable()
 	if err != nil {
-		c.log.Warningf("No destination path: %s", err)
+		c.log.Warningf("Error trying to determine our destination path: %s", err)
 		return ""
 	}
-	if strings.HasPrefix(path, "/Applications/Keybase.app/") {
-		return "/Applications/Keybase.app"
+	return appBundleForPath(path)
+}
+
+func appBundleForPath(path string) string {
+	if path == "" {
+		return ""
 	}
-	return ""
+	paths := strings.SplitN(path, ".app", 2)
+	if len(paths) == 0 {
+		return ""
+	}
+	if len(paths) == 1 {
+		return paths[0]
+	}
+	return paths[0] + ".app"
 }
 
 // dir returns directory for configuration files on darwin
