@@ -4,6 +4,7 @@
 package keybase
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -100,4 +101,47 @@ func TestConfigBadPath(t *testing.T) {
 	assert.False(t, autoSet, "Auto should not be set")
 	assert.False(t, auto, "Auto should be false")
 	assert.Equal(t, cfg.GetInstallID(), "")
+}
+
+func TestConfigExtra(t *testing.T) {
+	data := `{
+	"extra": "extrafield",
+	"installId": "deadbeef",
+	"auto": false,
+	"autoSet": true
+	}`
+	path := filepath.Join(os.TempDir(), "TestConfigExtra")
+	defer util.RemoveFileAtPath(path)
+	err := ioutil.WriteFile(path, []byte(data), 0644)
+	assert.NoError(t, err)
+
+	cfg := newDefaultConfig("", "", log)
+	err = cfg.loadFromPath(path)
+	assert.NoError(t, err)
+
+	t.Logf("Config: %#v", cfg.store)
+	assert.Equal(t, cfg.GetInstallID(), "deadbeef")
+	auto, autoSet := cfg.GetUpdateAuto()
+	assert.False(t, auto)
+	assert.True(t, autoSet)
+}
+
+// TestConfigPartial tests that if any parsing error occurs, we have the
+// default config
+func TestConfigPartial(t *testing.T) {
+	data := `{
+	"auto": true,
+	"installId": 1
+	}`
+	path := filepath.Join(os.TempDir(), "TestConfigBadType")
+	defer util.RemoveFileAtPath(path)
+	err := ioutil.WriteFile(path, []byte(data), 0644)
+	assert.NoError(t, err)
+
+	cfg := newDefaultConfig("", "", log)
+	err = cfg.loadFromPath(path)
+	assert.Error(t, err)
+	auto, autoSet := cfg.GetUpdateAuto()
+	assert.False(t, auto)
+	assert.False(t, autoSet)
 }
