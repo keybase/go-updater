@@ -28,16 +28,16 @@ func TestConfig(t *testing.T) {
 	cfg, err := testConfig(t) // Will error since load fails on first newConfig
 	assert.NotNil(t, err, "%s", err)
 	path, err := cfg.path()
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	assert.NotEqual(t, path, "", "No config path")
 
 	configDir, err := cfg.dir()
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	assert.NotEqual(t, configDir, "", "Config dir empty")
 	defer util.RemoveFileAtPath(configDir)
 
 	err = cfg.SetUpdateAuto(false)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	auto, autoSet := cfg.GetUpdateAuto()
 	assert.True(t, autoSet, "Auto should be set")
 	assert.False(t, auto, "Auto should be false")
@@ -47,11 +47,11 @@ func TestConfig(t *testing.T) {
 	assert.True(t, auto, "Auto should be true")
 
 	err = cfg.SetInstallID("deadbeef")
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	assert.Equal(t, cfg.GetInstallID(), "deadbeef")
 
 	err = cfg.save()
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 
 	options := cfg.updaterOptions()
 	t.Logf("Options: %#v", options)
@@ -73,7 +73,7 @@ func TestConfig(t *testing.T) {
 
 	// Load new config and make sure it has the same values
 	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, log)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	assert.NotEqual(t, cfg2.path, "", "No config path")
 
 	options2 := cfg2.updaterOptions()

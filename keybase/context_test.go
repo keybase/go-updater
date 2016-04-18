@@ -29,5 +29,5 @@ func TestContext(t *testing.T) {
   `
 	reader := bytes.NewReader([]byte(message1))
 	err := ctx.Verify(reader, signature1)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 }

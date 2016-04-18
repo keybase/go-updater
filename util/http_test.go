@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,7 @@ func TestSaveHTTPResponse(t *testing.T) {
 	resp := testResponse(t, data)
 	savePath, err := TempPath("TestSaveHTTPResponse.")
 	assert.NoError(t, err)
-	defer func() { _ = os.Remove(savePath) }()
+	defer RemoveFileAtPath(savePath)
 	err = SaveHTTPResponse(resp, savePath, 0600, log)
 	assert.NoError(t, err)
 
@@ -52,7 +51,7 @@ func TestSaveHTTPResponseInvalidPath(t *testing.T) {
 	resp := testResponse(t, data)
 	savePath, err := TempPath("TestSaveHTTPResponse.")
 	assert.NoError(t, err)
-	defer func() { _ = os.Remove(savePath) }()
+	defer RemoveFileAtPath(savePath)
 	err = SaveHTTPResponse(resp, "/badpath", 0600, log)
 	assert.Error(t, err)
 	err = SaveHTTPResponse(nil, savePath, 0600, log)

@@ -23,7 +23,7 @@ var testInvalidZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keyb
 func TestUnzipOver(t *testing.T) {
 	destinationPath, err := TempPath("TestUnzipOver.")
 	t.Logf("Destination: %s", destinationPath)
-	defer func() { _ = os.Remove(destinationPath) }()
+	defer RemoveFileAtPath(destinationPath)
 	assert.NoError(t, err)
 	err = UnzipOver(testZipPath, destinationPath, log)
 	assert.NoError(t, err)

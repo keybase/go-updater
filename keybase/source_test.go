@@ -55,7 +55,7 @@ func TestUpdateSource(t *testing.T) {
 	updateSource := newUpdateSource(server.URL, log)
 	options := updater.UpdateOptions{}
 	update, err := updateSource.FindUpdate(options)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	assert.Equal(t, update.Version, "1.0.15-20160414190014+fdfce90")
 	assert.Equal(t, update.Name, "v1.0.15-20160414190014+fdfce90")
 	assert.Equal(t, update.InstallID, "deadbeef")
@@ -72,6 +72,6 @@ func TestUpdateSourceBadResponse(t *testing.T) {
 	updateSource := newUpdateSource(server.URL, log)
 	options := updater.UpdateOptions{}
 	update, err := updateSource.FindUpdate(options)
-	assert.NotNil(t, err, "Should have errored")
+	assert.Error(t, err)
 	assert.Nil(t, update, "Shouldn't have update")
 }
