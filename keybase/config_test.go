@@ -33,7 +33,7 @@ func TestConfig(t *testing.T) {
 	configDir, err := cfg.dir()
 	assert.Nil(t, err, "%s", err)
 	assert.NotEqual(t, configDir, "", "Config dir empty")
-	defer func() { _ = os.Remove(configDir) }()
+	defer util.RemoveFileAtPath(configDir)
 
 	err = cfg.SetUpdateAuto(false)
 	assert.Nil(t, err, "%s", err)

@@ -72,7 +72,7 @@ func (c *config) loadFromPath(path string) error {
 	if file == nil {
 		return fmt.Errorf("No file")
 	}
-	defer func() { _ = file.Close() }()
+	defer util.Close(file)
 
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&c.store); err != nil {

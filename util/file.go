@@ -89,6 +89,15 @@ func Close(f *os.File) {
 	_ = f.Close()
 }
 
+// RemoveFileAtPath removes a file at path and ignores any error.
+// This satisfies lint checks when using with defer and you don't care if there
+// is an error, so instead of:
+//   defer func() { _ = os.Remove(path) }()
+//   defer RemoveFileAtPath(path)
+func RemoveFileAtPath(path string) {
+	_ = os.Remove(path)
+}
+
 // OpenTempFile creates an opened temporary file. Use mode=0 for default
 // permission (0600).
 //
