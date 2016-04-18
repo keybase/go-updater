@@ -21,6 +21,9 @@ func TestDigest(t *testing.T) {
 
 	err = CheckDigest("bad", path, log)
 	assert.Error(t, err)
+
+	err = CheckDigest("", path, log)
+	assert.Error(t, err)
 }
 
 func TestDigestInvalidPath(t *testing.T) {
