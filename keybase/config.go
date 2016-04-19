@@ -75,8 +75,6 @@ func (c *config) loadFromPath(path string) error {
 	defer util.Close(file)
 
 	decoder := json.NewDecoder(file)
-	// Instead of seprate store var here, we could decode directly into c.store,
-	// but we want to only mutate the store if decoding succeeds completely.
 	var decodeStore store
 	if err := decoder.Decode(&decodeStore); err != nil {
 		return err
