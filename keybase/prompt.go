@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 )
 
@@ -17,6 +18,14 @@ type updaterPromptInput struct {
 	Description string `json:"description"`
 	AutoUpdate  bool   `json:"autoUpdate"`
 }
+
+// Remove after config merge
+type context struct {
+	log logging.Logger
+}
+
+// promptTimeout is a long timeout here cause it might show the prompt while the user is not present
+var promptTimeout = time.Hour
 
 func (c context) updatePrompt(promptCommand string, update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	description := update.Description
@@ -39,8 +48,7 @@ func (c context) updatePrompt(promptCommand string, update updater.Update, optio
 		AutoUpdate bool   `json:"autoUpdate"`
 	}
 
-	// We have a long timeout here cause it might show the prompt while the user is not present
-	if err := updater.RunJSONCommand(promptCommand, []string{string(promptJSONInput)}, &result, time.Hour, c.log); err != nil {
+	if err := updater.RunJSONCommand(promptCommand, []string{string(promptJSONInput)}, &result, promptTimeout, c.log); err != nil {
 		return nil, fmt.Errorf("Error running command: %s", err)
 	}
 
