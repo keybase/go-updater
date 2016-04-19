@@ -32,7 +32,7 @@ func TestTempPathValid(t *testing.T) {
 	tempPath := TempPath("", "TempPrefix.")
 	t.Logf("Temp path: %s", tempPath)
 	assert.True(t, strings.HasPrefix(filepath.Base(tempPath), "TempPrefix."))
-	assert.Equal(t, len(tempPath), 92)
+	assert.Equal(t, len(filepath.Base(tempPath)), 43)
 }
 
 func TestTempPathRandFail(t *testing.T) {
@@ -46,7 +46,7 @@ func TestTempPathRandFail(t *testing.T) {
 	tempPath := TempPath("", "TempPrefix.")
 	t.Logf("Temp path: %s", tempPath)
 	assert.True(t, strings.HasPrefix(filepath.Base(tempPath), "TempPrefix."))
-	assert.Equal(t, len(tempPath), 79)
+	assert.Equal(t, len(filepath.Base(tempPath)), 30)
 }
 
 func TestIsDirReal(t *testing.T) {
