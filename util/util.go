@@ -30,10 +30,12 @@ func RandString(prefix string, numbytes int) (string, error) {
 	return str, nil
 }
 
+var randRead = rand.Read
+
 // RandBytes returns random bytes of length
 func RandBytes(length int) ([]byte, error) {
 	buf := make([]byte, length)
-	if _, err := rand.Read(buf); err != nil {
+	if _, err := randRead(buf); err != nil {
 		return nil, err
 	}
 	return buf, nil

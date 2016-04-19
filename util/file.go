@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/keybase/go-logging"
 )
@@ -94,6 +95,15 @@ func Close(f *os.File) {
 	_ = f.Close()
 }
 
+// RemoveFileAtPath removes a file at path (and any children) ignoring any error.
+// This satisfies lint checks when using with defer and you don't care if there
+// is an error, so instead of:
+//   defer func() { _ = os.Remove(path) }()
+//   defer RemoveFileAtPath(path)
+func RemoveFileAtPath(path string) {
+	_ = os.RemoveAll(path)
+}
+
 // openTempFile creates an opened temporary file.
 //
 //   openTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
@@ -127,25 +137,134 @@ func FileExists(path string) (bool, error) {
 	return false, err
 }
 
-// TempPath returns a temporary unique file path
-func TempPath(prefix string) (string, error) {
+// MakeParentDirs ensures parent directory exist for path
+func MakeParentDirs(path string, mode os.FileMode) error {
+	// 2nd return value here is filename (not an error), which is not needed
+	dir, _ := filepath.Split(path)
+	exists, err := FileExists(dir)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		fmt.Printf("Creating: %s\n", dir)
+		err = os.MkdirAll(dir, mode)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// TempPath returns a temporary unique file path.
+// If for some reason we can't obtain random bytes, we still return a valid
+// path, which may not be as unique.
+// If tempDir is "", then os.TempDir() is used.
+func TempPath(tempDir string, prefix string) string {
+	if tempDir == "" {
+		tempDir = os.TempDir()
+	}
 	filename, err := RandString(prefix, 20)
 	if err != nil {
+		// We had an error getting random bytes, we'll use current nanoseconds
+		filename = fmt.Sprintf("%s%d", prefix, time.Now().UnixNano())
+	}
+	path := filepath.Join(tempDir, filename)
+	return path
+}
+
+// WriteTempFile creates a unique temp file with data.
+//
+// For example:
+//   WriteTempFile("Test.", byte[]("test data"), 0600)
+func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error) {
+	path := TempPath("", prefix)
+	if err := ioutil.WriteFile(path, data, mode); err != nil {
 		return "", err
 	}
-	path := filepath.Join(os.TempDir(), filename)
 	return path, nil
 }
 
-// WriteTempFile creates a temp file with data
-func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error) {
-	path, err := TempPath(prefix)
-	if err != nil {
-		return "", err
-	}
-	err = ioutil.WriteFile(path, data, mode)
-	if err != nil {
+// WriteTempDir creates a unique temp directory.
+//
+// For example:
+//   WriteTempDir("Test.", 0600)
+func WriteTempDir(prefix string, mode os.FileMode) (string, error) {
+	path := TempPath("", prefix)
+	if err := os.MkdirAll(path, mode); err != nil {
 		return "", err
 	}
 	return path, nil
+}
+
+// IsDirReal returns true if directory exists and is a real directory (not a symlink).
+// If it returns false, an error will be set explaining why.
+func IsDirReal(path string) (bool, error) {
+	fileInfo, err := os.Lstat(path)
+	if err != nil {
+		return false, err
+	}
+	// Check if symlink
+	if fileInfo.Mode()&os.ModeSymlink != 0 {
+		return false, fmt.Errorf("Path is a symlink")
+	}
+	if !fileInfo.Mode().IsDir() {
+		return false, fmt.Errorf("Path is not a directory")
+	}
+	return true, nil
+}
+
+// MoveFile moves a file safely.
+// It will create parent directories for destinationPath if they don't exist.
+// It will overwrite an existing destinationPath.
+func MoveFile(sourcePath string, destinationPath string, log logging.Logger) error {
+	if _, statErr := os.Stat(destinationPath); statErr == nil {
+		log.Info("Removing existing destination path: %s", destinationPath)
+		if removeErr := os.RemoveAll(destinationPath); removeErr != nil {
+			return removeErr
+		}
+	}
+
+	if err := MakeParentDirs(destinationPath, 0700); err != nil {
+		return err
+	}
+
+	log.Infof("Moving %s to %s", sourcePath, destinationPath)
+	// Rename will copy over an existing destination
+	return os.Rename(sourcePath, destinationPath)
+}
+
+// CopyFile copies a file safely.
+// It will create parent directories for destinationPath if they don't exist.
+// It will overwrite an existing destinationPath.
+func CopyFile(sourcePath string, destinationPath string, log logging.Logger) error {
+	log.Infof("Copying %s to %s", sourcePath, destinationPath)
+	in, err := os.Open(sourcePath)
+	if err != nil {
+		return err
+	}
+	defer Close(in)
+
+	if _, statErr := os.Stat(destinationPath); statErr == nil {
+		log.Info("Removing existing destination path: %s", destinationPath)
+		if removeErr := os.RemoveAll(destinationPath); removeErr != nil {
+			return removeErr
+		}
+	}
+
+	if err := MakeParentDirs(destinationPath, 0700); err != nil {
+		return err
+	}
+
+	out, err := os.Create(destinationPath)
+	if err != nil {
+		return err
+	}
+	defer Close(out)
+	_, err = io.Copy(out, in)
+	closeErr := out.Close()
+	if err != nil {
+		return err
+	}
+	return closeErr
 }

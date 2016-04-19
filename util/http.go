@@ -8,7 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/keybase/go-logging"
 )
@@ -69,4 +73,152 @@ func SaveHTTPResponse(resp *http.Response, savePath string, mode os.FileMode, lo
 //   defer DiscardAndCloseBodyIgnoreError(resp)
 func DiscardAndCloseBodyIgnoreError(resp *http.Response) {
 	_ = DiscardAndCloseBody(resp)
+}
+
+// URLExists returns error if URL doesn't exist
+func URLExists(urlString string, timeout time.Duration, log logging.Logger) (bool, error) {
+	if strings.HasPrefix(urlString, "file://") {
+		return FileExists(urlString[7:])
+	}
+
+	log.Debugf("Checking URL exists: %s", urlString)
+	req, err := http.NewRequest("HEAD", urlString, nil)
+	if err != nil {
+		return false, err
+	}
+	client := &http.Client{
+		Timeout: timeout,
+	}
+	resp, requestErr := client.Do(req)
+	if requestErr != nil {
+		return false, requestErr
+	}
+	if resp == nil {
+		return false, fmt.Errorf("No response")
+	}
+	defer DiscardAndCloseBodyIgnoreError(resp)
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("Invalid status code (%d)", resp.StatusCode)
+	}
+	return true, nil
+}
+
+// DownloadURLOptions are options for DownloadURL
+type DownloadURLOptions struct {
+	Digest        string
+	RequireDigest bool
+	UseETag       bool
+	Timeout       time.Duration
+	Log           logging.Logger
+}
+
+// DownloadURL downloads a URL to a path.
+func DownloadURL(urlString string, destinationPath string, options DownloadURLOptions) error {
+	log := options.Log
+
+	url, parseErr := url.Parse(urlString)
+	if parseErr != nil {
+		return parseErr
+	}
+	if url == nil {
+		return fmt.Errorf("No URL")
+	}
+
+	// Handle local files
+	if url.Scheme == "file" {
+		localPath := url.Path
+		log.Infof("Using local path: %s", localPath)
+		if err := CopyFile(localPath, destinationPath, log); err != nil {
+			return err
+		}
+
+		if options.RequireDigest {
+			if err := CheckDigest(options.Digest, destinationPath, log); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// Compute ETag if the destinationPath already exists
+	etag := ""
+	if options.UseETag {
+		if _, err := os.Stat(destinationPath); err == nil {
+			computedEtag, etagErr := ComputeEtag(destinationPath)
+			if etagErr != nil {
+				log.Warningf("Error computing etag", etagErr)
+			} else {
+				etag = computedEtag
+			}
+		}
+	}
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return err
+	}
+	if etag != "" {
+		log.Infof("Using etag: %s", etag)
+		req.Header.Set("If-None-Match", etag)
+	}
+	var client http.Client
+	if options.Timeout > 0 {
+		client = http.Client{Timeout: options.Timeout}
+	} else {
+		client = http.Client{}
+	}
+	log.Infof("Request %s", url.String())
+	resp, requestErr := client.Do(req)
+	if requestErr != nil {
+		return requestErr
+	}
+	if resp == nil {
+		return fmt.Errorf("No response")
+	}
+	defer DiscardAndCloseBodyIgnoreError(resp)
+	if resp.StatusCode == http.StatusNotModified {
+		// ETag matched, we already have it
+		log.Infof("Using cached file: %s", destinationPath)
+		return nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Responded with %s", resp.Status)
+	}
+
+	savePath := fmt.Sprintf("%s.download", destinationPath)
+	if _, ferr := os.Stat(savePath); ferr == nil {
+		log.Infof("Removing existing partial download: %s", savePath)
+		if rerr := os.Remove(savePath); rerr != nil {
+			return fmt.Errorf("Error removing existing partial download: %s", rerr)
+		}
+	}
+
+	if err := MakeParentDirs(savePath, 0700); err != nil {
+		return err
+	}
+
+	if err := SaveHTTPResponse(resp, savePath, 0600, log); err != nil {
+		return err
+	}
+
+	if options.RequireDigest {
+		if err := CheckDigest(options.Digest, savePath, log); err != nil {
+			return err
+		}
+	}
+
+	if _, serr := os.Stat(destinationPath); serr == nil {
+		log.Infof("Removing existing download: %s", destinationPath)
+		if rerr := os.Remove(destinationPath); rerr != nil {
+			return fmt.Errorf("Error removing existing download: %s", rerr)
+		}
+	}
+
+	log.Infof("Moving %s to %s", filepath.Base(savePath), filepath.Base(destinationPath))
+
+	if err := os.Rename(savePath, destinationPath); err != nil {
+		return err
+	}
+
+	return nil
 }

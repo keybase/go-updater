@@ -10,33 +10,58 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/keybase/go-logging"
 )
 
-// UnzipOver safely unzips a filename to a destination path. If destination
-// path exists, it will be removed first. The filename must have a ".zip"
-// extension.
-func UnzipOver(filename string, destinationPath string, log logging.Logger) error {
-	if !strings.HasSuffix(filename, ".zip") {
-		return fmt.Errorf("File has unsupported extension: %q", filename)
+// UnzipOver safely unzips a file and copies it contents to a destination path.
+// If destination path exists, it will be removed first.
+// The filename must have a ".zip" extension.
+// You can specify a check function, which will run before moving the unzipped
+// directory into place.
+//
+// To unzip Keybase-1.2.3.zip and move the contents Keybase.app to /Applications/Keybase.app
+//
+//   UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, log)
+//
+func UnzipOver(sourcePath string, path string, destinationPath string, check func(sourcePath, destinationPath string) error, log logging.Logger) error {
+	unzipPath := fmt.Sprintf("%s.unzipped", sourcePath)
+	defer RemoveFileAtPath(unzipPath)
+	err := unzipOver(sourcePath, unzipPath, log)
+	if err != nil {
+		return err
 	}
 
+	contentPath := filepath.Join(unzipPath, path)
+
+	err = check(contentPath, destinationPath)
+	if err != nil {
+		return err
+	}
+
+	err = MoveFile(contentPath, destinationPath, log)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func unzipOver(sourcePath string, destinationPath string, log logging.Logger) error {
 	if destinationPath == "" {
 		return fmt.Errorf("Invalid destination %q", destinationPath)
 	}
 
 	if _, ferr := os.Stat(destinationPath); ferr == nil {
-		log.Infof("Removing existing destination path: %s", destinationPath)
+		log.Infof("Removing existing unzip destination path: %s", destinationPath)
 		err := os.RemoveAll(destinationPath)
 		if err != nil {
 			return nil
 		}
 	}
 
-	log.Infof("Unzipping %q to %q", filename, destinationPath)
-	return Unzip(filename, destinationPath, log)
+	log.Infof("Unzipping %q to %q", sourcePath, destinationPath)
+	return Unzip(sourcePath, destinationPath, log)
 }
 
 // Unzip unpacks a zip file to a destination.
