@@ -15,6 +15,4 @@ func TestFlags(t *testing.T) {
 	}
 	svc := serviceFromFlags(f)
 	assert.NotNil(t, svc)
-
-	// svc.Start()
 }

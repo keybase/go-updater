@@ -5,6 +5,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/keybase"
@@ -18,5 +19,10 @@ func TestService(t *testing.T) {
 	svc := newService(upd, ctx, log)
 	assert.NotNil(t, svc)
 
-	// svc.Start()
+	go func() {
+		t.Log("Waiting")
+		time.Sleep(10 * time.Millisecond)
+		svc.Quit()
+	}()
+	svc.Run()
 }

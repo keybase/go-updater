@@ -21,6 +21,7 @@ func newService(upd *updater.Updater, context updater.Context, log logging.Logge
 		updater: upd,
 		context: context,
 		log:     log,
+		ch:      make(chan int),
 	}
 	return &svc
 }
@@ -38,4 +39,8 @@ func (s *service) Run() int {
 	s.Start()
 	<-s.ch
 	return 0
+}
+
+func (s *service) Quit() {
+	s.ch <- 0
 }
