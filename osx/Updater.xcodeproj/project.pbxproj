@@ -164,7 +164,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0730;
-				ORGANIZATIONNAME = "Gabriel Handford";
+				ORGANIZATIONNAME = Keybase;
 				TargetAttributes = {
 					00C19B701CB6CE0500BDFDAD = {
 						CreatedOnToolsVersion = 7.3;
@@ -419,6 +419,7 @@
 				00E8F42B1CBF184900532C84 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

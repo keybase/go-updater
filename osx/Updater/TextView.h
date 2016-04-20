@@ -3,7 +3,7 @@
 //  Updater
 //
 //  Created by Gabriel on 4/10/16.
-//  Copyright © 2016 Gabriel Handford. All rights reserved.
+//  Copyright © 2016 Keybase. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

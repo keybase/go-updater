@@ -1,9 +1,9 @@
 //
 //  TextView.m
-//  Tikppa
+//  Updater
 //
 //  Created by Gabriel on 2/12/15.
-//  Copyright (c) 2015 Gabriel Handford. All rights reserved.
+//  Copyright (c) 2015 Keybase. All rights reserved.
 //
 
 #import "TextView.h"
