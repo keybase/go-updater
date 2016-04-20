@@ -4,7 +4,6 @@
 package util
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ func TestEtag(t *testing.T) {
 	data := []byte("test data\n")
 	path, err := WriteTempFile("TestEtag", data, 0644)
 	assert.NoError(t, err)
-	defer func() { _ = os.Remove(path) }()
+	defer RemoveFileAtPath(path)
 
 	etag, err := ComputeEtag(path)
 	assert.NoError(t, err)
@@ -25,7 +24,7 @@ func TestEtagNoData(t *testing.T) {
 	var data []byte
 	path, err := WriteTempFile("TestEtag", data, 0644)
 	assert.NoError(t, err)
-	defer func() { _ = os.Remove(path) }()
+	defer RemoveFileAtPath(path)
 
 	etag, err := ComputeEtag(path)
 	assert.NoError(t, err)

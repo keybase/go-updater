@@ -52,7 +52,10 @@ func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
 		}
 	}()
 
-	os.MkdirAll(destinationPath, 0755)
+	err = os.MkdirAll(destinationPath, 0755)
+	if err != nil {
+		return err
+	}
 
 	// Closure to address file descriptors issue with all the deferred .Close() methods
 	extractAndWriteFile := func(f *zip.File) error {

@@ -14,11 +14,9 @@ import (
 )
 
 func testPromptWithCommand(t *testing.T, promptCommand string, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
-	// TODO: Use real context after config merge
-	// cfg, _ := testConfig(t)
-	// ctx := newContext(&cfg, log)
-	// assert.NotNil(t, ctx)
-	ctx := context{log: log}
+	cfg, _ := testConfig(t)
+	ctx := newContext(&cfg, log)
+	assert.NotNil(t, ctx)
 
 	update := updater.Update{
 		Version:     "1.2.3-400+sha",
@@ -26,11 +24,7 @@ func testPromptWithCommand(t *testing.T, promptCommand string, timeout time.Dura
 		Description: "Bug fixes",
 	}
 
-	// TODO: Use real context after config merge
-	//options := cfg.updaterOptions()
-	updaterOptions := updater.UpdateOptions{
-		Version: "1.2.2",
-	}
+	updaterOptions := cfg.updaterOptions()
 
 	promptOptions := updater.UpdatePromptOptions{AutoUpdate: false}
 

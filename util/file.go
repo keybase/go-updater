@@ -87,17 +87,26 @@ func safeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
 // is an error, so instead of:
 //   defer func() { _ = f.Close() }()
 //   defer Close(f)
-func Close(f *os.File) {
+func Close(f io.Closer) {
 	if f == nil {
 		return
 	}
 	_ = f.Close()
 }
 
+// RemoveFileAtPath removes a file at path and ignores any error.
+// This satisfies lint checks when using with defer and you don't care if there
+// is an error, so instead of:
+//   defer func() { _ = os.Remove(path) }()
+//   defer RemoveFileAtPath(path)
+func RemoveFileAtPath(path string) {
+	_ = os.Remove(path)
+}
+
 // openTempFile creates an opened temporary file.
 //
 //   openTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
-//   openTempFile(path.Join(os.TempDir(), "foo"), "", 0) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
+//   openTempFile(path.Join(os.TempDir(), "foo"), "", 0600) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
 //
 func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.File, error) {
 	filename, err := RandString(prefix, 20)
@@ -125,6 +134,25 @@ func FileExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+// MakeParentDirs ensures parent directory exist for path
+func MakeParentDirs(path string, mode os.FileMode) error {
+	// 2nd return value here is filename (not an error), which is not needed
+	dir, _ := filepath.Split(path)
+	exists, err := FileExists(dir)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		fmt.Printf("Creating: %s\n", dir)
+		err = os.MkdirAll(dir, mode)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // TempPath returns a temporary unique file path

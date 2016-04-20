@@ -16,7 +16,7 @@ func TestEmptyRunCommand(t *testing.T) {
 	out, err := RunCommand("", nil, time.Second, log)
 	assert.Equal(t, out, "", "Should have empty output")
 	t.Logf("Error: %s", err)
-	assert.NotNil(t, err, "Should have errored")
+	assert.Error(t, err)
 }
 
 func TestInvalidRunCommand(t *testing.T) {
@@ -28,7 +28,7 @@ func TestInvalidRunCommand(t *testing.T) {
 
 func TestRunCommandEcho(t *testing.T) {
 	out, err := RunCommand("echo", []string{"arg1", "arg2"}, time.Second, log)
-	assert.Nil(t, err, "Should have errored")
+	assert.NoError(t, err)
 	assert.Equal(t, out, "arg1 arg2\n")
 }
 
@@ -42,7 +42,7 @@ func TestRunCommandTimeout(t *testing.T) {
 		t.Error("We didn't actually sleep more than a second")
 	}
 	assert.Equal(t, out, "", "Should have empty output")
-	if assert.NotNil(t, err, "Should have errored") {
+	if assert.Error(t, err) {
 		assert.Equal(t, err.Error(), "Error running command: timed out")
 	}
 }
@@ -51,7 +51,7 @@ func TestRunCommandBadTimeout(t *testing.T) {
 	out, err := RunCommand("sleep", []string{"1"}, -time.Second, log)
 	assert.Equal(t, out, "", "Should have empty output")
 	t.Logf("Error: %s", err)
-	assert.NotNil(t, err, "Should have errored")
+	assert.Error(t, err)
 }
 
 type testObj struct {
@@ -86,7 +86,7 @@ var testVal = testObj{
 func TestRunJSONCommand(t *testing.T) {
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON}, &testValOut, time.Second, log)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	t.Logf("Out: %#v", testValOut)
 	if !reflect.DeepEqual(testVal, testValOut) {
 		t.Errorf("Invalid object: %#v", testValOut)
@@ -98,7 +98,7 @@ func TestRunJSONCommand(t *testing.T) {
 func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
 	var testValOut testObj
 	err := RunJSONCommand("echo", []string{testJSON + "bad input"}, &testValOut, time.Second, log)
-	assert.Nil(t, err, "%s", err)
+	assert.NoError(t, err)
 	t.Logf("Out: %#v", testValOut)
 	if !reflect.DeepEqual(testVal, testValOut) {
 		t.Errorf("Invalid object: %#v", testValOut)
@@ -108,7 +108,7 @@ func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
 func TestRunJSONCommandTimeout(t *testing.T) {
 	var testValOut testObj
 	err := RunJSONCommand("sleep", []string{"10"}, &testValOut, 10*time.Millisecond, log)
-	if assert.NotNil(t, err, "Should have errored") {
+	if assert.Error(t, err) {
 		assert.Equal(t, err.Error(), "Error running command: timed out")
 	}
 }
@@ -117,7 +117,7 @@ func TestRunJSONCommandTimeout(t *testing.T) {
 func TestTimeoutProcessKilled(t *testing.T) {
 	out, process, err := runCommand("sleep", []string{"10"}, true, 10*time.Millisecond, log)
 	assert.Equal(t, out, []byte{}, "Should have empty output")
-	assert.NotNil(t, err, "Should have errored")
+	assert.Error(t, err)
 	findProcess, _ := os.FindProcess(process.Pid)
 	// This should error since killing a non-existant process should error
 	perr := findProcess.Kill()

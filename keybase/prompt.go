@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 )
 
@@ -17,11 +16,6 @@ type updaterPromptInput struct {
 	Message     string `json:"message"`
 	Description string `json:"description"`
 	AutoUpdate  bool   `json:"autoUpdate"`
-}
-
-// Remove after config merge
-type context struct {
-	log logging.Logger
 }
 
 // promptTimeout is a long timeout here cause it might show the prompt while the user is not present

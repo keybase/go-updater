@@ -4,7 +4,6 @@
 package util
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ func TestDigest(t *testing.T) {
 	data := []byte("test data\n")
 	path, err := WriteTempFile("TestDigest", data, 0644)
 	assert.NoError(t, err)
-	defer func() { _ = os.Remove(path) }()
+	defer RemoveFileAtPath(path)
 
 	err = CheckDigest("0c15e883dee85bb2f3540a47ec58f617a2547117f9096417ba5422268029f501", path, log)
 	assert.NoError(t, err)

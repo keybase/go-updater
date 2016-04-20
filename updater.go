@@ -21,6 +21,7 @@ import (
 	"github.com/keybase/client/go/lsof"
 	keybase1 "github.com/keybase/client/go/protocol"
 	zip "github.com/keybase/client/go/tools/zip"
+	"github.com/keybase/go-updater/util"
 	"golang.org/x/net/context"
 )
 
@@ -236,7 +237,7 @@ func (u *Updater) downloadAsset(asset keybase1.Asset) (fpath string, cached bool
 
 	filename := asset.Name
 	fpath = pathForUpdaterFilename(filename)
-	err = libkb.MakeParentDirs(fpath)
+	err = util.MakeParentDirs(fpath, 0700)
 	if err != nil {
 		return
 	}
