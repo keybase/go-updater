@@ -22,21 +22,6 @@
   });
 }
 
-/*!
- If error specified, then exit with status 1, otherwise 0.
- */
-- (void)exit:(NSError *)error {
-  if (error) {
-    NSLog(@"Error: %@", error.localizedDescription);
-  }
-  fflush(stdout);
-  fflush(stderr);
-  if (error) {
-    exit(1);
-  }
-  exit(0);
-}
-
 - (void)run {
   NSString *inputString = @"{}";
 
@@ -50,13 +35,13 @@
 
   [Prompt showPromptWithInputString:inputString presenter:^NSModalResponse(NSAlert *alert) {
     return [alert runModal];
-  } completion:^(NSError *error, NSData *output) {
-    if (error) {
-      [self exit:error];
-      return;
+  } completion:^(NSData *output) {
+    if (!!output) {
+      [[NSFileHandle fileHandleWithStandardOutput] writeData:output];
     }
-    [[NSFileHandle fileHandleWithStandardOutput] writeData:output];
-    [self exit:nil];
+    fflush(stdout);
+    fflush(stderr);
+    exit(0);
   }];
 }
 

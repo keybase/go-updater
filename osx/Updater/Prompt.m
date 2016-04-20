@@ -39,7 +39,7 @@
   return input;
 }
 
-+ (void)showPromptWithInputString:(NSString *)inputString presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSError *error, NSData *output))completion {
++ (void)showPromptWithInputString:(NSString *)inputString presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSData *output))completion {
 
   // Try to parse input, if there is any error use a default empty dictionary.
   NSDictionary *input = [self parseInputString:inputString defaultValue:@{}];
@@ -47,7 +47,7 @@
   [self showUpdatePrompt:input presenter:presenter completion:completion];
 }
 
-+ (void)showUpdatePrompt:(NSDictionary *)input presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSError *error, NSData *output))completion {
++ (void)showUpdatePrompt:(NSDictionary *)input presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSData *output))completion {
   NSString *title = [input kb_stringForKey:@"title"];
   NSString *message = [input kb_stringForKey:@"message"];
   NSString *description = [input kb_stringForKey:@"description"];
@@ -107,14 +107,9 @@
 
   NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:&error];
   if (!!error) {
-    completion(error, nil);
-    return;
+    NSLog(@"Error generating JSON response: %@", error);
   }
-  if (!data) {
-    completion(KBMakeError(@"No data"), nil);
-    return;
-  }
-  completion(nil, data);
+  completion(data);
 }
 
 @end
