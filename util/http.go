@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -77,8 +76,17 @@ func DiscardAndCloseBodyIgnoreError(resp *http.Response) {
 
 // URLExists returns error if URL doesn't exist
 func URLExists(urlString string, timeout time.Duration, log logging.Logger) (bool, error) {
-	if strings.HasPrefix(urlString, "file://") {
-		return FileExists(urlString[7:])
+	url, parseErr := url.Parse(urlString)
+	if parseErr != nil {
+		return false, parseErr
+	}
+	if url == nil {
+		return false, fmt.Errorf("No URL")
+	}
+
+	// Handle local files
+	if url.Scheme == "file" {
+		return FileExists(url.Path)
 	}
 
 	log.Debugf("Checking URL exists: %s", urlString)
