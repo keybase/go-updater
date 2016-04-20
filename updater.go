@@ -25,6 +25,9 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Version is the updater version
+const Version = "0.2.1"
+
 // Updater knows how to find and apply updates
 type Updater struct {
 	options      keybase1.UpdateOptions
