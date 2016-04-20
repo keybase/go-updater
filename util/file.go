@@ -219,7 +219,7 @@ func IsDirReal(path string) (bool, error) {
 // It will overwrite an existing destinationPath.
 func MoveFile(sourcePath string, destinationPath string, log logging.Logger) error {
 	if _, statErr := os.Stat(destinationPath); statErr == nil {
-		log.Info("Removing existing destination path: %s", destinationPath)
+		log.Infof("Removing existing destination path: %s", destinationPath)
 		if removeErr := os.RemoveAll(destinationPath); removeErr != nil {
 			return removeErr
 		}
@@ -246,7 +246,7 @@ func CopyFile(sourcePath string, destinationPath string, log logging.Logger) err
 	defer Close(in)
 
 	if _, statErr := os.Stat(destinationPath); statErr == nil {
-		log.Info("Removing existing destination path: %s", destinationPath)
+		log.Infof("Removing existing destination path: %s", destinationPath)
 		if removeErr := os.RemoveAll(destinationPath); removeErr != nil {
 			return removeErr
 		}
