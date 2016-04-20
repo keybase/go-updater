@@ -92,10 +92,10 @@
 
   NSString *action = @"";
   if (response == NSAlertFirstButtonReturn) {
-    action = @"update";
+    action = @"apply";
     autoUpdateResponse = autoCheckbox.state == NSOnState ? YES : NO;
   } else if (response == NSAlertSecondButtonReturn) {
-    action = @"ignore";
+    action = @"snooze";
   }
   NSLog(@"Action: %@", action);
 
