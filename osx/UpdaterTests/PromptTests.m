@@ -23,7 +23,7 @@
   } completion:^(NSError *error, NSData *output) {
     NSLog(@"Error: %@", error);
     NSLog(@"Output: %@", output);
-    // TODO: Check output
+    XCTAssertNil(error);
   }];
 }
 
@@ -33,7 +33,31 @@
   } completion:^(NSError *error, NSData *output) {
     NSLog(@"Error: %@", error);
     NSLog(@"Output: %@", output);
-    XCTAssertEqualObjects(error.localizedDescription, @"The data couldn’t be read because it isn’t in the correct format.");
+    XCTAssertNil(error);
+  }];
+}
+
+- (void)testUpdatePromptInvalidJSONInput {
+  NSData *data = [NSJSONSerialization dataWithJSONObject:@{@"title": @{}, @"message": @{}, @"description": @{}, @"autoUpdate": @{}} options:0 error:nil];
+  NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+  [Prompt showPromptWithInputString:str presenter:^NSModalResponse(NSAlert *alert) {
+    return NSAlertFirstButtonReturn;
+  } completion:^(NSError *error, NSData *output) {
+    NSLog(@"Error: %@", error);
+    NSLog(@"Output: %@", output);
+    XCTAssertNil(error);
+  }];
+}
+
+- (void)testUpdatePromptInvalidJSONRoot {
+  NSData *data = [NSJSONSerialization dataWithJSONObject:@[] options:0 error:nil];
+  NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+  [Prompt showPromptWithInputString:str presenter:^NSModalResponse(NSAlert *alert) {
+    return NSAlertFirstButtonReturn;
+  } completion:^(NSError *error, NSData *output) {
+    NSLog(@"Error: %@", error);
+    NSLog(@"Output: %@", output);
+    XCTAssertNil(error);
   }];
 }
 

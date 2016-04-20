@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00791F631CBB2589003DBC85 /* TextView.m in Sources */ = {isa = PBXBuildFile; fileRef = 00791F621CBB2589003DBC85 /* TextView.m */; };
+		009873051CC73C9A006CC7FF /* NSDictionary+Extension.m in Sources */ = {isa = PBXBuildFile; fileRef = 009873041CC73C9A006CC7FF /* NSDictionary+Extension.m */; };
 		00C19B761CB6CE0500BDFDAD /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 00C19B751CB6CE0500BDFDAD /* AppDelegate.m */; };
 		00C19B791CB6CE0500BDFDAD /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 00C19B781CB6CE0500BDFDAD /* main.m */; };
 		00C19B7B1CB6CE0500BDFDAD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00C19B7A1CB6CE0500BDFDAD /* Assets.xcassets */; };
@@ -30,6 +31,8 @@
 		0017DD331CB72F130051E666 /* build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = build.sh; sourceTree = "<group>"; };
 		00791F611CBB2589003DBC85 /* TextView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TextView.h; sourceTree = "<group>"; };
 		00791F621CBB2589003DBC85 /* TextView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TextView.m; sourceTree = "<group>"; };
+		009873031CC73C9A006CC7FF /* NSDictionary+Extension.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+Extension.h"; sourceTree = "<group>"; };
+		009873041CC73C9A006CC7FF /* NSDictionary+Extension.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+Extension.m"; sourceTree = "<group>"; };
 		00C19B711CB6CE0500BDFDAD /* Updater.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Updater.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		00C19B741CB6CE0500BDFDAD /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		00C19B751CB6CE0500BDFDAD /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -94,6 +97,8 @@
 				00E8F42E1CBF1B4A00532C84 /* Prompt.m */,
 				00791F611CBB2589003DBC85 /* TextView.h */,
 				00791F621CBB2589003DBC85 /* TextView.m */,
+				009873031CC73C9A006CC7FF /* NSDictionary+Extension.h */,
+				009873041CC73C9A006CC7FF /* NSDictionary+Extension.m */,
 				00C19B7A1CB6CE0500BDFDAD /* Assets.xcassets */,
 				00C19B7C1CB6CE0500BDFDAD /* MainMenu.xib */,
 				00C19B7F1CB6CE0500BDFDAD /* Info.plist */,
@@ -218,6 +223,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				009873051CC73C9A006CC7FF /* NSDictionary+Extension.m in Sources */,
 				00C19B791CB6CE0500BDFDAD /* main.m in Sources */,
 				00E8F42F1CBF1B4A00532C84 /* Prompt.m in Sources */,
 				00791F631CBB2589003DBC85 /* TextView.m in Sources */,

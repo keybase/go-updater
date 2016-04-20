@@ -14,6 +14,9 @@
 @implementation AppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
+  // Check if test environment
+  if ([self isRunningTests]) return;
+
   dispatch_async(dispatch_get_main_queue(), ^{
     [self run];
   });
@@ -35,17 +38,17 @@
 }
 
 - (void)run {
+  NSString *inputString = @"{}";
+
   NSArray *args = NSProcessInfo.processInfo.arguments;
-  if (args.count < 1) {
-    [self exit:KBMakeError(@"No args for process")];
+  if (args.count > 0) {
+    NSArray *subargs = [args subarrayWithRange:NSMakeRange(1, args.count-1)];
+    if (subargs.count >= 1) {
+      inputString = subargs[0];
+    }
   }
 
-  NSArray *subargs = [args subarrayWithRange:NSMakeRange(1, args.count-1)];
-  if (subargs.count < 1) {
-    [self exit:KBMakeError(@"No args")];
-  }
-
-  [Prompt showPromptWithInputString:subargs[0] presenter:^NSModalResponse(NSAlert *alert) {
+  [Prompt showPromptWithInputString:inputString presenter:^NSModalResponse(NSAlert *alert) {
     return [alert runModal];
   } completion:^(NSError *error, NSData *output) {
     if (error) {
@@ -55,6 +58,13 @@
     [[NSFileHandle fileHandleWithStandardOutput] writeData:output];
     [self exit:nil];
   }];
+}
+
+- (BOOL)isRunningTests {
+  // The Xcode test environment is a little awkward. Instead of using TEST preprocessor macro, check env.
+  NSDictionary *environment = [[NSProcessInfo processInfo] environment];
+  NSString *testFilePath = environment[@"XCTestConfigurationFilePath"];
+  return !!testFilePath;
 }
 
 @end

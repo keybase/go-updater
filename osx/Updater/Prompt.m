@@ -9,43 +9,49 @@
 #import "Prompt.h"
 #import "TextView.h"
 #import "Defines.h"
+#import "NSDictionary+Extension.h"
 
 @interface FView : NSView
 @end
 
 @implementation Prompt
 
-+ (void)showPromptWithInputString:(NSString *)inputString presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSError *error, NSData *output))completion {
++ (NSDictionary *)parseInputString:(NSString *)inputString defaultValue:(NSDictionary *)defaultValue {
   NSData *data = [inputString dataUsingEncoding:NSUTF8StringEncoding];
   if (!data) {
-    completion(KBMakeError(@"No data for input"), nil);
-    return;
+    NSLog(@"No data for input");
+    return defaultValue;
   }
-
   NSError *error = nil;
   id input = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
   if (!!error) {
-    completion(error, nil);
-    return;
+    NSLog(@"Error parsing input: %@", error);
+    return defaultValue;
   }
   if (!input) {
-    completion(KBMakeError(@"No input for JSON"), nil);
-    return;
+    NSLog(@"No input");
+    return defaultValue;
   }
-
   if (![input isKindOfClass:[NSDictionary class]]) {
-    completion(KBMakeError(@"Invalid input"), nil);
-    return;
+    NSLog(@"Invalid input type");
+    return defaultValue;
   }
+  return input;
+}
+
++ (void)showPromptWithInputString:(NSString *)inputString presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSError *error, NSData *output))completion {
+
+  // Try to parse input, if there is any error use a default empty dictionary.
+  NSDictionary *input = [self parseInputString:inputString defaultValue:@{}];
 
   [self showUpdatePrompt:input presenter:presenter completion:completion];
 }
 
 + (void)showUpdatePrompt:(NSDictionary *)input presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSError *error, NSData *output))completion {
-  NSString *title = [input objectForKey:@"title"];
-  NSString *message = [input objectForKey:@"message"];
-  NSString *description = [input objectForKey:@"description"];
-  BOOL autoUpdate = [[input objectForKey:@"autoUpdate"] boolValue];
+  NSString *title = [input kb_stringForKey:@"title"];
+  NSString *message = [input kb_stringForKey:@"message"];
+  NSString *description = [input kb_stringForKey:@"description"];
+  BOOL autoUpdate = [input kb_boolForKey:@"autoUpdate"];
 
   if (!title) title = @"Keybase Update";
   if (!message) message = @"There is an update available.";
