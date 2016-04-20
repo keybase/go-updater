@@ -46,10 +46,13 @@ func (c context) updatePrompt(promptCommand string, update updater.Update, optio
 		return nil, fmt.Errorf("Error running command: %s", err)
 	}
 
+	autoUpdate := false
+
 	var updateAction updater.UpdateAction
 	switch result.Action {
 	case "apply":
 		updateAction = updater.UpdateActionApply
+		autoUpdate = result.AutoUpdate
 	case "snooze":
 		updateAction = updater.UpdateActionSnooze
 	default:
@@ -58,6 +61,6 @@ func (c context) updatePrompt(promptCommand string, update updater.Update, optio
 
 	return &updater.UpdatePromptResponse{
 		Action:     updateAction,
-		AutoUpdate: result.AutoUpdate,
+		AutoUpdate: autoUpdate,
 	}, nil
 }

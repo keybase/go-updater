@@ -66,7 +66,7 @@ func TestPromptSnooze(t *testing.T) {
 	resp, err := testPromptWithCommand(t, promptCommand, 0)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
-		assert.True(t, resp.AutoUpdate)
+		assert.False(t, resp.AutoUpdate)
 		assert.Equal(t, updater.UpdateActionSnooze, resp.Action)
 	}
 }
@@ -76,7 +76,7 @@ func TestPromptCancel(t *testing.T) {
 	resp, err := testPromptWithCommand(t, promptCommand, 0)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
-		assert.True(t, resp.AutoUpdate)
+		assert.False(t, resp.AutoUpdate)
 		assert.Equal(t, updater.UpdateActionCancel, resp.Action)
 	}
 }
