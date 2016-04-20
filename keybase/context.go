@@ -63,12 +63,6 @@ func (c *context) GetUpdateUI() (updater.UpdateUI, error) {
 	return c, nil
 }
 
-// UpdatePrompt shows an update prompt
-func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	// TODO
-	return nil, nil
-}
-
 // GetLog returns log
 func (c context) GetLog() logging.Logger {
 	return c.log
