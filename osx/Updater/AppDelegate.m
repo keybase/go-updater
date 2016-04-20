@@ -36,10 +36,6 @@
     [self exitWithError:KBMakeError(@"No args")];
   }
 
-  if (![subargs[0] isKindOfClass:NSString.class]) {
-    [self exitWithError:KBMakeError(@"Invalid arg")];
-  }
-
   [Prompt showPromptWithInputString:subargs[0] presenter:^NSModalResponse(NSAlert *alert) {
     return [alert runModal];
   } completion:^(NSError *error, NSData *output) {
