@@ -17,6 +17,7 @@
   // Check if test environment
   if ([self isRunningTests]) return;
 
+  [NSApp activateIgnoringOtherApps:YES];
   dispatch_async(dispatch_get_main_queue(), ^{
     [self run];
   });
