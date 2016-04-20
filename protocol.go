@@ -93,8 +93,8 @@ type UpdatePromptResponse struct {
 	AutoUpdate bool         `json:"autoUpdate"`
 }
 
-// UpdatePromptUI is a prompt interface
-type UpdatePromptUI interface {
+// UpdateUI is a UI interface
+type UpdateUI interface {
 	// UpdatePrompt prompts for an update
 	UpdatePrompt(Update, UpdateOptions, UpdatePromptOptions) (*UpdatePromptResponse, error)
 }

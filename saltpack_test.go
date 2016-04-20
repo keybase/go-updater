@@ -5,7 +5,11 @@ package updater
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var validCodeSigningKIDs = map[string]bool{
@@ -23,32 +27,37 @@ const signature1 = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
   Z. END KEYBASE SALTPACK DETACHED SIGNATURE.
 `
 
+var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+
+const testZipSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
+	kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy
+	Cco4N255JFdUr6I 7XDXrDPRUsFPSRq RK1iOiDNoTlRIXC u4Zi7tLmajqLHUU
+	Eo0ng5CsVDR7e4Y DF4S9ioSsqGaQtX euRrI6tMO2EVmEx pQqidbB0aJsKLle
+	B. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+
 func TestSaltpackVerify(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, validCodeSigningKIDs, log)
-	if err != nil {
-		t.Errorf("Error in verify: %s", err)
-	}
+	assert.NoError(t, err)
+}
+
+func TestSaltpackVerifyDetachedFileAtPath(t *testing.T) {
+	err := SaltpackVerifyDetachedFileAtPath(testZipPath, testZipSignature, validCodeSigningKIDs, log)
+	assert.NoError(t, err)
 }
 
 func TestSaltpackVerifyFail(t *testing.T) {
 	invalid := bytes.NewReader([]byte("This is a test message changed\n"))
 	err := SaltpackVerifyDetached(invalid, signature1, validCodeSigningKIDs, log)
-	if err == nil {
-		t.Fatal("Should have failed verification")
-	}
+	assert.Error(t, err, "Should have failed verify")
 }
 
 func TestSaltpackVerifyNoValidIDs(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, nil, log)
+	assert.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
-	if err == nil {
-		t.Fatal("Should have errored")
-	}
-	if err.Error() != "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1" {
-		t.Errorf("Unexpected error output")
-	}
+	assert.Equal(t, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", err.Error())
 }
 
 func TestSaltpackVerifyBadValidIDs(t *testing.T) {
@@ -58,28 +67,20 @@ func TestSaltpackVerifyBadValidIDs(t *testing.T) {
 
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, badCodeSigningKIDs, log)
+	assert.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
-	if err == nil {
-		t.Fatal("Should have errored")
-	}
-	if err.Error() != "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1" {
-		t.Errorf("Unexpected error output")
-	}
+	assert.Equal(t, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", err.Error())
 }
 
 func TestSaltpackVerifyNilInput(t *testing.T) {
 	err := SaltpackVerifyDetached(nil, signature1, validCodeSigningKIDs, log)
+	assert.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
-	if err == nil {
-		t.Fatal("Should have errored")
-	}
 }
 
 func TestSaltpackVerifyNoSignature(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, "", validCodeSigningKIDs, log)
+	assert.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
-	if err == nil {
-		t.Fatal("Should have errored")
-	}
 }

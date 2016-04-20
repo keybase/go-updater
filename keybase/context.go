@@ -5,7 +5,6 @@ package keybase
 
 import (
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -23,22 +22,51 @@ var validCodeSigningKIDs = map[string]bool{
 
 // context is an updater.Context implementation
 type context struct {
+	// updater is the configured updater
+	updater *updater.Updater
 	// config is updater config
 	config *config
 	// log is the logger
 	log logging.Logger
 }
 
-func newContext(cfg *config, log logging.Logger) *context {
-	ctx := context{}
-	ctx.config = cfg
-	ctx.log = log
+func newContext(upd *updater.Updater, cfg *config, log logging.Logger) *context {
+	ctx := context{
+		updater: upd,
+		config:  cfg,
+		log:     log,
+	}
 	return &ctx
+}
+
+// NewUpdaterContext returns an updater context for Keybase
+func NewUpdaterContext(pathToKeybase string, log logging.Logger) (updater.Context, *updater.Updater) {
+	cfg, err := newConfig("Keybase", pathToKeybase, log)
+	if err != nil {
+		log.Warningf("Error loading config for context: %s", err)
+	}
+
+	src := NewUpdateSource(log)
+	// For testing
+	//src := sources.NewLocalUpdateSource("/tmp/Keybase.zip", log)
+	upd := updater.NewUpdater(src, &cfg, log)
+	return newContext(upd, &cfg, log), upd
 }
 
 // UpdateOptions returns update options
 func (c *context) UpdateOptions() updater.UpdateOptions {
 	return c.config.updaterOptions()
+}
+
+// GetUpdateUI returns Update UI
+func (c *context) GetUpdateUI() (updater.UpdateUI, error) {
+	return c, nil
+}
+
+// UpdatePrompt shows an update prompt
+func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
+	// TODO
+	return nil, nil
 }
 
 // GetLog returns log
@@ -47,24 +75,24 @@ func (c context) GetLog() logging.Logger {
 }
 
 // Verify verifies the signature
-func (c context) Verify(reader io.Reader, signature string) error {
-	err := updater.SaltpackVerifyDetached(reader, signature, validCodeSigningKIDs, c.log)
-	if err != nil {
-		return fmt.Errorf("Error verifying signature: %s", err)
-	}
-	return nil
+func (c context) Verify(update updater.Update) error {
+	return updater.SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, c.log)
 }
 
 // BeforeApply is called before an update is applied
-func (c context) BeforeApply() error {
+func (c context) BeforeApply(update updater.Update) error {
 	return nil
 }
 
 // AfterApply is called before an update is applied
-func (c context) AfterApply() error {
+func (c context) AfterApply(update updater.Update) error {
 	output, err := updater.RunCommand(c.config.pathToKeybase, []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
 	if err != nil {
 		return fmt.Errorf("Error in after apply: %s (%s)", err, output)
 	}
+	return nil
+}
+
+func (c context) Restart() error {
 	return nil
 }

@@ -3,23 +3,38 @@
 
 package main
 
-import "github.com/keybase/go-logging"
+import (
+	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater"
+)
 
 type service struct {
-	log logging.Logger
-	ch  chan int
+	updater       *updater.Updater
+	updateChecker *updater.UpdateChecker
+	context       updater.Context
+	log           logging.Logger
+	ch            chan int
 }
 
-func newService(log logging.Logger) *service {
-	svc := service{}
+func newService(upd *updater.Updater, context updater.Context, log logging.Logger) *service {
+	svc := service{
+		updater: upd,
+		context: context,
+		log:     log,
+	}
 	return &svc
 }
 
-func (s service) Start() {
-	// TODO:
+func (s *service) Start() {
+	if s.updateChecker == nil {
+		updateChecker := updater.NewUpdateChecker(s.updater, s.context, s.log)
+		s.updateChecker = &updateChecker
+	}
+	s.updateChecker.Start()
+	s.updateChecker.Check()
 }
 
-func (s service) Run() int {
+func (s *service) Run() int {
 	s.Start()
 	<-s.ch
 	return 0

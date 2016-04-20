@@ -10,6 +10,7 @@ import (
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/keybase"
 )
 
 type flags struct {
@@ -44,9 +45,8 @@ func serviceFromFlags(f flags) *service {
 		log.Warning("Missing -path-to-keybase")
 	}
 
-	// TODO: Construct updater
-
-	return newService(log)
+	ctx, upd := keybase.NewUpdaterContext(f.pathToKeybase, log)
+	return newService(upd, ctx, log)
 }
 
 func run(s *service) int {

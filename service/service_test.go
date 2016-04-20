@@ -6,14 +6,16 @@ package main
 import (
 	"testing"
 
+	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater/keybase"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFlags(t *testing.T) {
-	f := flags{
-		pathToKeybase: "keybase",
-	}
-	svc := serviceFromFlags(f)
+var log = logging.Logger{Module: "test"}
+
+func TestService(t *testing.T) {
+	ctx, upd := keybase.NewUpdaterContext("keybase", log)
+	svc := newService(upd, ctx, log)
 	assert.NotNil(t, svc)
 
 	// svc.Start()

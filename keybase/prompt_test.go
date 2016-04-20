@@ -15,7 +15,7 @@ import (
 
 func testPromptWithCommand(t *testing.T, promptCommand string, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
 	cfg, _ := testConfig(t)
-	ctx := newContext(&cfg, log)
+	ctx := newContext(nil, &cfg, log)
 	assert.NotNil(t, ctx)
 
 	update := updater.Update{
