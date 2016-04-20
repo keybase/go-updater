@@ -36,6 +36,12 @@ func newServer(response string) *httptest.Server {
 	}))
 }
 
+func newServerForError(err error) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, err.Error(), 500)
+	}))
+}
+
 func TestUpdateSource(t *testing.T) {
 	server := newServer(updateJSONResponse)
 	defer server.Close()
@@ -54,12 +60,13 @@ func TestUpdateSource(t *testing.T) {
 }
 
 func TestUpdateSourceBadResponse(t *testing.T) {
-	server := newServer("")
+	server := newServerForError(fmt.Errorf("Bad response"))
 	defer server.Close()
 
 	updateSource := newUpdateSource(server.URL, log)
 	options := updater.UpdateOptions{}
 	update, err := updateSource.FindUpdate(options)
+	t.Logf("Error: %s", err)
 	assert.Error(t, err)
 	assert.Nil(t, update, "Shouldn't have update")
 }
