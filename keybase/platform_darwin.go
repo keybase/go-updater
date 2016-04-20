@@ -56,3 +56,13 @@ func (c config) osVersion() string {
 	}
 	return strings.TrimSpace(out)
 }
+
+// UpdatePrompt is called when the user needs to accept an update
+func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
+	destinationPath := c.config.destinationPath()
+	if destinationPath == "" {
+		return nil, fmt.Errorf("No destination path")
+	}
+	promptPath := filepath.Join(destinationPath, "Contents", "Resources", "Updater.app", "Contents", "MacOS", "Updater")
+	return c.updatePrompt(promptPath, update, options, promptOptions)
+}

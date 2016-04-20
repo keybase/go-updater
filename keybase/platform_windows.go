@@ -33,3 +33,8 @@ func (c config) osVersion() string {
 	}
 	return strings.TrimSpace(out)
 }
+
+func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
+	// TODO
+	return nil, fmt.Errorf("Unsupported")
+}

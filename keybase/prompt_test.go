@@ -15,7 +15,7 @@ import (
 
 func testPromptWithCommand(t *testing.T, promptCommand string, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
 	cfg, _ := testConfig(t)
-	ctx := newContext(&cfg, log)
+	ctx := newContext(nil, &cfg, log)
 	assert.NotNil(t, ctx)
 
 	update := updater.Update{
@@ -66,7 +66,7 @@ func TestPromptSnooze(t *testing.T) {
 	resp, err := testPromptWithCommand(t, promptCommand, 0)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
-		assert.True(t, resp.AutoUpdate)
+		assert.False(t, resp.AutoUpdate)
 		assert.Equal(t, updater.UpdateActionSnooze, resp.Action)
 	}
 }
@@ -76,7 +76,7 @@ func TestPromptCancel(t *testing.T) {
 	resp, err := testPromptWithCommand(t, promptCommand, 0)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
-		assert.True(t, resp.AutoUpdate)
+		assert.False(t, resp.AutoUpdate)
 		assert.Equal(t, updater.UpdateActionCancel, resp.Action)
 	}
 }
