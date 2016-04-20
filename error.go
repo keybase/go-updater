@@ -11,6 +11,8 @@ type UpdateErrorType string
 const (
 	// UpdateUnknownError is for if we had an unknown error
 	UpdateUnknownError UpdateErrorType = "unknown"
+	// UpdateCancelError is for if we canceled
+	UpdateCancelError UpdateErrorType = "cancel"
 	// UpdatePromptError is an UI prompt error
 	UpdatePromptError UpdateErrorType = "prompt"
 	// UpdateUnpackError is an error unpacking the asset
@@ -42,7 +44,7 @@ type UpdateError struct {
 }
 
 // NewUpdateError constructs an UpdateError from a source error
-func NewUpdateError(errorType UpdateErrorType, err error) error {
+func NewUpdateError(errorType UpdateErrorType, err error) UpdateError {
 	return UpdateError{errorType: errorType, source: err}
 }
 
@@ -53,5 +55,12 @@ func (e UpdateError) TypeString() string {
 
 // Error returns description for an UpdateError
 func (e UpdateError) Error() string {
+	if e.source == nil {
+		return fmt.Sprintf("Update Error (%s)", e.TypeString())
+	}
 	return fmt.Sprintf("Update Error (%s): %s", e.TypeString(), e.source.Error())
+}
+
+func cancelError(message string) UpdateError {
+	return NewUpdateError(UpdateCancelError, fmt.Errorf(message))
 }
