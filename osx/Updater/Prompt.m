@@ -87,9 +87,13 @@
 
 
   NSModalResponse response = presenter(alert);
+
+  BOOL autoUpdateResponse = NO;
+
   NSString *action = @"";
   if (response == NSAlertFirstButtonReturn) {
     action = @"update";
+    autoUpdateResponse = autoCheckbox.state == NSOnState ? YES : NO;
   } else if (response == NSAlertSecondButtonReturn) {
     action = @"ignore";
   }
@@ -98,7 +102,7 @@
   NSError *error = nil;
   NSDictionary *result = @{
                            @"action": action,
-                           @"autoUpdate": autoCheckbox.state == NSOnState ? @YES : @NO,
+                           @"autoUpdate": @(autoUpdateResponse),
                            };
 
   NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:&error];
