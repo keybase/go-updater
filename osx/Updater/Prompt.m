@@ -57,6 +57,9 @@
   if (!message) message = @"There is an update available.";
   if (!description) description = @"Please visit keybase.io for more information.";
 
+  if ([title length] > 700) title = [title substringToIndex:699];
+  if ([message length] > 700) message = [message substringToIndex:699];
+
   NSAlert *alert = [[NSAlert alloc] init];
   alert.messageText = title;
   alert.informativeText = message;
