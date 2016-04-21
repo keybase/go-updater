@@ -41,11 +41,9 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 		return nil, nil, fmt.Errorf("No command")
 	}
 	var buf bytes.Buffer
+	cmd.Stdout = &buf
 	if combinedOutput {
-		cmd.Stdout = &buf
 		cmd.Stderr = &buf
-	} else {
-		cmd.Stdout = &buf
 	}
 	err := cmd.Start()
 	if err != nil {
