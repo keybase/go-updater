@@ -90,23 +90,24 @@ func (u *Updater) openApplication(applicationPath string) error {
 	return nil
 }
 
+func (u *Updater) check(sourcePath string, destinationPath string) error {
+	ok, err := util.IsDirReal(sourcePath)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("Source path isn't a directory")
+	}
+	return nil
+}
+
 func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
 	localPath := update.Asset.LocalPath
 	destinationPath := options.DestinationPath
-	check := func(sourcePath string, destinationPath string) error {
-		ok, err := util.IsDirReal(sourcePath)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return fmt.Errorf("Source path isn't a directory")
-		}
-		return nil
-	}
 
 	// The file name we unzip over should match the (base) file in the destination path
 	filename := filepath.Base(destinationPath)
-	if err := util.UnzipOver(localPath, filename, destinationPath, check, u.log); err != nil {
+	if err := util.UnzipOver(localPath, filename, destinationPath, u.check, u.log); err != nil {
 		return err
 	}
 

@@ -15,6 +15,7 @@ import (
 
 	"github.com/keybase/go-logging"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var log = logging.Logger{Module: "test"}
@@ -139,18 +140,16 @@ func TestUpdater(t *testing.T) {
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
 	update, err := upr.Update(testUpdateUI{newDefaultTestUpdateOptions()})
-	if assert.NoError(t, err) {
-		if assert.NotNil(t, update) {
-			t.Logf("Update: %#v\n", *update)
-			if assert.NotNil(t, update.Asset) {
-				t.Logf("Asset: %#v\n", *update.Asset)
-			}
-		}
-		auto, autoSet := upr.config.GetUpdateAuto()
-		assert.True(t, auto)
-		assert.True(t, autoSet)
-		assert.Equal(t, "deadbeef", upr.config.GetInstallID())
-	}
+	require.NoError(t, err)
+	require.NotNil(t, update)
+	t.Logf("Update: %#v\n", *update)
+	require.NotNil(t, update.Asset)
+	t.Logf("Asset: %#v\n", *update.Asset)
+
+	auto, autoSet := upr.config.GetUpdateAuto()
+	assert.True(t, auto)
+	assert.True(t, autoSet)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
 }
 
 func TestUpdaterSourceError(t *testing.T) {

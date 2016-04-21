@@ -207,7 +207,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 
 	u.log.Debugf("Update prompt response: %#v", updatePromptResponse)
 	if err := u.config.SetUpdateAuto(updatePromptResponse.AutoUpdate); err != nil {
-		u.log.Warningf("Error setting auto preference", err)
+		u.log.Warningf("Error setting auto preference: %s", err)
 	}
 
 	return updatePromptResponse.Action, nil
