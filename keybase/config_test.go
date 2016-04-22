@@ -20,7 +20,7 @@ func testConfig(t *testing.T) (config, error) {
 	if err != nil {
 		t.Fatalf("Unable to resolve test app name: %s", err)
 	}
-	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/keybase/keybase-test.sh")
+	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-version.sh")
 	return newConfig(testAppName, testPathToKeybase, log)
 }
 
