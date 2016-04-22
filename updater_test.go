@@ -4,244 +4,111 @@
 package updater
 
 import (
-	"crypto/rand"
-	"fmt"
-	"io"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
-	"github.com/keybase/client/go/libkb"
-	"github.com/keybase/client/go/logger"
-	keybase1 "github.com/keybase/client/go/protocol"
-	"golang.org/x/net/context"
+	"github.com/keybase/go-logging"
 )
 
-type processUpdate func(update *keybase1.Update, path string)
+var log = logging.Logger{Module: "test"}
 
-func newTestUpdater(t *testing.T, options keybase1.UpdateOptions, p processUpdate) (*Updater, error) {
-	updateSource, err := newTestUpdateSource(p)
-	if err != nil {
-		return nil, err
-	}
-	config := &testConfig{}
-	return NewUpdater(options, updateSource, config, logger.NewTestLogger(t)), nil
+func newTestUpdater(t *testing.T) (*Updater, error) {
+	return newTestUpdaterWithServer(t, nil)
 }
 
-type testUpdateUI struct{}
-
-func (u testUpdateUI) UpdatePrompt(_ context.Context, _ keybase1.UpdatePromptArg) (keybase1.UpdatePromptRes, error) {
-	return keybase1.UpdatePromptRes{Action: keybase1.UpdateAction_UPDATE}, nil
+func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server) (*Updater, error) {
+	return NewUpdater(testUpdateSource{testServer: testServer}, &testConfig{}, log), nil
 }
 
-func (u testUpdateUI) UpdateQuit(_ context.Context, _ keybase1.UpdateQuitArg) (keybase1.UpdateQuitRes, error) {
-	return keybase1.UpdateQuitRes{Quit: false}, nil
+type testUpdateUI struct {
+	options UpdateOptions
+}
+
+func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
+	return &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true}, nil
+}
+
+func (u testUpdateUI) BeforeApply(update Update) error {
+	return nil
+}
+
+func (u testUpdateUI) AfterApply(update Update) error {
+	return nil
 }
 
 func (u testUpdateUI) GetUpdateUI() (UpdateUI, error) {
 	return u, nil
 }
 
-func (u testUpdateUI) AfterUpdateApply(willRestart bool) error {
+func (u testUpdateUI) Verify(update Update) error {
+	return SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, log)
+}
+
+func (u testUpdateUI) Restart() error {
 	return nil
 }
 
-func (u testUpdateUI) UpdateAppInUse(context.Context, keybase1.UpdateAppInUseArg) (keybase1.UpdateAppInUseRes, error) {
-	return keybase1.UpdateAppInUseRes{Action: keybase1.UpdateAppInUseAction_CANCEL}, nil
-}
-
-func (u testUpdateUI) Verify(r io.Reader, signature string) error {
-	digest, err := libkb.Digest(r)
-	if err != nil {
-		return err
-	}
-	if signature != digest {
-		return fmt.Errorf("Verify failed")
-	}
-	return nil
+func (u testUpdateUI) UpdateOptions() UpdateOptions {
+	return u.options
 }
 
 type testUpdateSource struct {
-	processUpdate processUpdate
-}
-
-func newTestUpdateSource(p processUpdate) (testUpdateSource, error) {
-	return testUpdateSource{processUpdate: p}, nil
+	testServer *httptest.Server
 }
 
 func (u testUpdateSource) Description() string {
 	return "Test"
 }
 
-func (u testUpdateSource) FindUpdate(config keybase1.UpdateOptions) (*keybase1.Update, error) {
-	version := "1.0.1"
-	update := keybase1.Update{
-		Version:     version,
+func (u testUpdateSource) FindUpdate(config UpdateOptions) (*Update, error) {
+	update := Update{
+		Version:     "1.0.1",
 		Name:        "Test",
 		Description: "Bug fixes",
-	}
-
-	path := filepath.Join(os.TempDir(), "Test.zip")
-	assetName, err := createTestUpdateFile(path, version)
-	if err != nil {
-		return nil, err
-	}
-
-	if path != "" {
-		digest, err := libkb.DigestForFileAtPath(path)
-		if err != nil {
-			return nil, err
-		}
-
-		update.Asset = &keybase1.Asset{
-			Name:      assetName,
-			Url:       fmt.Sprintf("file://%s", path),
-			Digest:    digest,
-			Signature: digest, // Use digest as signature in test
-		}
-	}
-
-	if u.processUpdate != nil {
-		u.processUpdate(&update, path)
+		InstallID:   "deadbeef",
+		Asset: &Asset{
+			Name:      "test.zip",
+			URL:       u.testServer.URL,
+			Digest:    "4769edbb33b86cf960cebd39af33cb3baabf38f8e43a8dc89ff420faf1cf0d36",
+			Signature: testZipSignature,
+		},
 	}
 
 	return &update, nil
 }
 
 type testConfig struct {
-	lastChecked  keybase1.Time
-	publicKeyHex string
+	auto      bool
+	autoSet   bool
+	installID string
 }
 
-func (c testConfig) GetUpdatePreferenceAuto() (bool, bool) {
-	return false, false
+func (c testConfig) GetUpdateAuto() (bool, bool) {
+	return c.auto, c.autoSet
 }
 
-func (c testConfig) GetUpdatePreferenceSnoozeUntil() keybase1.Time {
-	return keybase1.Time(0)
-}
-
-func (c testConfig) GetUpdateLastChecked() keybase1.Time {
-	return c.lastChecked
-}
-
-func (c testConfig) GetUpdatePreferenceSkip() string {
-	return ""
-}
-
-func (c *testConfig) SetUpdatePreferenceAuto(b bool) error {
+func (c *testConfig) SetUpdateAuto(b bool) error {
+	c.auto = b
+	c.autoSet = true
 	return nil
 }
 
-func (c *testConfig) SetUpdatePreferenceSkip(v string) error {
+func (c testConfig) GetInstallID() string {
+	return c.installID
+}
+
+func (c *testConfig) SetInstallID(s string) error {
+	c.installID = s
 	return nil
 }
 
-func (c *testConfig) SetUpdatePreferenceSnoozeUntil(t keybase1.Time) error {
-	return nil
-}
-
-func (c *testConfig) SetUpdateLastChecked(t keybase1.Time) error {
-	c.lastChecked = t
-	return nil
-}
-
-func (c testConfig) GetRunModeAsString() string {
-	return "test"
-}
-
-func (c testConfig) GetMountDir() string {
-	return filepath.Join(os.Getenv("HOME"), "keybase.test")
-}
-
-func (c testConfig) GetUpdateDefaultInstructions() (string, error) {
-	return "", nil
-}
-
-func NewDefaultTestUpdateConfig() keybase1.UpdateOptions {
-	return keybase1.UpdateOptions{
-		Version:             "1.0.0",
-		Platform:            runtime.GOOS,
-		DestinationPath:     filepath.Join(os.TempDir(), "Test"),
-		Source:              "test",
-		DefaultInstructions: "Bug fixes",
+func newDefaultTestUpdateOptions() UpdateOptions {
+	return UpdateOptions{
+		Version:         "1.0.0",
+		Platform:        runtime.GOOS,
+		DestinationPath: filepath.Join(os.TempDir(), "Test"),
 	}
-}
-
-func TestUpdater(t *testing.T) {
-	u, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	update, err := u.Update(testUpdateUI{}, false, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("Update: %#v\n", update)
-
-	if update.Asset == nil {
-		t.Errorf("No asset")
-	}
-
-	t.Logf("Asset: %#v\n", *update.Asset)
-
-	if update.Asset.Signature == "" {
-		t.Errorf("No signature")
-	}
-
-	if update == nil {
-		t.Errorf("Should have an update")
-	}
-}
-
-func TestUpdateCheckErrorIfLowerVersion(t *testing.T) {
-	u, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	u.options.Version = "100000000.0.0"
-
-	update, err := u.checkForUpdate(true, false, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if update != nil {
-		t.Fatal("Shouldn't have update since our version is newer")
-	}
-}
-
-func TestChangeUpdateFailSignature(t *testing.T) {
-	changeAsset := func(u *keybase1.Update, path string) {
-		// Write new file over existing (fix digest but not signature)
-		_, err := createTestUpdateFile(path, u.Version)
-		if err != nil {
-			t.Fatal(err)
-		}
-		digest, _ := libkb.DigestForFileAtPath(path)
-		t.Logf("Wrote a new update file: %s (%s)", path, digest)
-		u.Asset.Digest = digest
-	}
-	updater, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), changeAsset)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = updater.Update(testUpdateUI{}, false, false)
-	t.Logf("Err: %s\n", err)
-	if err == nil {
-		t.Fatal("Should have failed")
-	}
-}
-
-func randString(n int) string {
-	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	var bytes = make([]byte, n)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		panic(fmt.Sprintf("Read errored: %s", err))
-	}
-	for i, b := range bytes {
-		bytes[i] = alphanum[b%byte(len(alphanum))]
-	}
-	return string(bytes)
 }

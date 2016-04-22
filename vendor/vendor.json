@@ -3,14 +3,89 @@
 	"ignore": "test",
 	"package": [
 		{
-			"path": "github.com/keybase/client/go/protocol",
-			"revision": "8ac9934275b6775f2aa2cc14efe271cfe2617495",
-			"revisionTime": "2016-04-03T15:41:36-07:00"
+			"path": "github.com/agl/ed25519",
+			"revision": "278e1ec8e8a6e017cd07577924d6766039146ced",
+			"revisionTime": "2015-08-30T11:26:16-07:00"
+		},
+		{
+			"path": "github.com/agl/ed25519/edwards25519",
+			"revision": "278e1ec8e8a6e017cd07577924d6766039146ced",
+			"revisionTime": "2015-08-30T11:26:16-07:00"
+		},
+		{
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
+			"revisionTime": "2015-11-05T15:09:06-06:00"
+		},
+		{
+			"path": "github.com/kardianos/osext",
+			"revision": "6e7f843663477789fac7c02def0d0909e969b4e5",
+			"revisionTime": "2015-05-28T07:23:15-07:00"
+		},
+		{
+			"path": "github.com/keybase/go-codec/codec",
+			"revision": "8a39c1d1f00af239dd650a292922fa4f46a39fa2",
+			"revisionTime": "2016-04-04T17:08:33-07:00"
+		},
+		{
+			"path": "github.com/keybase/go-logging",
+			"revision": "f3c7c3c1605e29ebcce430bb1e0d048faf4081ce",
+			"revisionTime": "2016-03-23T15:35:38-07:00"
 		},
 		{
 			"path": "github.com/keybase/saltpack",
-			"revision": "3f752afeda53a6e28d4875b3aeb29bf0e1ad74d6",
-			"revisionTime": "2016-03-29T14:41:00-07:00"
+			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
+			"revisionTime": "2016-04-14T14:15:52-04:00"
+		},
+		{
+			"path": "github.com/keybase/saltpack/basic",
+			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
+			"revisionTime": "2016-04-14T14:15:52-04:00"
+		},
+		{
+			"path": "github.com/keybase/saltpack/encoding/basex",
+			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
+			"revisionTime": "2016-04-14T14:15:52-04:00"
+		},
+		{
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "f78a839676152fd9f4863704f5d516195c18fc14",
+			"revisionTime": "2015-05-10T10:46:06+02:00"
+		},
+		{
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "bcd9e3389dd03b0b668d11f4d462a6af6c2dfd60",
+			"revisionTime": "2016-04-13T10:04:24+01:00"
+		},
+		{
+			"path": "github.com/stretchr/testify/require",
+			"revision": "bcd9e3389dd03b0b668d11f4d462a6af6c2dfd60",
+			"revisionTime": "2016-04-13T10:04:24+01:00"
+		},
+		{
+			"path": "golang.org/x/crypto/curve25519",
+			"revision": "1777f3ba8c1fed80fcaec3317e3aaa4f627764d2",
+			"revisionTime": "2016-03-18T12:12:46Z"
+		},
+		{
+			"path": "golang.org/x/crypto/nacl/box",
+			"revision": "7b428712abe956d0e9e1e9a01e163fb6c7171438",
+			"revisionTime": "2016-04-19T13:20:54-07:00"
+		},
+		{
+			"path": "golang.org/x/crypto/nacl/secretbox",
+			"revision": "7b428712abe956d0e9e1e9a01e163fb6c7171438",
+			"revisionTime": "2016-04-19T13:20:54-07:00"
+		},
+		{
+			"path": "golang.org/x/crypto/poly1305",
+			"revision": "7b428712abe956d0e9e1e9a01e163fb6c7171438",
+			"revisionTime": "2016-04-19T13:20:54-07:00"
+		},
+		{
+			"path": "golang.org/x/crypto/salsa20/salsa",
+			"revision": "7b428712abe956d0e9e1e9a01e163fb6c7171438",
+			"revisionTime": "2016-04-19T13:20:54-07:00"
 		}
 	]
 }

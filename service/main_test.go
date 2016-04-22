@@ -3,14 +3,16 @@
 
 package main
 
-import "testing"
+import (
+	"testing"
 
-func TestRun(t *testing.T) {
+	"github.com/stretchr/testify/require"
+)
+
+func TestFlags(t *testing.T) {
 	f := flags{
 		pathToKeybase: "keybase",
 	}
 	svc := serviceFromFlags(f)
-	if svc == nil {
-		t.Fatal("No service")
-	}
+	require.NotNil(t, svc)
 }

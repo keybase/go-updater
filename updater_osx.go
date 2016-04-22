@@ -88,18 +88,7 @@ func (u *Updater) openApplication(applicationPath string) error {
 	return nil
 }
 
-func (u *Updater) applyUpdate(localPath string) (err error) {
-	destinationPath := u.options.DestinationPath
-	err = u.applyZip(localPath, destinationPath)
-	if err != nil {
-		return
-	}
-
-	// Update spotlight, ignore (but log) errors
-	u.log.Debug("Updating spotlight: %s", destinationPath)
-	mdimportOut, mdierr := exec.Command("/usr/bin/mdimport", destinationPath).CombinedOutput()
-	if mdierr != nil {
-		u.log.Errorf("Error trying to update spotlight: %s; %s", mdierr, string(mdimportOut))
-	}
-	return
+func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
+	// TODO
+	return nil
 }

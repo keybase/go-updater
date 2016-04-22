@@ -4,60 +4,54 @@
 package updater
 
 import (
-	"io"
 	"testing"
 	"time"
 
-	"github.com/keybase/client/go/logger"
-	"github.com/keybase/client/go/protocol"
-	"golang.org/x/net/context"
+	"github.com/stretchr/testify/assert"
 )
 
-// TestUpdateCheckerIsAsync checks to make sure if the updater is blocked in a
-// prompt that checks continue. This is safe because the updater is
-// singleflighted.
-func TestUpdateCheckerIsAsync(t *testing.T) {
-	updater, err := newTestUpdater(t, NewDefaultTestUpdateConfig(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestUpdateChecker(t *testing.T) {
+	updater, err := newTestUpdater(t)
+	assert.NoError(t, err)
 
-	checker := newUpdateChecker(updater, testUpdateCheckUI{promptDelay: 400 * time.Millisecond}, logger.NewTestLogger(t), 50*time.Millisecond, 100*time.Millisecond)
+	checker := newUpdateChecker(updater, testUpdateCheckUI{promptDelay: 10 * time.Millisecond}, log, time.Millisecond)
 	defer checker.Stop()
 	checker.Start()
 
-	time.Sleep(400 * time.Millisecond)
+	time.Sleep(11 * time.Millisecond)
 
-	if checker.Count() <= 2 {
-		t.Fatal("Checker should have checked more than once")
-	}
+	assert.True(t, checker.Count() >= 1)
 }
 
 type testUpdateCheckUI struct {
 	promptDelay time.Duration
 }
 
-func (u testUpdateCheckUI) UpdatePrompt(_ context.Context, _ keybase1.UpdatePromptArg) (keybase1.UpdatePromptRes, error) {
+func (u testUpdateCheckUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
 	time.Sleep(u.promptDelay)
-	return keybase1.UpdatePromptRes{Action: keybase1.UpdateAction_UPDATE}, nil
+	return &UpdatePromptResponse{Action: UpdateActionApply}, nil
 }
 
-func (u testUpdateCheckUI) UpdateQuit(_ context.Context, _ keybase1.UpdateQuitArg) (keybase1.UpdateQuitRes, error) {
-	return keybase1.UpdateQuitRes{Quit: false}, nil
+func (u testUpdateCheckUI) BeforeApply(update Update) error {
+	return nil
+}
+
+func (u testUpdateCheckUI) AfterApply(update Update) error {
+	return nil
 }
 
 func (u testUpdateCheckUI) GetUpdateUI() (UpdateUI, error) {
 	return u, nil
 }
 
-func (u testUpdateCheckUI) AfterUpdateApply(willRestart bool) error {
+func (u testUpdateCheckUI) Verify(update Update) error {
 	return nil
 }
 
-func (u testUpdateCheckUI) Verify(r io.Reader, signature string) error {
+func (u testUpdateCheckUI) Restart() error {
 	return nil
 }
 
-func (u testUpdateCheckUI) UpdateAppInUse(context.Context, keybase1.UpdateAppInUseArg) (keybase1.UpdateAppInUseRes, error) {
-	return keybase1.UpdateAppInUseRes{Action: keybase1.UpdateAppInUseAction_CANCEL}, nil
+func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
+	return newDefaultTestUpdateOptions()
 }
