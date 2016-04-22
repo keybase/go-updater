@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var validCodeSigningKIDs = map[string]bool{
@@ -49,13 +50,13 @@ func TestSaltpackVerifyDetachedFileAtPath(t *testing.T) {
 func TestSaltpackVerifyFail(t *testing.T) {
 	invalid := bytes.NewReader([]byte("This is a test message changed\n"))
 	err := SaltpackVerifyDetached(invalid, signature1, validCodeSigningKIDs, log)
-	assert.Error(t, err, "Should have failed verify")
+	require.Error(t, err, "Should have failed verify")
 }
 
 func TestSaltpackVerifyNoValidIDs(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, nil, log)
-	assert.Error(t, err, "Should have failed verify")
+	require.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
 	assert.Equal(t, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", err.Error())
 }
@@ -67,20 +68,20 @@ func TestSaltpackVerifyBadValidIDs(t *testing.T) {
 
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, badCodeSigningKIDs, log)
-	assert.Error(t, err, "Should have failed verify")
+	require.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
-	assert.Equal(t, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", err.Error())
+	require.Equal(t, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", err.Error())
 }
 
 func TestSaltpackVerifyNilInput(t *testing.T) {
 	err := SaltpackVerifyDetached(nil, signature1, validCodeSigningKIDs, log)
-	assert.Error(t, err, "Should have failed verify")
+	require.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
 }
 
 func TestSaltpackVerifyNoSignature(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, "", validCodeSigningKIDs, log)
-	assert.Error(t, err, "Should have failed verify")
+	require.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
 }
