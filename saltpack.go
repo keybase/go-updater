@@ -7,11 +7,27 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater/util"
 	"github.com/keybase/saltpack"
 	"github.com/keybase/saltpack/basic"
 )
+
+// SaltpackVerifyDetachedFileAtPath verifies a file
+func SaltpackVerifyDetachedFileAtPath(path string, signature string, validKIDs map[string]bool, log logging.Logger) error {
+	file, err := os.Open(path)
+	defer util.Close(file)
+	if err != nil {
+		return err
+	}
+	err = SaltpackVerifyDetached(file, signature, validKIDs, log)
+	if err != nil {
+		return fmt.Errorf("Error verifying signature: %s", err)
+	}
+	return nil
+}
 
 // SaltpackVerifyDetached verifies a message signature
 func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[string]bool, log logging.Logger) error {
