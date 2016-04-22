@@ -10,6 +10,7 @@ import (
 
 	"github.com/keybase/go-updater"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // This message signed by keybot
@@ -34,7 +35,7 @@ const testSignatureInvalidSigner = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 func testContext(t *testing.T) *context {
 	cfg, _ := testConfig(t)
 	ctx := newContext(&cfg, log)
-	assert.NotNil(t, ctx)
+	require.NotNil(t, ctx)
 	return ctx
 }
 
@@ -64,18 +65,18 @@ func TestContextVerify(t *testing.T) {
 func TestContextVerifyFail(t *testing.T) {
 	ctx := testContext(t)
 	err := ctx.Verify(testContextUpdate(testMessage2Path, testSignature))
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestContextVerifyNoValidIDs(t *testing.T) {
 	ctx := testContext(t)
 	err := ctx.Verify(testContextUpdate(testMessagePath, testSignatureInvalidSigner))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "Error verifying signature: Unknown signer KID: ad6ec4c0132ca7627b3c4d72c650323abec004da51dc086fd0ec2b4f82e6e486", err.Error())
 }
 
 func TestContextVerifyBadSignature(t *testing.T) {
 	ctx := testContext(t)
 	err := ctx.Verify(testContextUpdate(testMessagePath, "BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. END KEYBASE SALTPACK DETACHED SIGNATURE."))
-	assert.Error(t, err)
+	require.Error(t, err)
 }

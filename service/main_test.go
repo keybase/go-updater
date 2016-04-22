@@ -6,7 +6,7 @@ package main
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFlags(t *testing.T) {
@@ -14,5 +14,5 @@ func TestFlags(t *testing.T) {
 		pathToKeybase: "keybase",
 	}
 	svc := serviceFromFlags(f)
-	assert.NotNil(t, svc)
+	require.NotNil(t, svc)
 }
