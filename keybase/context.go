@@ -22,19 +22,16 @@ var validCodeSigningKIDs = map[string]bool{
 
 // context is an updater.Context implementation
 type context struct {
-	// updater is the configured updater
-	updater *updater.Updater
 	// config is updater config
 	config *config
 	// log is the logger
 	log logging.Logger
 }
 
-func newContext(upd *updater.Updater, cfg *config, log logging.Logger) *context {
+func newContext(cfg *config, log logging.Logger) *context {
 	ctx := context{
-		updater: upd,
-		config:  cfg,
-		log:     log,
+		config: cfg,
+		log:    log,
 	}
 	return &ctx
 }
@@ -50,7 +47,7 @@ func NewUpdaterContext(pathToKeybase string, log logging.Logger) (updater.Contex
 	// For testing
 	//src := sources.NewLocalUpdateSource("/tmp/Keybase.zip", log)
 	upd := updater.NewUpdater(src, &cfg, log)
-	return newContext(upd, &cfg, log), upd
+	return newContext(&cfg, log), upd
 }
 
 // UpdateOptions returns update options

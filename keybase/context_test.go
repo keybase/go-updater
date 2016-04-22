@@ -33,7 +33,7 @@ const testSignatureInvalidSigner = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 
 func testContext(t *testing.T) *context {
 	cfg, _ := testConfig(t)
-	ctx := newContext(nil, &cfg, log)
+	ctx := newContext(&cfg, log)
 	assert.NotNil(t, ctx)
 	return ctx
 }
