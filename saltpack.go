@@ -29,32 +29,36 @@ func SaltpackVerifyDetachedFileAtPath(path string, signature string, validKIDs m
 	return nil
 }
 
+func checkSender(key saltpack.BasePublicKey, validKIDs map[string]bool, log logging.Logger) error {
+	if key == nil {
+		return fmt.Errorf("No key")
+	}
+	kid := key.ToKID()
+	if kid == nil {
+		return fmt.Errorf("No KID for key")
+	}
+	skid := hex.EncodeToString(kid)
+	log.Infof("Signed by %s", skid)
+	if validKIDs[skid] {
+		log.Debug("Valid KID")
+		return nil
+	}
+	return fmt.Errorf("Unknown signer KID: %s", skid)
+}
+
 // SaltpackVerifyDetached verifies a message signature
 func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[string]bool, log logging.Logger) error {
 	if reader == nil {
 		return fmt.Errorf("Saltpack Error: No reader")
 	}
-	checkSender := func(key saltpack.SigningPublicKey) error {
-		if key == nil {
-			return fmt.Errorf("No key")
-		}
-		kid := key.ToKID()
-		if kid == nil {
-			return fmt.Errorf("No KID for key")
-		}
-		skid := hex.EncodeToString(kid)
-		log.Infof("Signed by %s", skid)
-		if validKIDs[skid] {
-			log.Debug("Valid KID")
-			return nil
-		}
-		return fmt.Errorf("Unknown signer KID: %s", skid)
+	check := func(key saltpack.BasePublicKey) error {
+		return checkSender(key, validKIDs, log)
 	}
-	return SaltpackVerifyDetachedCheckSender(reader, []byte(signature), checkSender)
+	return SaltpackVerifyDetachedCheckSender(reader, []byte(signature), check)
 }
 
 // SaltpackVerifyDetachedCheckSender verifies a message signature
-func SaltpackVerifyDetachedCheckSender(message io.Reader, signature []byte, checkSender func(saltpack.SigningPublicKey) error) error {
+func SaltpackVerifyDetachedCheckSender(message io.Reader, signature []byte, checkSender func(saltpack.BasePublicKey) error) error {
 	kr := basic.NewKeyring()
 	var skey saltpack.SigningPublicKey
 	var err error

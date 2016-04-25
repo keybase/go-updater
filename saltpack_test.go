@@ -85,3 +85,31 @@ func TestSaltpackVerifyNoSignature(t *testing.T) {
 	require.Error(t, err, "Should have failed verify")
 	t.Logf("Error: %s", err)
 }
+
+type testSigningKey struct {
+	kid []byte
+}
+
+func (t testSigningKey) ToKID() []byte {
+	return t.kid
+}
+
+func (t testSigningKey) Verify(message []byte, signature []byte) error {
+	panic("Unsupported")
+}
+
+func TestSaltpackCheckNilSender(t *testing.T) {
+	err := checkSender(nil, validCodeSigningKIDs, log)
+	require.Error(t, err)
+}
+
+func TestSaltpackCheckNoKID(t *testing.T) {
+	err := checkSender(testSigningKey{kid: nil}, validCodeSigningKIDs, log)
+	require.Error(t, err)
+}
+
+func TestSaltpackVerifyNoFile(t *testing.T) {
+	err := SaltpackVerifyDetachedFileAtPath("/invalid", signature1, validCodeSigningKIDs, log)
+	require.Error(t, err)
+	t.Logf("Error: %s", err)
+}
