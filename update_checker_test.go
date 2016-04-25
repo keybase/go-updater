@@ -67,9 +67,12 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 }
 
 func TestUpdateCheckerError(t *testing.T) {
-	updater, err := newTestUpdater(t)
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+	updater, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
 
 	checker := NewUpdateChecker(updater, testUpdateCheckUI{verifyError: fmt.Errorf("Test verify error")}, log)
-	checker.Start()
+	err = checker.check()
+	require.Error(t, err)
 }

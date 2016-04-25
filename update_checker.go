@@ -33,11 +33,15 @@ func newUpdateChecker(updater *Updater, ctx Context, log logging.Logger, tickDur
 	}
 }
 
-// Check checks for an update.
-func (u *UpdateChecker) Check() {
+func (u *UpdateChecker) check() error {
 	u.count++
 	_, err := u.updater.Update(u.ctx)
-	if err != nil {
+	return err
+}
+
+// Check checks for an update.
+func (u *UpdateChecker) Check() {
+	if err := u.check(); err != nil {
 		u.log.Errorf("Error in update: %s", err)
 	}
 }
