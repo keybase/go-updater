@@ -39,12 +39,7 @@ func UnzipOver(sourcePath string, path string, destinationPath string, check fun
 		return err
 	}
 
-	err = MoveFile(contentPath, destinationPath, log)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return MoveFile(contentPath, destinationPath, log)
 }
 
 func unzipOver(sourcePath string, destinationPath string, log logging.Logger) error {

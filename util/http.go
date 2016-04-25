@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -134,18 +133,7 @@ func DownloadURL(urlString string, destinationPath string, options DownloadURLOp
 
 	// Handle local files
 	if url.Scheme == "file" {
-		localPath := url.Path
-		log.Infof("Using local path: %s", localPath)
-		if err := CopyFile(localPath, destinationPath, log); err != nil {
-			return err
-		}
-
-		if options.RequireDigest {
-			if err := CheckDigest(options.Digest, destinationPath, log); err != nil {
-				return err
-			}
-		}
-		return nil
+		return downloadLocal(url.Path, destinationPath, options)
 	}
 
 	// Compute ETag if the destinationPath already exists
@@ -215,18 +203,18 @@ func DownloadURL(urlString string, destinationPath string, options DownloadURLOp
 		}
 	}
 
-	if _, serr := os.Stat(destinationPath); serr == nil {
-		log.Infof("Removing existing download: %s", destinationPath)
-		if rerr := os.Remove(destinationPath); rerr != nil {
-			return fmt.Errorf("Error removing existing download: %s", rerr)
-		}
-	}
+	return MoveFile(savePath, destinationPath, log)
+}
 
-	log.Infof("Moving %s to %s", filepath.Base(savePath), filepath.Base(destinationPath))
-
-	if err := os.Rename(savePath, destinationPath); err != nil {
+func downloadLocal(localPath string, destinationPath string, options DownloadURLOptions) error {
+	if err := CopyFile(localPath, destinationPath, options.Log); err != nil {
 		return err
 	}
 
+	if options.RequireDigest {
+		if err := CheckDigest(options.Digest, destinationPath, options.Log); err != nil {
+			return err
+		}
+	}
 	return nil
 }
