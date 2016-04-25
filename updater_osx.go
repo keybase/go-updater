@@ -13,9 +13,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/keybase/go-updater/util"
 )
 
-func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath string) error {
+func (u *Updater) platformProcessUpdate(sourcePath string, destinationPath string) error {
 	//
 	// Get the uid, gid of the current user and make sure our src matches.
 	//
@@ -42,7 +44,7 @@ func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath
 		return err
 	}
 
-	u.log.Info("Current user uid: %d, gid: %d", uid, gid)
+	u.log.Infof("Current user uid: %d, gid: %d", uid, gid)
 
 	walk := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -79,7 +81,37 @@ func (u *Updater) openApplication(applicationPath string) error {
 	return nil
 }
 
+func (u *Updater) check(sourcePath string, destinationPath string) error {
+	ok, err := util.IsDirReal(sourcePath)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("Source path isn't a directory")
+	}
+	return nil
+}
+
 func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
-	// TODO
+	localPath := update.Asset.LocalPath
+	destinationPath := options.DestinationPath
+
+	// The file name we unzip over should match the (base) file in the destination path
+	filename := filepath.Base(destinationPath)
+	if err := util.UnzipOver(localPath, filename, destinationPath, u.check, u.log); err != nil {
+		return err
+	}
+
+	if err := u.platformProcessUpdate(localPath, destinationPath); err != nil {
+		return err
+	}
+
+	// Update spotlight
+	u.log.Debugf("Updating spotlight: %s", destinationPath)
+	spotLightOut, spotLightErr := RunCommand("/usr/bin/mdimport", []string{destinationPath}, 5*time.Second, u.log)
+	if spotLightErr != nil {
+		u.log.Warningf("Error trying to update spotlight: %s; %s", spotLightErr, spotLightOut)
+	}
+
 	return nil
 }

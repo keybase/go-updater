@@ -11,7 +11,9 @@ import (
 )
 
 func TestUpdateChecker(t *testing.T) {
-	updater, err := newTestUpdater(t)
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+	updater, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
 
 	checker := newUpdateChecker(updater, testUpdateCheckUI{promptDelay: 10 * time.Millisecond}, log, time.Millisecond)
