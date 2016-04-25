@@ -4,6 +4,10 @@
 package updater
 
 import (
+	"fmt"
+	"io"
+	"net/http"
+
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -11,6 +15,8 @@ import (
 	"testing"
 
 	"github.com/keybase/go-logging"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var log = logging.Logger{Module: "test"}
@@ -111,4 +117,49 @@ func newDefaultTestUpdateOptions() UpdateOptions {
 		Platform:        runtime.GOOS,
 		DestinationPath: filepath.Join(os.TempDir(), "Test"),
 	}
+}
+
+func testServerForUpdateFile(t *testing.T, path string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f, err := os.Open(path)
+		require.NoError(t, err)
+		w.Header().Set("Content-Type", "application/zip")
+		_, err = io.Copy(w, f)
+		require.NoError(t, err)
+	}))
+}
+
+func testServerForError(t *testing.T, err error) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, err.Error(), 500)
+	}))
+}
+
+func TestUpdater(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer)
+	assert.NoError(t, err)
+	update, err := upr.Update(testUpdateUI{newDefaultTestUpdateOptions()})
+	require.NoError(t, err)
+	require.NotNil(t, update)
+	t.Logf("Update: %#v\n", *update)
+	require.NotNil(t, update.Asset)
+	t.Logf("Asset: %#v\n", *update.Asset)
+
+	auto, autoSet := upr.config.GetUpdateAuto()
+	assert.True(t, auto)
+	assert.True(t, autoSet)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+}
+
+func TestUpdaterSourceError(t *testing.T) {
+	testServer := testServerForError(t, fmt.Errorf("bad response"))
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer)
+	assert.NoError(t, err)
+	_, err = upr.Update(testUpdateUI{newDefaultTestUpdateOptions()})
+	assert.Error(t, err)
 }
