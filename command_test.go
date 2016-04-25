@@ -4,12 +4,17 @@
 package updater
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEmptyRunCommand(t *testing.T) {
@@ -30,6 +35,14 @@ func TestRunCommandEcho(t *testing.T) {
 	out, err := RunCommand("echo", []string{"arg1", "arg2"}, time.Second, log)
 	assert.NoError(t, err)
 	assert.Equal(t, out, "arg1 arg2\n")
+}
+
+func TestRunCommandNil(t *testing.T) {
+	execCmd := func(name string, arg ...string) *exec.Cmd {
+		return nil
+	}
+	_, _, err := runCommand("echo", []string{"arg1", "arg2"}, execCmd, true, time.Second, log)
+	require.Error(t, err)
 }
 
 func TestRunCommandTimeout(t *testing.T) {
@@ -93,6 +106,20 @@ func TestRunJSONCommand(t *testing.T) {
 	}
 }
 
+func TestRunJSONCommandEmpty(t *testing.T) {
+	err := RunJSONCommand("", nil, nil, time.Second, log)
+	require.Error(t, err)
+}
+
+func TestRunJSONCommandInvalidObject(t *testing.T) {
+	// Valid JSON, but not the right object
+	validJSON := `{"stringVar": true}`
+	var testValOut testObj
+	err := RunJSONCommand("echo", []string{validJSON}, &testValOut, time.Second, log)
+	require.Error(t, err)
+	t.Logf("Error: %s", err)
+}
+
 // TestRunJSONCommandAddingInvalidInput tests valid JSON input with invalid input after.
 // We still succeed in this case since we got valid input to start.
 func TestRunJSONCommandAddingInvalidInput(t *testing.T) {
@@ -115,11 +142,18 @@ func TestRunJSONCommandTimeout(t *testing.T) {
 
 // TestTimeoutProcessKilled checks to make sure process is killed after timeout
 func TestTimeoutProcessKilled(t *testing.T) {
-	out, process, err := runCommand("sleep", []string{"10"}, true, 10*time.Millisecond, log)
+	out, process, err := runCommand("sleep", []string{"10"}, exec.Command, true, 10*time.Millisecond, log)
 	assert.Equal(t, out, []byte{}, "Should have empty output")
 	assert.Error(t, err)
 	findProcess, _ := os.FindProcess(process.Pid)
 	// This should error since killing a non-existant process should error
 	perr := findProcess.Kill()
 	assert.NotNil(t, perr, "Should have errored killing since killing non-existant process should error")
+}
+
+func TestRunCommandNoExit(t *testing.T) {
+	bin := fmt.Sprintf("noexit_%s", runtime.GOOS)
+	path := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test", bin)
+	_, err := RunCommand(path, []string{}, 10*time.Millisecond, log)
+	require.Error(t, err)
 }
