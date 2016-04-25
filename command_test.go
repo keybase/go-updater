@@ -4,12 +4,10 @@
 package updater
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"testing"
 	"time"
 
@@ -152,8 +150,8 @@ func TestTimeoutProcessKilled(t *testing.T) {
 }
 
 func TestRunCommandNoExit(t *testing.T) {
-	bin := fmt.Sprintf("noexit_%s", runtime.GOOS)
-	path := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test", bin)
+	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	_, err := RunCommand(path, []string{}, 10*time.Millisecond, log)
 	require.Error(t, err)
+	t.Logf("Error: %s", err)
 }
