@@ -8,26 +8,15 @@ package updater
 import (
 	"fmt"
 	"os/exec"
-	"strings"
 )
-
-func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath string) error {
-	return nil
-}
 
 func (u *Updater) openApplication(applicationPath string) error {
 	return fmt.Errorf("Open application not supported on this platform")
 }
 
-func (u *Updater) applyUpdate(localPath string) (err error) {
-	if strings.HasSuffix(localPath, ".exe") {
-		err = exec.Command(localPath, "/SILENT").Start()
-	} else if strings.HasSuffix(localPath, ".zip") {
-		// Allow this to make the tests easier. No point in executing a real .exe
-		// during a test.
-		return
-	} else {
-		err = fmt.Errorf("Unsupported update file type: %s", localPath)
+func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
+	if update.Asset == nil || update.Asset.LocalPath == "" {
+		return fmt.Errorf("No asset")
 	}
-	return
+	return exec.Command(update.Asset.LocalPath, "/SILENT").Start()
 }
