@@ -13,9 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// This message signed by keybot
-const testMessage = "This is a test message\n"
-const testSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
+// testSignatureKeybot is "This is a test message" signed by keybot
+const testSignatureKeybot = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 	kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy
 	Cco4N255JFQSlh7 IZiojdPCOssX5DX pEcVEdujw3EsDuI FOTpFB77NK4tqLr
 	Dgme7xtCaR4QRl2 hchPpr65lKLKSFy YVZcF2xUVN3gjpM vPFUMwg0JTBAG8x
@@ -25,7 +24,8 @@ const testSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 var testMessagePath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/message1.txt")
 var testMessage2Path = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/message2.txt")
 
-// This message signed by gabrielh
+// testSignatureInvalidSigner is "This is a test message" signed by gabrielh who
+// is not in valid signing IDs.
 const testSignatureInvalidSigner = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 	kXR7VktZdyH7rvq v5wcIkPOwGV4GkV Zj40Ut1jYS2euBu Ti6z39EdDX7Ne1P
 	i0ToOCpSPXyNeSm Zr6r5UOEZnblXeU gLhEpUSRpLFMlKe MWkq61Yaa8XyFvt
@@ -58,13 +58,13 @@ func TestContext(t *testing.T) {
 
 func TestContextVerify(t *testing.T) {
 	ctx := testContext(t)
-	err := ctx.Verify(testContextUpdate(testMessagePath, testSignature))
+	err := ctx.Verify(testContextUpdate(testMessagePath, testSignatureKeybot))
 	assert.NoError(t, err)
 }
 
 func TestContextVerifyFail(t *testing.T) {
 	ctx := testContext(t)
-	err := ctx.Verify(testContextUpdate(testMessage2Path, testSignature))
+	err := ctx.Verify(testContextUpdate(testMessage2Path, testSignatureInvalidSigner))
 	require.Error(t, err)
 }
 

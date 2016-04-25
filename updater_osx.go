@@ -53,20 +53,11 @@ func (u *Updater) checkPlatformSpecificUpdate(sourcePath string, destinationPath
 			return err
 		}
 		t := time.Now()
-		err = os.Chtimes(path, t, t)
-		if err != nil {
-			return err
-		}
-		return nil
+		return os.Chtimes(path, t, t)
 	}
 
 	u.log.Info("Touching, chowning files in %s", sourcePath)
-	err = filepath.Walk(sourcePath, walk)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return filepath.Walk(sourcePath, walk)
 }
 
 func (u *Updater) openApplication(applicationPath string) error {
