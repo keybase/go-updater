@@ -53,6 +53,11 @@ func TestSaltpackVerifyFail(t *testing.T) {
 	require.Error(t, err, "Should have failed verify")
 }
 
+func TestSaltpackVerifyFailDetachedFileAtPath(t *testing.T) {
+	err := SaltpackVerifyDetachedFileAtPath(testZipPath, testZipSignature, map[string]bool{}, log)
+	require.Error(t, err)
+}
+
 func TestSaltpackVerifyNoValidIDs(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, nil, log)
