@@ -42,10 +42,10 @@ func (u *UpdateChecker) Check() {
 	}
 }
 
-// Start starts the update checker
-func (u *UpdateChecker) Start() {
+// Start starts the update checker. Returns false if we are already running.
+func (u *UpdateChecker) Start() bool {
 	if u.ticker != nil {
-		return
+		return false
 	}
 	u.ticker = time.NewTicker(u.tickDuration)
 	go func() {
@@ -55,6 +55,7 @@ func (u *UpdateChecker) Start() {
 			u.Check()
 		}
 	}()
+	return true
 }
 
 // Stop stops the update checker
