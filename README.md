@@ -21,3 +21,16 @@ The goals of this library are to provide an updater that:
 
 This updater library is used to support updating (in background and on-demand)
 for Keybase apps and services.
+
+
+### Development
+
+Install the pre-commit hook (and run manually):
+
+```
+pip install pre-commit
+go get -u github.com/alecthomas/gometalinter
+gometalinter --install --update
+pre-commit install
+pre-commit run -a
+```
