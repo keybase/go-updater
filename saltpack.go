@@ -39,17 +39,17 @@ func checkSender(key saltpack.BasePublicKey, validKIDs map[string]bool, log logg
 	}
 	skid := hex.EncodeToString(kid)
 	log.Infof("Signed by %s", skid)
-	if validKIDs[skid] {
-		log.Debug("Valid KID")
-		return nil
+	if !validKIDs[skid] {
+		return fmt.Errorf("Unknown signer KID: %s", skid)
 	}
-	return fmt.Errorf("Unknown signer KID: %s", skid)
+	log.Debug("Valid KID: %s", skid)
+	return nil
 }
 
 // SaltpackVerifyDetached verifies a message signature
 func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[string]bool, log logging.Logger) error {
 	if reader == nil {
-		return fmt.Errorf("Saltpack Error: No reader")
+		return fmt.Errorf("No reader")
 	}
 	check := func(key saltpack.BasePublicKey) error {
 		return checkSender(key, validKIDs, log)
