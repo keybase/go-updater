@@ -15,9 +15,11 @@ import (
 	"github.com/keybase/go-logging"
 )
 
+type execCmd func(name string, arg ...string) *exec.Cmd
+
 // RunCommand runs a command and returns the combined stdout/err output
 func RunCommand(command string, args []string, timeout time.Duration, log logging.Logger) (string, error) {
-	out, _, err := runCommand(command, args, true, timeout, log)
+	out, _, err := runCommand(command, args, exec.Command, true, timeout, log)
 	if out == nil {
 		return "", err
 	}
@@ -28,7 +30,7 @@ func RunCommand(command string, args []string, timeout time.Duration, log loggin
 // combined stdout/stderr output is returned, otherwise only stdout is returned.
 // We will send TERM signal and wait 1 second or timeout, whichever is less,
 // before calling KILL.
-func runCommand(command string, args []string, combinedOutput bool, timeout time.Duration, log logging.Logger) ([]byte, *os.Process, error) {
+func runCommand(command string, args []string, execCmd execCmd, combinedOutput bool, timeout time.Duration, log logging.Logger) ([]byte, *os.Process, error) {
 	log.Debugf("Command: %s %s", command, args)
 	if command == "" {
 		return nil, nil, fmt.Errorf("No command")
@@ -36,7 +38,7 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 	if timeout < 0 {
 		return nil, nil, fmt.Errorf("Invalid timeout: %s", timeout)
 	}
-	cmd := exec.Command(command, args...)
+	cmd := execCmd(command, args...)
 	if cmd == nil {
 		return nil, nil, fmt.Errorf("No command")
 	}
@@ -96,7 +98,7 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 
 // RunJSONCommand runs a command (with timeout) expecting JSON output with result interface
 func RunJSONCommand(command string, args []string, result interface{}, timeout time.Duration, log logging.Logger) error {
-	out, _, err := runCommand(command, args, false, timeout, log)
+	out, _, err := runCommand(command, args, exec.Command, false, timeout, log)
 	if err != nil {
 		return err
 	}
