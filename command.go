@@ -40,10 +40,13 @@ func runCommand(command string, args []string, combinedOutput bool, timeout time
 	if cmd == nil {
 		return nil, nil, fmt.Errorf("No command")
 	}
-	// Run the command and spawn a goroutine to wait for it
 	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
+	if combinedOutput {
+		cmd.Stdout = &buf
+		cmd.Stderr = &buf
+	} else {
+		cmd.Stdout = &buf
+	}
 	err := cmd.Start()
 	if err != nil {
 		return nil, nil, err
@@ -100,6 +103,7 @@ func RunJSONCommand(command string, args []string, result interface{}, timeout t
 	if out == nil {
 		return fmt.Errorf("No output")
 	}
+	log.Debugf("Output: %s", string(out))
 	if err := json.NewDecoder(bytes.NewReader(out)).Decode(&result); err != nil {
 		return fmt.Errorf("Error in result: %s", err)
 	}

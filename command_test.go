@@ -5,6 +5,7 @@ package updater
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -122,4 +123,16 @@ func TestTimeoutProcessKilled(t *testing.T) {
 	// This should error since killing a non-existant process should error
 	perr := findProcess.Kill()
 	assert.NotNil(t, perr, "Should have errored killing since killing non-existant process should error")
+}
+
+func TestRunCommandCombinedOutput(t *testing.T) {
+	testCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/echo-out-err.sh")
+	out, _, err := runCommand(testCommand, nil, true, time.Second, log)
+	assert.NoError(t, err)
+	assert.Equal(t, "stdout output\nstderr output\n", string(out))
+
+	// No combined output (stdout only)
+	out, _, err = runCommand(testCommand, nil, false, time.Second, log)
+	assert.NoError(t, err)
+	assert.Equal(t, "stdout output\n", string(out))
 }

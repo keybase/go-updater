@@ -50,15 +50,18 @@ func TestSaltpackVerifyDetachedFileAtPath(t *testing.T) {
 func TestSaltpackVerifyFail(t *testing.T) {
 	invalid := bytes.NewReader([]byte("This is a test message changed\n"))
 	err := SaltpackVerifyDetached(invalid, signature1, validCodeSigningKIDs, log)
-	require.Error(t, err, "Should have failed verify")
+	require.EqualError(t, err, "invalid signature")
+}
+
+func TestSaltpackVerifyFailDetachedFileAtPath(t *testing.T) {
+	err := SaltpackVerifyDetachedFileAtPath(testZipPath, testZipSignature, map[string]bool{}, log)
+	require.Error(t, err)
 }
 
 func TestSaltpackVerifyNoValidIDs(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, nil, log)
-	require.Error(t, err, "Should have failed verify")
-	t.Logf("Error: %s", err)
-	assert.Equal(t, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", err.Error())
+	require.EqualError(t, err, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1")
 }
 
 func TestSaltpackVerifyBadValidIDs(t *testing.T) {
@@ -68,20 +71,43 @@ func TestSaltpackVerifyBadValidIDs(t *testing.T) {
 
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, signature1, badCodeSigningKIDs, log)
-	require.Error(t, err, "Should have failed verify")
-	t.Logf("Error: %s", err)
-	require.Equal(t, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1", err.Error())
+	require.EqualError(t, err, "Unknown signer KID: 9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1")
 }
 
 func TestSaltpackVerifyNilInput(t *testing.T) {
 	err := SaltpackVerifyDetached(nil, signature1, validCodeSigningKIDs, log)
-	require.Error(t, err, "Should have failed verify")
-	t.Logf("Error: %s", err)
+	require.EqualError(t, err, "No reader")
 }
 
 func TestSaltpackVerifyNoSignature(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := SaltpackVerifyDetached(reader, "", validCodeSigningKIDs, log)
-	require.Error(t, err, "Should have failed verify")
-	t.Logf("Error: %s", err)
+	require.EqualError(t, err, "Error in framing: wrong number of words (1)")
+}
+
+type testSigningKey struct {
+	kid []byte
+}
+
+func (t testSigningKey) ToKID() []byte {
+	return t.kid
+}
+
+func (t testSigningKey) Verify(message []byte, signature []byte) error {
+	panic("Unsupported")
+}
+
+func TestSaltpackCheckNilSender(t *testing.T) {
+	err := checkSender(nil, validCodeSigningKIDs, log)
+	require.Error(t, err)
+}
+
+func TestSaltpackCheckNoKID(t *testing.T) {
+	err := checkSender(testSigningKey{kid: nil}, validCodeSigningKIDs, log)
+	require.Error(t, err)
+}
+
+func TestSaltpackVerifyNoFile(t *testing.T) {
+	err := SaltpackVerifyDetachedFileAtPath("/invalid", signature1, validCodeSigningKIDs, log)
+	require.EqualError(t, err, "open /invalid: no such file or directory")
 }
