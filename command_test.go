@@ -155,3 +155,15 @@ func TestRunCommandNoExit(t *testing.T) {
 	require.Error(t, err)
 	t.Logf("Error: %s", err)
 }
+
+func TestRunCommandCombinedOutput(t *testing.T) {
+	testCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/echo-out-err.sh")
+	out, _, err := runCommand(testCommand, nil, exec.Command, true, time.Second, log)
+	assert.NoError(t, err)
+	assert.Equal(t, "stdout output\nstderr output\n", string(out))
+
+	// No combined output (stdout only)
+	out, _, err = runCommand(testCommand, nil, exec.Command, false, time.Second, log)
+	assert.NoError(t, err)
+	assert.Equal(t, "stdout output\n", string(out))
+}
