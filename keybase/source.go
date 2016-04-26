@@ -16,18 +16,6 @@ import (
 	"github.com/keybase/go-updater/util"
 )
 
-type responseStatus struct {
-	Code   int               `json:"code"`
-	Name   string            `json:"name"`
-	Desc   string            `json:"desc"`
-	Fields map[string]string `json:"fields"`
-}
-
-type updateResponse struct {
-	Status responseStatus `json:"status"`
-	Update updater.Update `json:"update"`
-}
-
 // UpdateSource finds releases/updates on keybase.io
 type UpdateSource struct {
 	log      logging.Logger
@@ -90,15 +78,11 @@ func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update
 	}
 
 	var reader io.Reader = resp.Body
-	var res updateResponse
-	if err = json.NewDecoder(reader).Decode(&res); err != nil {
+	var update updater.Update
+	if err = json.NewDecoder(reader).Decode(&update); err != nil {
 		return nil, fmt.Errorf("Invalid API response %s", err)
 	}
 
-	if res.Status.Code != 0 {
-		return nil, fmt.Errorf("API returned error response: %#v", res)
-	}
-
-	k.log.Debugf("Received update: %#v", res.Update)
-	return &res.Update, nil
+	k.log.Debugf("Received update: %#v", update)
+	return &update, nil
 }

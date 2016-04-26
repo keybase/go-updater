@@ -14,10 +14,6 @@ import (
 )
 
 const updateJSONResponse = `{
-	"status": {
-		"code": 0
-	},
-	"update": {
 		"version": "1.0.15-20160414190014+fdfce90",
 		"name": "v1.0.15-20160414190014+fdfce90",
 		"installId": "deadbeef",
@@ -31,20 +27,18 @@ const updateJSONResponse = `{
 			"signature": "BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFgnUxK yZ7SITOx8887cOR aeLbQGWBTMZWEQR hL6bhOCR8CqdXaQ 71lCQkT4WsnqAZe 7bbU2Xrsl50sLbJ BN19a9r6bQBYjce gfK0xY0064VY6CW 9. END KEYBASE SALTPACK DETACHED SIGNATURE.\n",
 			"localPath": ""
 		}
-	}
-}
-`
-
-const updateBadResponse = `{
-	"status": {
-		"code": 218
-	}
-}`
+	}`
 
 func newServer(response string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(w, response)
+	}))
+}
+
+func newServerForError(err error) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, err.Error(), 500)
 	}))
 }
 
@@ -66,12 +60,13 @@ func TestUpdateSource(t *testing.T) {
 }
 
 func TestUpdateSourceBadResponse(t *testing.T) {
-	server := newServer(updateBadResponse)
+	server := newServerForError(fmt.Errorf("Bad response"))
 	defer server.Close()
 
 	updateSource := newUpdateSource(server.URL, log)
 	options := updater.UpdateOptions{}
 	update, err := updateSource.FindUpdate(options)
+	t.Logf("Error: %s", err)
 	assert.Error(t, err)
 	assert.Nil(t, update, "Shouldn't have update")
 }
