@@ -34,8 +34,9 @@ func newTestContext(options UpdateOptions) *testUpdateUI {
 }
 
 type testUpdateUI struct {
-	options     UpdateOptions
-	errReported *Error
+	options        UpdateOptions
+	errReported    *Error
+	actionReported UpdateAction
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -64,6 +65,10 @@ func (u testUpdateUI) Restart() error {
 
 func (u *testUpdateUI) ReportError(err Error, options UpdateOptions) {
 	u.errReported = &err
+}
+
+func (u *testUpdateUI) ReportAction(action UpdateAction, options UpdateOptions) {
+	u.actionReported = action
 }
 
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
@@ -150,7 +155,8 @@ func TestUpdater(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
-	update, err := upr.Update(newTestContext(newDefaultTestUpdateOptions()))
+	ctx := newTestContext(newDefaultTestUpdateOptions())
+	update, err := upr.Update(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, update)
 	t.Logf("Update: %#v\n", *update)
@@ -161,6 +167,9 @@ func TestUpdater(t *testing.T) {
 	assert.True(t, auto)
 	assert.True(t, autoSet)
 	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	assert.Nil(t, ctx.errReported)
+	assert.Equal(t, ctx.actionReported, UpdateActionApply)
 }
 
 func TestUpdaterSourceError(t *testing.T) {

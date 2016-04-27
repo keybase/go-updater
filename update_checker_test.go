@@ -58,4 +58,5 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()
 }
 
-func (u testUpdateCheckUI) ReportError(_ Error, _ UpdateOptions) {}
+func (u testUpdateCheckUI) ReportError(_ Error, _ UpdateOptions)         {}
+func (u testUpdateCheckUI) ReportAction(_ UpdateAction, _ UpdateOptions) {}

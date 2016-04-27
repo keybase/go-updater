@@ -31,11 +31,13 @@ type context struct {
 // endpoints define all the url locations for reporting, etc
 type endpoints struct {
 	update string
+	action string
 	err    string
 }
 
 var defaultEndpoints = endpoints{
 	update: "https://keybase.io/_/api/1.0/pkg/update.json",
+	action: "https://keybase.io/_/api/1.0/pkg/act.json",
 	err:    "https://keybase.io/_/api/1.0/pkg/error.json",
 }
 

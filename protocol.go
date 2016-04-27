@@ -82,6 +82,11 @@ const (
 	UpdateActionError UpdateAction = "error"
 )
 
+// String is a unique string label for the action
+func (u UpdateAction) String() string {
+	return string(u)
+}
+
 // UpdatePromptOptions are the options for UpdatePrompt
 type UpdatePromptOptions struct {
 	AutoUpdate bool `json:"autoUpdate"`
