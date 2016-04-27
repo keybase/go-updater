@@ -24,7 +24,7 @@ type UpdateSource struct {
 
 // NewUpdateSource contructs an update source for keybase.io
 func NewUpdateSource(log logging.Logger) UpdateSource {
-	return newUpdateSource("https://keybase.io/_/api/1.0/pkg/update.json", log)
+	return newUpdateSource(defaultEndpoints.update, log)
 }
 
 func newUpdateSource(endpoint string, log logging.Logger) UpdateSource {
@@ -41,6 +41,10 @@ func (k UpdateSource) Description() string {
 
 // FindUpdate returns update for updater and options
 func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update, error) {
+	return k.findUpdate(options, time.Minute)
+}
+
+func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Duration) (*updater.Update, error) {
 	if options.URL != "" {
 		return nil, fmt.Errorf("Custom URLs not supported for this update source")
 	}
@@ -63,9 +67,7 @@ func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{
-		Timeout: time.Minute,
-	}
+	client := &http.Client{Timeout: timeout}
 	k.log.Infof("Request %#v", urlString)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)
@@ -74,7 +76,7 @@ func (k UpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Keybase returned bad HTTP status %v", resp.Status)
+		return nil, fmt.Errorf("Find update returned bad HTTP status %v", resp.Status)
 	}
 
 	var reader io.Reader = resp.Body

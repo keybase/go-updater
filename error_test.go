@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-func TestNewUpdateError(t *testing.T) {
-	err := NewUpdateError(UpdatePromptError, fmt.Errorf("There was an error prompting"))
+func TestNewError(t *testing.T) {
+	err := NewError(PromptError, fmt.Errorf("There was an error prompting"))
 	if err.Error() != "Update Error (prompt): There was an error prompting" {
 		t.Errorf("Unexpected error message: %s", err.Error())
 	}

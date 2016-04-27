@@ -80,3 +80,8 @@ func TestContextVerifyBadSignature(t *testing.T) {
 	err := ctx.Verify(testContextUpdate(testMessagePath, "BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. END KEYBASE SALTPACK DETACHED SIGNATURE."))
 	require.Error(t, err)
 }
+
+func TestContextReportError(t *testing.T) {
+	ctx := testContext(t)
+	ctx.ReportError(updater.NewError(updater.UnknownError, nil), updater.UpdateOptions{})
+}

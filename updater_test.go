@@ -29,8 +29,13 @@ func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server) (*Updat
 	return NewUpdater(testUpdateSource{testServer: testServer}, &testConfig{}, log), nil
 }
 
+func newTestContext(options UpdateOptions) *testUpdateUI {
+	return &testUpdateUI{options: options}
+}
+
 type testUpdateUI struct {
-	options UpdateOptions
+	options     UpdateOptions
+	errReported *Error
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -55,6 +60,10 @@ func (u testUpdateUI) Verify(update Update) error {
 
 func (u testUpdateUI) Restart() error {
 	return nil
+}
+
+func (u *testUpdateUI) ReportError(err Error, options UpdateOptions) {
+	u.errReported = &err
 }
 
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
@@ -141,7 +150,7 @@ func TestUpdater(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
-	update, err := upr.Update(testUpdateUI{newDefaultTestUpdateOptions()})
+	update, err := upr.Update(newTestContext(newDefaultTestUpdateOptions()))
 	require.NoError(t, err)
 	require.NotNil(t, update)
 	t.Logf("Update: %#v\n", *update)
@@ -160,6 +169,10 @@ func TestUpdaterSourceError(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
-	_, err = upr.Update(testUpdateUI{newDefaultTestUpdateOptions()})
-	assert.Error(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions())
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (download): Responded with 500 Internal Server Error")
+
+	require.NotNil(t, ctx.errReported)
+	assert.Equal(t, ctx.errReported.errorType, DownloadError)
 }

@@ -37,6 +37,7 @@ type Context interface {
 	BeforeApply(update Update) error
 	AfterApply(update Update) error
 	Restart() error
+	ReportError(err Error, options UpdateOptions)
 }
 
 // Config defines configuration for the Updater
@@ -57,11 +58,19 @@ func NewUpdater(source UpdateSource, config Config, log logging.Logger) *Updater
 }
 
 // Update checks, downloads and performs an update
-func (u *Updater) Update(ctx Context) (*Update, error) {
+func (u *Updater) Update(ctx Context) (*Update, *Error) {
 	options := ctx.UpdateOptions()
+	update, err := u.update(ctx, options)
+	if err != nil {
+		ctx.ReportError(*err, options)
+	}
+	return update, err
+}
+
+func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	update, err := u.checkForUpdate(ctx, options)
 	if err != nil {
-		return nil, err
+		return nil, findErrPtr(err)
 	}
 	if update == nil {
 		// No update available
@@ -77,17 +86,17 @@ func (u *Updater) Update(ctx Context) (*Update, error) {
 	// Prompt for update
 	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
 	if err != nil {
-		return update, err
+		return update, promptErrPtr(err)
 	}
 	switch updateAction {
 	case UpdateActionApply, UpdateActionAuto:
 		// Continue
 	case UpdateActionSnooze:
-		return update, cancelError("Snoozed update")
+		return update, cancelErrPtr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
-		return update, cancelError("Canceled by user")
+		return update, cancelErrPtr(fmt.Errorf("Canceled by user"))
 	case UpdateActionError:
-		return update, fmt.Errorf("Error in update prompt: %s", err)
+		return update, promptErrPtr(fmt.Errorf("Unknown prompt error"))
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
@@ -97,38 +106,40 @@ func (u *Updater) Update(ctx Context) (*Update, error) {
 		return update, nil
 	}
 	if update.Asset.LocalPath == "" {
-		return update, fmt.Errorf("No local asset path")
+		if err := u.downloadAsset(update.Asset, options); err != nil {
+			return update, downloadErrPtr(err)
+		}
 	}
 
 	// Ensure asset still exists in case it got pulled while we were waiting in
 	// the prompt.
 	exists, err := util.URLExists(update.Asset.URL, time.Minute, u.log)
 	if err != nil {
-		return update, err
+		return update, downloadErrPtr(err)
 	}
 	if !exists {
-		return update, fmt.Errorf("Asset no longer exists: %s", update.Asset.URL)
+		return update, downloadErrPtr(fmt.Errorf("Asset no longer exists: %s", update.Asset.URL))
 	}
 
 	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
 	if err := ctx.Verify(*update); err != nil {
-		return update, err
+		return update, verifyErrPtr(err)
 	}
 
 	if err := ctx.BeforeApply(*update); err != nil {
-		return update, err
+		return update, applyErrPtr(err)
 	}
 
 	if err := u.platformApplyUpdate(*update, options); err != nil {
-		return update, err
+		return update, applyErrPtr(err)
 	}
 
 	if err := ctx.AfterApply(*update); err != nil {
-		return update, err
+		return update, applyErrPtr(err)
 	}
 
 	if err := ctx.Restart(); err != nil {
-		return update, err
+		return update, restartErrPtr(err)
 	}
 
 	return update, nil
@@ -175,6 +186,7 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 	if update.InstallID != "" {
 		if err := u.config.SetInstallID(update.InstallID); err != nil {
 			u.log.Warningf("Error saving install ID: %s", err)
+			ctx.ReportError(configErr(fmt.Errorf("Error saving install ID: %s", err)), options)
 		}
 	}
 
@@ -208,6 +220,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	u.log.Debugf("Update prompt response: %#v", updatePromptResponse)
 	if err := u.config.SetUpdateAuto(updatePromptResponse.AutoUpdate); err != nil {
 		u.log.Warningf("Error setting auto preference: %s", err)
+		ctx.ReportError(configErr(fmt.Errorf("Error setting auto preference: %s", err)), options)
 	}
 
 	return updatePromptResponse.Action, nil

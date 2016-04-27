@@ -57,3 +57,5 @@ func (u testUpdateCheckUI) Restart() error {
 func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()
 }
+
+func (u testUpdateCheckUI) ReportError(_ Error, _ UpdateOptions) {}

@@ -28,6 +28,17 @@ type context struct {
 	log logging.Logger
 }
 
+// endpoints define all the url locations for reporting, etc
+type endpoints struct {
+	update string
+	err    string
+}
+
+var defaultEndpoints = endpoints{
+	update: "https://keybase.io/_/api/1.0/pkg/update.json",
+	err:    "https://keybase.io/_/api/1.0/pkg/error.json",
+}
+
 func newContext(cfg *config, log logging.Logger) *context {
 	ctx := context{
 		config: cfg,
