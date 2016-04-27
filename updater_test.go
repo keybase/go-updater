@@ -29,17 +29,18 @@ func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server) (*Updat
 	return NewUpdater(testUpdateSource{testServer: testServer}, &testConfig{}, log), nil
 }
 
-func newTestContext(options UpdateOptions) *testUpdateUI {
-	return &testUpdateUI{options: options}
+func newTestContext(options UpdateOptions, action UpdateAction) *testUpdateUI {
+	return &testUpdateUI{options: options, action: action}
 }
 
 type testUpdateUI struct {
+	action      UpdateAction
 	options     UpdateOptions
 	errReported *Error
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
-	return &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true}, nil
+	return &UpdatePromptResponse{Action: u.action, AutoUpdate: true}, nil
 }
 
 func (u testUpdateUI) BeforeApply(update Update) error {
@@ -144,13 +145,13 @@ func testServerForError(t *testing.T, err error) *httptest.Server {
 	}))
 }
 
-func TestUpdater(t *testing.T) {
+func TestUpdaterApply(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
 
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
-	update, err := upr.Update(newTestContext(newDefaultTestUpdateOptions()))
+	update, err := upr.Update(newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply))
 	require.NoError(t, err)
 	require.NotNil(t, update)
 	t.Logf("Update: %#v\n", *update)
@@ -163,16 +164,38 @@ func TestUpdater(t *testing.T) {
 	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
 }
 
-func TestUpdaterSourceError(t *testing.T) {
+func TestUpdaterDownloadError(t *testing.T) {
 	testServer := testServerForError(t, fmt.Errorf("bad response"))
 	defer testServer.Close()
 
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions())
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (download): Responded with 500 Internal Server Error")
 
 	require.NotNil(t, ctx.errReported)
 	assert.Equal(t, ctx.errReported.errorType, DownloadError)
+}
+
+func TestUpdaterCancel(t *testing.T) {
+	testServer := testServerForError(t, fmt.Errorf("cancel"))
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer)
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionCancel)
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (cancel): Canceled by user")
+}
+
+func TestUpdaterSnooze(t *testing.T) {
+	testServer := testServerForError(t, fmt.Errorf("snooze"))
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer)
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionSnooze)
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
 }
