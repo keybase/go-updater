@@ -36,10 +36,16 @@ func newTestContext(options UpdateOptions, action UpdateAction) *testUpdateUI {
 type testUpdateUI struct {
 	action      UpdateAction
 	options     UpdateOptions
+	promptErr   error
+	verifyErr   error
+	restartErr  error
 	errReported *Error
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
+	if u.promptErr != nil {
+		return nil, u.promptErr
+	}
 	return &UpdatePromptResponse{Action: u.action, AutoUpdate: true}, nil
 }
 
@@ -56,11 +62,14 @@ func (u testUpdateUI) GetUpdateUI() (UpdateUI, error) {
 }
 
 func (u testUpdateUI) Verify(update Update) error {
+	if u.verifyErr != nil {
+		return u.verifyErr
+	}
 	return SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, log)
 }
 
 func (u testUpdateUI) Restart() error {
-	return nil
+	return u.restartErr
 }
 
 func (u *testUpdateUI) ReportError(err Error, options UpdateOptions) {
@@ -79,7 +88,7 @@ func (u testUpdateSource) Description() string {
 	return "Test"
 }
 
-func (u testUpdateSource) FindUpdate(config UpdateOptions) (*Update, error) {
+func (u testUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
 	update := Update{
 		Version:     "1.0.1",
 		Name:        "Test",
@@ -198,4 +207,33 @@ func TestUpdaterSnooze(t *testing.T) {
 	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionSnooze)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
+}
+
+func testUpdaterError(t *testing.T, errorType ErrorType) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	upr, _ := newTestUpdaterWithServer(t, testServer)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
+	testErr := fmt.Errorf("Test error")
+	switch errorType {
+	case PromptError:
+		ctx.promptErr = testErr
+	case VerifyError:
+		ctx.verifyErr = testErr
+	case RestartError:
+		ctx.restartErr = testErr
+	}
+
+	_, err := upr.Update(ctx)
+	assert.EqualError(t, err, fmt.Sprintf("Update Error (%s): Test error", errorType.String()))
+
+	require.NotNil(t, ctx.errReported)
+	assert.Equal(t, ctx.errReported.errorType, errorType)
+}
+
+func TestUpdaterErrors(t *testing.T) {
+	testUpdaterError(t, PromptError)
+	testUpdaterError(t, VerifyError)
+	testUpdaterError(t, RestartError)
 }
