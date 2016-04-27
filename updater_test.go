@@ -22,11 +22,11 @@ import (
 var log = logging.Logger{Module: "test"}
 
 func newTestUpdater(t *testing.T) (*Updater, error) {
-	return newTestUpdaterWithServer(t, nil)
+	return newTestUpdaterWithServer(t, nil, nil)
 }
 
-func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server) (*Updater, error) {
-	return NewUpdater(testUpdateSource{testServer: testServer}, &testConfig{}, log), nil
+func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server, update *Update) (*Updater, error) {
+	return NewUpdater(testUpdateSource{testServer: testServer, update: update}, &testConfig{}, log), nil
 }
 
 func newTestContext(options UpdateOptions, action UpdateAction) *testUpdateUI {
@@ -78,27 +78,34 @@ func (u testUpdateUI) UpdateOptions() UpdateOptions {
 
 type testUpdateSource struct {
 	testServer *httptest.Server
+	update     *Update
+	findErr    error
 }
 
 func (u testUpdateSource) Description() string {
 	return "Test"
 }
 
-func (u testUpdateSource) FindUpdate(config UpdateOptions) (*Update, error) {
-	update := Update{
+func testUpdate(uri string) *Update {
+	update := &Update{
 		Version:     "1.0.1",
 		Name:        "Test",
 		Description: "Bug fixes",
 		InstallID:   "deadbeef",
-		Asset: &Asset{
+	}
+	if uri != "" {
+		update.Asset = &Asset{
 			Name:      "test.zip",
-			URL:       u.testServer.URL,
+			URL:       uri,
 			Digest:    "4769edbb33b86cf960cebd39af33cb3baabf38f8e43a8dc89ff420faf1cf0d36",
 			Signature: testZipSignature,
-		},
+		}
 	}
+	return update
+}
 
-	return &update, nil
+func (u testUpdateSource) FindUpdate(config UpdateOptions) (*Update, error) {
+	return u.update, u.findErr
 }
 
 type testConfig struct {
@@ -150,11 +157,17 @@ func testServerForError(t *testing.T, err error) *httptest.Server {
 	}))
 }
 
+func testServerNotFound(t *testing.T) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not Found", 404)
+	}))
+}
+
 func TestUpdaterApply(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
 
-	upr, err := newTestUpdaterWithServer(t, testServer)
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL))
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
 	update, err := upr.Update(ctx)
@@ -177,7 +190,7 @@ func TestUpdaterDownloadError(t *testing.T) {
 	testServer := testServerForError(t, fmt.Errorf("bad response"))
 	defer testServer.Close()
 
-	upr, err := newTestUpdaterWithServer(t, testServer)
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL))
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
 	_, err = upr.Update(ctx)
@@ -191,7 +204,7 @@ func TestUpdaterCancel(t *testing.T) {
 	testServer := testServerForError(t, fmt.Errorf("cancel"))
 	defer testServer.Close()
 
-	upr, err := newTestUpdaterWithServer(t, testServer)
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL))
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionCancel)
 	_, err = upr.Update(ctx)
@@ -202,9 +215,21 @@ func TestUpdaterSnooze(t *testing.T) {
 	testServer := testServerForError(t, fmt.Errorf("snooze"))
 	defer testServer.Close()
 
-	upr, err := newTestUpdaterWithServer(t, testServer)
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL))
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionSnooze)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
+}
+
+func TestUpdateNoAsset(t *testing.T) {
+	testServer := testServerNotFound(t)
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(""))
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
+	update, err := upr.Update(ctx)
+	assert.NoError(t, err)
+	assert.Nil(t, update.Asset)
 }
