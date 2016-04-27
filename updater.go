@@ -38,6 +38,7 @@ type Context interface {
 	AfterApply(update Update) error
 	Restart() error
 	ReportError(err Error, options UpdateOptions)
+	ReportAction(action UpdateAction, options UpdateOptions)
 }
 
 // Config defines configuration for the Updater
@@ -89,9 +90,12 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 		return update, promptErrPtr(err)
 	}
 	switch updateAction {
-	case UpdateActionApply, UpdateActionAuto:
-		// Continue
+	case UpdateActionApply:
+		ctx.ReportAction(UpdateActionApply, options)
+	case UpdateActionAuto:
+		ctx.ReportAction(UpdateActionAuto, options)
 	case UpdateActionSnooze:
+		ctx.ReportAction(UpdateActionSnooze, options)
 		return update, cancelErrPtr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
 		return update, cancelErrPtr(fmt.Errorf("Canceled by user"))
@@ -126,16 +130,8 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 		return update, verifyErrPtr(err)
 	}
 
-	if err := ctx.BeforeApply(*update); err != nil {
-		return update, applyErrPtr(err)
-	}
-
-	if err := u.platformApplyUpdate(*update, options); err != nil {
-		return update, applyErrPtr(err)
-	}
-
-	if err := ctx.AfterApply(*update); err != nil {
-		return update, applyErrPtr(err)
+	if err := u.apply(ctx, *update, options); err != nil {
+		return update, err
 	}
 
 	if err := ctx.Restart(); err != nil {
@@ -143,6 +139,22 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	}
 
 	return update, nil
+}
+
+func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) *Error {
+	if err := ctx.BeforeApply(update); err != nil {
+		return applyErrPtr(err)
+	}
+
+	if err := u.platformApplyUpdate(update, options); err != nil {
+		return applyErrPtr(err)
+	}
+
+	if err := ctx.AfterApply(update); err != nil {
+		return applyErrPtr(err)
+	}
+
+	return nil
 }
 
 // downloadAsset will download the update to a temporary path (if not cached),

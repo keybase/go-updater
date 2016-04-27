@@ -31,6 +31,22 @@ func (c context) reportError(updateErr updater.Error, options updater.UpdateOpti
 	return c.report(data, uri, timeout)
 }
 
+// ReportAction notifies the API server of a client updater action
+func (c context) ReportAction(action updater.UpdateAction, options updater.UpdateOptions) {
+	if err := c.reportAction(action, options, defaultEndpoints.action, time.Minute); err != nil {
+		c.log.Warningf("Error notifying about an action (%s): %s", action, err)
+	}
+}
+
+func (c context) reportAction(action updater.UpdateAction, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+	data := url.Values{}
+	data.Add("install_id", options.InstallID)
+	data.Add("version", options.Version)
+	data.Add("upd_version", options.UpdaterVersion)
+	data.Add("action", action.String())
+	return c.report(data, uri, timeout)
+}
+
 func (c context) report(data url.Values, uri string, timeout time.Duration) error {
 	req, err := http.NewRequest("POST", uri, bytes.NewBufferString(data.Encode()))
 	if err != nil {
