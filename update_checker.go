@@ -33,19 +33,23 @@ func newUpdateChecker(updater *Updater, ctx Context, log logging.Logger, tickDur
 	}
 }
 
-// Check checks for an update.
-func (u *UpdateChecker) Check() {
+func (u *UpdateChecker) check() error {
 	u.count++
 	_, err := u.updater.Update(u.ctx)
-	if err != nil {
+	return err
+}
+
+// Check checks for an update.
+func (u *UpdateChecker) Check() {
+	if err := u.check(); err != nil {
 		u.log.Errorf("Error in update: %s", err)
 	}
 }
 
-// Start starts the update checker
-func (u *UpdateChecker) Start() {
+// Start starts the update checker. Returns false if we are already running.
+func (u *UpdateChecker) Start() bool {
 	if u.ticker != nil {
-		return
+		return false
 	}
 	u.ticker = time.NewTicker(u.tickDuration)
 	go func() {
@@ -55,6 +59,7 @@ func (u *UpdateChecker) Start() {
 			u.Check()
 		}
 	}()
+	return true
 }
 
 // Stop stops the update checker
