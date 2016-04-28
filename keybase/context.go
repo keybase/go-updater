@@ -46,7 +46,7 @@ func NewUpdaterContext(pathToKeybase string, log logging.Logger) (updater.Contex
 
 	src := NewUpdateSource(log)
 	// For testing
-	//src := sources.NewLocalUpdateSource("/tmp/Keybase.zip", log)
+	//src := updater.NewLocalUpdateSource("/tmp/Keybase.zip", log)
 	upd := updater.NewUpdater(src, &cfg, log)
 	return newContext(&cfg, log), upd
 }
@@ -82,9 +82,5 @@ func (c context) AfterApply(update updater.Update) error {
 	if err != nil {
 		return fmt.Errorf("Error in after apply: %s (%s)", err, result.CombinedOutput())
 	}
-	return nil
-}
-
-func (c context) Restart() error {
 	return nil
 }

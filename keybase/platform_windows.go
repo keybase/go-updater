@@ -39,3 +39,7 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	// TODO
 	return nil, fmt.Errorf("Unsupported")
 }
+
+func (c context) Restart() error {
+	return nil
+}
