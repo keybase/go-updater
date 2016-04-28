@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
 )
 
@@ -108,9 +109,9 @@ func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) erro
 
 	// Update spotlight
 	u.log.Debugf("Updating spotlight: %s", destinationPath)
-	spotLightOut, spotLightErr := RunCommand("/usr/bin/mdimport", []string{destinationPath}, 5*time.Second, u.log)
+	spotlightResult, spotLightErr := command.Exec("/usr/bin/mdimport", []string{destinationPath}, 5*time.Second, u.log)
 	if spotLightErr != nil {
-		u.log.Warningf("Error trying to update spotlight: %s; %s", spotLightErr, spotLightOut)
+		u.log.Warningf("Error trying to update spotlight: %s, (%s)", spotLightErr, spotlightResult.CombinedOutput())
 	}
 
 	return nil

@@ -9,6 +9,7 @@ import (
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 )
 
 // validCodeSigningKIDs are the list of valid code signing IDs for saltpack verify
@@ -77,9 +78,9 @@ func (c context) BeforeApply(update updater.Update) error {
 
 // AfterApply is called before an update is applied
 func (c context) AfterApply(update updater.Update) error {
-	output, err := updater.RunCommand(c.config.pathToKeybase, []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
+	result, err := command.Exec(c.config.pathToKeybase, []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
 	if err != nil {
-		return fmt.Errorf("Error in after apply: %s (%s)", err, output)
+		return fmt.Errorf("Error in after apply: %s (%s)", err, result.CombinedOutput())
 	}
 	return nil
 }

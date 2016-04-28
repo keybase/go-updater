@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 )
 
 func (c config) destinationPath() string {
@@ -32,12 +33,12 @@ func (c config) dir() (string, error) {
 }
 
 func (c config) osVersion() string {
-	out, err := updater.RunCommand("uname", []string{"-mrs"}, 5*time.Second, c.log)
+	result, err := command.Exec("uname", []string{"-mrs"}, 5*time.Second, c.log)
 	if err != nil {
-		c.log.Warningf("Error trying to determine OS version: %s (%s)", err, out)
+		c.log.Warningf("Error trying to determine OS version: %s (%s)", err, result.CombinedOutput())
 		return ""
 	}
-	return strings.TrimSpace(out)
+	return strings.TrimSpace(result.Stdout.String())
 }
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {

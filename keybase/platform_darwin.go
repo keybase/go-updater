@@ -12,6 +12,7 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 )
 
 // destinationPath returns the app bundle path where this executable is located
@@ -49,12 +50,12 @@ func (c config) dir() (string, error) {
 }
 
 func (c config) osVersion() string {
-	out, err := updater.RunCommand("/usr/bin/sw_vers", []string{"-productVersion"}, 5*time.Second, c.log)
+	result, err := command.Exec("/usr/bin/sw_vers", []string{"-productVersion"}, 5*time.Second, c.log)
 	if err != nil {
-		c.log.Warningf("Error trying to determine OS version: %s (%s)", err, out)
+		c.log.Warningf("Error trying to determine OS version: %s (%s)", err, result.CombinedOutput())
 		return ""
 	}
-	return strings.TrimSpace(out)
+	return strings.TrimSpace(result.Stdout.String())
 }
 
 // UpdatePrompt is called when the user needs to accept an update
