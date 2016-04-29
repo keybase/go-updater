@@ -30,4 +30,14 @@
   return value;
 }
 
+- (NSArray<NSString *> *)kb_stringArrayForKey:(id)key {
+  id value = [self objectForKey:key];
+  if (!value || [value isEqual:[NSNull null]]) return nil;
+  if (![value isKindOfClass:[NSArray class]]) return nil;
+  for (id obj in value) {
+    if (![obj isKindOfClass:NSString.class]) return nil;
+  }
+  return value;
+}
+
 @end

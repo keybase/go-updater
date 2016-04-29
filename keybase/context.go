@@ -4,7 +4,6 @@
 package keybase
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -46,7 +45,8 @@ func NewUpdaterContext(pathToKeybase string, log logging.Logger) (updater.Contex
 
 	src := NewUpdateSource(log)
 	// For testing
-	//src := sources.NewLocalUpdateSource("/tmp/Keybase.zip", log)
+	// (cd /Applications; ditto -c -k --sequesterRsrc --keepParent Keybase.app /tmp/Keybase.zip)
+	//src := updater.NewLocalUpdateSource("/tmp/Keybase.zip", log)
 	upd := updater.NewUpdater(src, &cfg, log)
 	return newContext(&cfg, log), upd
 }
@@ -73,14 +73,22 @@ func (c context) Verify(update updater.Update) error {
 
 // BeforeApply is called before an update is applied
 func (c context) BeforeApply(update updater.Update) error {
+	result, err := command.Exec(c.config.pathToKeybase, []string{"update", "check-in-use"}, time.Minute, c.log)
+	if err != nil {
+		// Returned non-zero exit code
+		c.log.Warningf("Error in before apply: %s (%s)", err, result.CombinedOutput())
+		if err := c.PausedPrompt(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-// AfterApply is called before an update is applied
+// AfterApply is called after an update is applied
 func (c context) AfterApply(update updater.Update) error {
 	result, err := command.Exec(c.config.pathToKeybase, []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
 	if err != nil {
-		return fmt.Errorf("Error in after apply: %s (%s)", err, result.CombinedOutput())
+		c.log.Warningf("Error in after apply: %s (%s)", err, result.CombinedOutput())
 	}
 	return nil
 }

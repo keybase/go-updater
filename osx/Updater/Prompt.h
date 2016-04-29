@@ -16,4 +16,6 @@
 
 + (void)showUpdatePrompt:(NSDictionary *)input presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSData *output))completion;
 
++ (void)showGenericPrompt:(NSDictionary *)input presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSData *output))completion;
+
 @end

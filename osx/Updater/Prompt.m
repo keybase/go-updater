@@ -44,6 +44,12 @@
   // Try to parse input, if there is any error use a default empty dictionary.
   NSDictionary *input = [self parseInputString:inputString defaultValue:@{}];
 
+  // If input defines buttons it's a generic prompt
+  if ([input[@"type"] isEqual:@"generic"]) {
+    [self showGenericPrompt:input presenter:presenter completion:completion];
+    return;
+  }
+
   [self showUpdatePrompt:input presenter:presenter completion:completion];
 }
 
@@ -108,6 +114,35 @@
                            @"autoUpdate": @(autoUpdateResponse),
                            };
 
+  NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:&error];
+  if (!!error) {
+    NSLog(@"Error generating JSON response: %@", error);
+  }
+  completion(data);
+}
+
++ (void)showGenericPrompt:(NSDictionary *)input presenter:(NSModalResponse (^)(NSAlert *alert))presenter completion:(void (^)(NSData *output))completion {
+  NSString *title = [input kb_stringForKey:@"title"];
+  NSString *message = [input kb_stringForKey:@"message"];
+  NSArray *buttons = [input kb_stringArrayForKey:@"buttons"];
+
+  if ([title length] > 700) title = [title substringToIndex:699];
+  if ([message length] > 700) message = [message substringToIndex:699];
+
+  NSAlert *alert = [[NSAlert alloc] init];
+  alert.messageText = title;
+  alert.informativeText = message;
+  for (NSString *button in buttons) {
+    [alert addButtonWithTitle:button];
+  }
+  [alert setAlertStyle:NSInformationalAlertStyle];
+
+  NSModalResponse response = presenter(alert);
+
+  NSString *buttonSelected = buttons[response-NSAlertFirstButtonReturn];
+
+  NSError *error = nil;
+  NSDictionary *result = @{@"button": buttonSelected};
   NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:&error];
   if (!!error) {
     NSLog(@"Error generating JSON response: %@", error);
