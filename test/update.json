@@ -1,0 +1,15 @@
+{
+  "version": "1.2.3-400+abcdef",
+  "name": "1.2.3-400+abcdef",
+  "installId": "deadbeef",
+  "description": "This is an update!",
+  "type": 0,
+  "publishedAt": 1460660414000,
+  "asset": {
+    "name": "Test-1.2.3-400+abcdef.zip",
+    "url": "test.zip",
+    "digest": "4769edbb33b86cf960cebd39af33cb3baabf38f8e43a8dc89ff420faf1cf0d36",
+    "signature": "BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JGM2Aac zvDRSSxB7AFoTH3 LkOrRM9MI6nxspS TVtkULTGEf8aapE jBO8KuFayegXr1R 0lOGS6msmG0IrLB bo8PlHUVqyqCygO Uh3ETm30U60aYXF o. END KEYBASE SALTPACK DETACHED SIGNATURE.\n",
+    "localPath": ""
+  }
+}

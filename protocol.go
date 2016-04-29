@@ -44,13 +44,13 @@ type UpdateOptions struct {
 	Version string `json:"version"`
 	// Platform is the os type (darwin, windows, linux)
 	Platform string `json:"platform"`
-	// DestinationPath is where to apply the update to)
+	// DestinationPath is where to apply the update to
 	DestinationPath string `json:"destinationPath"`
 	// URL can override where the updater looks
 	URL string `json:"URL"`
 	// Channel is an alternative channel to get updates from (test, prerelease)
 	Channel string `json:"channel"`
-	// Env is an enviroment or run mode (prod, staging, devel)
+	// Env is an environment or run mode (prod, staging, devel)
 	Env string `json:"env"`
 	// InstallID is an identifier that the client can send with requests
 	InstallID string `json:"installId"`
@@ -58,8 +58,6 @@ type UpdateOptions struct {
 	Arch string `json:"arch"`
 	// Force is whether to apply the update, even if older or same version
 	Force bool `json:"force"`
-	// SignaturePath is path to signature file to verify against
-	SignaturePath string `json:"signaturePath"`
 	// OSVersion is the version of the OS
 	OSVersion string `json:"osVersion"`
 	// UpdaterVersion is the version of the updater service
