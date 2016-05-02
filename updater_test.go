@@ -39,7 +39,7 @@ type testUpdateUI struct {
 	promptErr   error
 	verifyErr   error
 	restartErr  error
-	errReported *Error
+	errReported error
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -72,8 +72,8 @@ func (u testUpdateUI) Restart() error {
 	return u.restartErr
 }
 
-func (u *testUpdateUI) ReportError(err Error, options UpdateOptions) {
-	u.errReported = &err
+func (u *testUpdateUI) ReportError(err error, options UpdateOptions) {
+	u.errReported = err
 }
 
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
@@ -184,7 +184,7 @@ func TestUpdaterDownloadError(t *testing.T) {
 	assert.EqualError(t, err, "Update Error (download): Responded with 500 Internal Server Error")
 
 	require.NotNil(t, ctx.errReported)
-	assert.Equal(t, ctx.errReported.errorType, DownloadError)
+	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
 }
 
 func TestUpdaterCancel(t *testing.T) {
@@ -229,7 +229,7 @@ func testUpdaterError(t *testing.T, errorType ErrorType) {
 	assert.EqualError(t, err, fmt.Sprintf("Update Error (%s): Test error", errorType.String()))
 
 	require.NotNil(t, ctx.errReported)
-	assert.Equal(t, ctx.errReported.errorType, errorType)
+	assert.Equal(t, ctx.errReported.(Error).errorType, errorType)
 }
 
 func TestUpdaterErrors(t *testing.T) {

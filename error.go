@@ -92,7 +92,3 @@ func restartErr(err error) Error {
 func configErr(err error) Error {
 	return NewError(ConfigError, err)
 }
-
-func errPtr(e Error) *Error {
-	return &e
-}
