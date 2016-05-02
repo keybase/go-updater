@@ -65,3 +65,37 @@ func (c context) updatePrompt(promptCommand string, update updater.Update, optio
 		AutoUpdate: autoUpdate,
 	}, nil
 }
+
+type promptInput struct {
+	Type    string   `json:"type"`
+	Title   string   `json:"title"`
+	Message string   `json:"message"`
+	Buttons []string `json:"buttons"`
+}
+
+func (c context) pausedPrompt(promptCommand string) error {
+	promptJSONInput, err := json.Marshal(promptInput{
+		Type:    "generic",
+		Title:   "Update Paused",
+		Message: "You have files, folders or a terminal open in Keybase.\n\nYou can force the update. That would be like yanking a USB drive and plugging it right back in. It'll instantly give you the latest version of Keybase, but you'll need to reopen any files you're working with. If you're working in the terminal, you'll need to cd out of /keybase and back in.",
+		Buttons: []string{"Force update", "Try again later"},
+	})
+	if err != nil {
+		return fmt.Errorf("Error generating input: %s", err)
+	}
+
+	var result struct {
+		Button string `json:"button"`
+	}
+
+	if err := command.ExecForJSON(promptCommand, []string{string(promptJSONInput)}, &result, 5*time.Minute, c.log); err != nil {
+		return fmt.Errorf("Error running command: %s", err)
+	}
+
+	switch result.Button {
+	case "Force update":
+		return nil
+	default:
+		return fmt.Errorf("Canceled by user (%s)", result.Button)
+	}
+}

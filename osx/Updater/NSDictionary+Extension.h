@@ -24,4 +24,11 @@
  */
 - (NSString *)kb_stringForKey:(id)key;
 
+/*!
+ NSArray of NSString for key.
+ @param key
+ @result NSArray
+ */
+- (NSArray<NSString *> *)kb_stringArrayForKey:(id)key;
+
 @end

@@ -58,13 +58,28 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
-// UpdatePrompt is called when the user needs to accept an update
-func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
+func (c context) promptPath() (string, error) {
 	destinationPath := c.config.destinationPath()
 	if destinationPath == "" {
-		return nil, fmt.Errorf("Unable to find update app: No destination path")
+		return "", fmt.Errorf("No destination path")
 	}
-	// For example, /Applications/Keybase.app/Contents/Resources/KeybaseUpdater.app/Contents/MacOS/Updater
-	promptPath := filepath.Join(destinationPath, "Contents", "Resources", "KeybaseUpdater.app", "Contents", "MacOS", "Updater")
+	return filepath.Join(destinationPath, "Contents", "Resources", "KeybaseUpdater.app", "Contents", "MacOS", "Updater"), nil
+}
+
+// UpdatePrompt is called when the user needs to accept an update
+func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
+	promptPath, err := c.promptPath()
+	if err != nil {
+		return nil, err
+	}
 	return c.updatePrompt(promptPath, update, options, promptOptions)
+}
+
+// PausedPrompt is called when the we can't update cause the app is in use
+func (c context) PausedPrompt() error {
+	promptPath, err := c.promptPath()
+	if err != nil {
+		return err
+	}
+	return c.pausedPrompt(promptPath)
 }
