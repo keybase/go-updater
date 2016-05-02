@@ -38,6 +38,7 @@ type Context interface {
 	AfterApply(update Update) error
 	Restart() error
 	ReportError(err error, options UpdateOptions)
+	ReportAction(action UpdateAction, options UpdateOptions)
 }
 
 // Config defines configuration for the Updater
@@ -89,12 +90,16 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, promptErr(err)
 	}
 	switch updateAction {
-	case UpdateActionApply, UpdateActionAuto:
-		// Continue
+	case UpdateActionApply:
+		ctx.ReportAction(UpdateActionApply, options)
+	case UpdateActionAuto:
+		ctx.ReportAction(UpdateActionAuto, options)
 	case UpdateActionSnooze:
+		ctx.ReportAction(UpdateActionSnooze, options)
 		return update, cancelErr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
-		return update, cancelErr(fmt.Errorf("Canceled by user"))
+		ctx.ReportAction(UpdateActionCancel, options)
+		return update, cancelErr(fmt.Errorf("Canceled"))
 	case UpdateActionError:
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
 	}
@@ -126,16 +131,8 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, verifyErr(err)
 	}
 
-	if err := ctx.BeforeApply(*update); err != nil {
-		return update, applyErr(err)
-	}
-
-	if err := u.platformApplyUpdate(*update, options); err != nil {
-		return update, applyErr(err)
-	}
-
-	if err := ctx.AfterApply(*update); err != nil {
-		return update, applyErr(err)
+	if err := u.apply(ctx, *update, options); err != nil {
+		return update, err
 	}
 
 	if err := ctx.Restart(); err != nil {
@@ -143,6 +140,26 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 
 	return update, nil
+}
+
+func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) error {
+	if err := ctx.BeforeApply(update); err != nil {
+		return applyErr(err)
+	}
+
+	if err := ctx.BeforeApply(update); err != nil {
+		return applyErr(err)
+	}
+
+	if err := u.platformApplyUpdate(update, options); err != nil {
+		return applyErr(err)
+	}
+
+	if err := ctx.AfterApply(update); err != nil {
+		return applyErr(err)
+	}
+
+	return nil
 }
 
 // downloadAsset will download the update to a temporary path (if not cached),

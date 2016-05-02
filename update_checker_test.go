@@ -15,7 +15,7 @@ import (
 func TestUpdateChecker(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
-	updater, err := newTestUpdaterWithServer(t, testServer)
+	updater, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL))
 	assert.NoError(t, err)
 
 	checker := newUpdateChecker(updater, testUpdateCheckUI{promptDelay: 10 * time.Millisecond}, log, time.Millisecond)
@@ -66,12 +66,14 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()
 }
 
+func (u testUpdateCheckUI) ReportAction(_ UpdateAction, _ UpdateOptions) {}
+
 func (u testUpdateCheckUI) ReportError(_ error, _ UpdateOptions) {}
 
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
-	updater, err := newTestUpdaterWithServer(t, testServer)
+	updater, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL))
 	assert.NoError(t, err)
 
 	checker := NewUpdateChecker(updater, testUpdateCheckUI{verifyError: fmt.Errorf("Test verify error")}, log)
