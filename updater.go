@@ -5,7 +5,6 @@ package updater
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/util"
@@ -78,12 +77,6 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return nil, nil
 	}
 
-	// Try to download (cache) asset before prompt so the update happens immediately
-	// after the user chooses apply. In the case of linux we won't have an asset.
-	if err := u.downloadAsset(update.Asset, options); err != nil {
-		u.log.Warningf("Unable to download asset: %s", err)
-	}
-
 	// Prompt for update
 	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
 	if err != nil {
@@ -110,20 +103,9 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		u.log.Info("No update asset to apply")
 		return update, nil
 	}
-	if update.Asset.LocalPath == "" {
-		if err := u.downloadAsset(update.Asset, options); err != nil {
-			return update, downloadErr(err)
-		}
-	}
 
-	// Ensure asset still exists in case it got pulled while we were waiting in
-	// the prompt.
-	exists, err := util.URLExists(update.Asset.URL, time.Minute, u.log)
-	if err != nil {
+	if err := u.downloadAsset(update.Asset, options); err != nil {
 		return update, downloadErr(err)
-	}
-	if !exists {
-		return update, downloadErr(fmt.Errorf("Asset no longer exists: %s", update.Asset.URL))
 	}
 
 	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
