@@ -1,7 +1,7 @@
 // Copyright 2015 Keybase, Inc. All rights reserved. Use of
 // this source code is governed by the included BSD license.
 
-package updater
+package sources
 
 import (
 	"encoding/json"
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/util"
 )
 
@@ -34,17 +35,20 @@ func (r RemoteUpdateSource) Description() string {
 	return "Remote"
 }
 
-func (r RemoteUpdateSource) sourceURL(options UpdateOptions) string {
+func (r RemoteUpdateSource) sourceURL(options updater.UpdateOptions) string {
 	params := util.JoinPredicate([]string{options.Platform, options.Env, options.Channel}, "-", func(s string) bool { return s != "" })
 	url := options.URL
 	if url == "" {
 		url = r.defaultURI
 	}
+	if params == "" {
+		return fmt.Sprintf("%s/update.json", url)
+	}
 	return fmt.Sprintf("%s/update-%s.json", url, params)
 }
 
 // FindUpdate returns update for options
-func (r RemoteUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
+func (r RemoteUpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update, error) {
 	sourceURL := r.sourceURL(options)
 	req, err := http.NewRequest("GET", sourceURL, nil)
 	client := &http.Client{
@@ -63,7 +67,7 @@ func (r RemoteUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
 	}
 
 	var reader io.Reader = resp.Body
-	var update Update
+	var update updater.Update
 	if err = json.NewDecoder(reader).Decode(&update); err != nil {
 		return nil, fmt.Errorf("Bad updater remote response %s", err)
 	}
