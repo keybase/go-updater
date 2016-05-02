@@ -15,19 +15,27 @@ import (
 )
 
 // ReportError notifies the API server of a client updater error
-func (c context) ReportError(updateErr updater.Error, options updater.UpdateOptions) {
-	if err := c.reportError(updateErr, options, defaultEndpoints.err, time.Minute); err != nil {
+func (c context) ReportError(err error, options updater.UpdateOptions) {
+	if err := c.reportError(err, options, defaultEndpoints.err, time.Minute); err != nil {
 		c.log.Warningf("Error notifying about an error: %s", err)
 	}
 }
 
-func (c context) reportError(updateErr updater.Error, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+func (c context) reportError(err error, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+	var errorType string
+	switch uerr := err.(type) {
+	case updater.Error:
+		errorType = uerr.TypeString()
+	default:
+		errorType = string(updater.UnknownError)
+	}
+
 	data := url.Values{}
 	data.Add("install_id", options.InstallID)
 	data.Add("version", options.Version)
 	data.Add("upd_version", options.UpdaterVersion)
-	data.Add("error_type", updateErr.TypeString())
-	data.Add("description", updateErr.Error())
+	data.Add("error_type", errorType)
+	data.Add("description", err.Error())
 	return c.report(data, uri, timeout)
 }
 

@@ -37,7 +37,7 @@ type Context interface {
 	BeforeApply(update Update) error
 	AfterApply(update Update) error
 	Restart() error
-	ReportError(err Error, options UpdateOptions)
+	ReportError(err error, options UpdateOptions)
 	ReportAction(action UpdateAction, options UpdateOptions)
 }
 
@@ -59,19 +59,19 @@ func NewUpdater(source UpdateSource, config Config, log logging.Logger) *Updater
 }
 
 // Update checks, downloads and performs an update
-func (u *Updater) Update(ctx Context) (*Update, *Error) {
+func (u *Updater) Update(ctx Context) (*Update, error) {
 	options := ctx.UpdateOptions()
 	update, err := u.update(ctx, options)
 	if err != nil {
-		ctx.ReportError(*err, options)
+		ctx.ReportError(err, options)
 	}
 	return update, err
 }
 
-func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
+func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	update, err := u.checkForUpdate(ctx, options)
 	if err != nil {
-		return nil, findErrPtr(err)
+		return nil, findErr(err)
 	}
 	if update == nil {
 		// No update available
@@ -87,7 +87,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	// Prompt for update
 	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
 	if err != nil {
-		return update, promptErrPtr(err)
+		return update, promptErr(err)
 	}
 	switch updateAction {
 	case UpdateActionApply:
@@ -96,11 +96,12 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 		ctx.ReportAction(UpdateActionAuto, options)
 	case UpdateActionSnooze:
 		ctx.ReportAction(UpdateActionSnooze, options)
-		return update, cancelErrPtr(fmt.Errorf("Snoozed update"))
+		return update, cancelErr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
-		return update, cancelErrPtr(fmt.Errorf("Canceled by user"))
+		ctx.ReportAction(UpdateActionCancel, options)
+		return update, cancelErr(fmt.Errorf("Canceled"))
 	case UpdateActionError:
-		return update, promptErrPtr(fmt.Errorf("Unknown prompt error"))
+		return update, promptErr(fmt.Errorf("Unknown prompt error"))
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
@@ -111,7 +112,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	}
 	if update.Asset.LocalPath == "" {
 		if err := u.downloadAsset(update.Asset, options); err != nil {
-			return update, downloadErrPtr(err)
+			return update, downloadErr(err)
 		}
 	}
 
@@ -119,15 +120,15 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	// the prompt.
 	exists, err := util.URLExists(update.Asset.URL, time.Minute, u.log)
 	if err != nil {
-		return update, downloadErrPtr(err)
+		return update, downloadErr(err)
 	}
 	if !exists {
-		return update, downloadErrPtr(fmt.Errorf("Asset no longer exists: %s", update.Asset.URL))
+		return update, downloadErr(fmt.Errorf("Asset no longer exists: %s", update.Asset.URL))
 	}
 
 	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
 	if err := ctx.Verify(*update); err != nil {
-		return update, verifyErrPtr(err)
+		return update, verifyErr(err)
 	}
 
 	if err := u.apply(ctx, *update, options); err != nil {
@@ -135,23 +136,27 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	}
 
 	if err := ctx.Restart(); err != nil {
-		return update, restartErrPtr(err)
+		return update, restartErr(err)
 	}
 
 	return update, nil
 }
 
-func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) *Error {
+func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) error {
 	if err := ctx.BeforeApply(update); err != nil {
-		return applyErrPtr(err)
+		return applyErr(err)
+	}
+
+	if err := ctx.BeforeApply(update); err != nil {
+		return applyErr(err)
 	}
 
 	if err := u.platformApplyUpdate(update, options); err != nil {
-		return applyErrPtr(err)
+		return applyErr(err)
 	}
 
 	if err := ctx.AfterApply(update); err != nil {
-		return applyErrPtr(err)
+		return applyErr(err)
 	}
 
 	return nil

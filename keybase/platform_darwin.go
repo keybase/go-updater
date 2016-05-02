@@ -63,6 +63,7 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	if destinationPath == "" {
 		return nil, fmt.Errorf("Unable to find update app: No destination path")
 	}
-	promptPath := filepath.Join(destinationPath, "Contents", "Resources", "Updater.app", "Contents", "MacOS", "Updater")
+	// For example, /Applications/Keybase.app/Contents/Resources/KeybaseUpdater.app/Contents/MacOS/Updater
+	promptPath := filepath.Join(destinationPath, "Contents", "Resources", "KeybaseUpdater.app", "Contents", "MacOS", "Updater")
 	return c.updatePrompt(promptPath, update, options, promptOptions)
 }

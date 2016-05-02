@@ -36,11 +36,17 @@ func newTestContext(options UpdateOptions, action UpdateAction) *testUpdateUI {
 type testUpdateUI struct {
 	action         UpdateAction
 	options        UpdateOptions
-	errReported    *Error
+	promptErr      error
+	verifyErr      error
+	restartErr     error
 	actionReported UpdateAction
+	errReported    error
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
+	if u.promptErr != nil {
+		return nil, u.promptErr
+	}
 	return &UpdatePromptResponse{Action: u.action, AutoUpdate: true}, nil
 }
 
@@ -57,15 +63,18 @@ func (u testUpdateUI) GetUpdateUI() (UpdateUI, error) {
 }
 
 func (u testUpdateUI) Verify(update Update) error {
+	if u.verifyErr != nil {
+		return u.verifyErr
+	}
 	return SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, log)
 }
 
 func (u testUpdateUI) Restart() error {
-	return nil
+	return u.restartErr
 }
 
-func (u *testUpdateUI) ReportError(err Error, options UpdateOptions) {
-	u.errReported = &err
+func (u *testUpdateUI) ReportError(err error, options UpdateOptions) {
+	u.errReported = err
 }
 
 func (u *testUpdateUI) ReportAction(action UpdateAction, options UpdateOptions) {
@@ -197,7 +206,7 @@ func TestUpdaterDownloadError(t *testing.T) {
 	assert.EqualError(t, err, "Update Error (download): Responded with 500 Internal Server Error")
 
 	require.NotNil(t, ctx.errReported)
-	assert.Equal(t, ctx.errReported.errorType, DownloadError)
+	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
 }
 
 func TestUpdaterCancel(t *testing.T) {
@@ -208,7 +217,7 @@ func TestUpdaterCancel(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionCancel)
 	_, err = upr.Update(ctx)
-	assert.EqualError(t, err, "Update Error (cancel): Canceled by user")
+	assert.EqualError(t, err, "Update Error (cancel): Canceled")
 }
 
 func TestUpdaterSnooze(t *testing.T) {
@@ -220,6 +229,35 @@ func TestUpdaterSnooze(t *testing.T) {
 	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionSnooze)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
+}
+
+func testUpdaterError(t *testing.T, errorType ErrorType) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	upr, _ := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL))
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
+	testErr := fmt.Errorf("Test error")
+	switch errorType {
+	case PromptError:
+		ctx.promptErr = testErr
+	case VerifyError:
+		ctx.verifyErr = testErr
+	case RestartError:
+		ctx.restartErr = testErr
+	}
+
+	_, err := upr.Update(ctx)
+	assert.EqualError(t, err, fmt.Sprintf("Update Error (%s): Test error", errorType.String()))
+
+	require.NotNil(t, ctx.errReported)
+	assert.Equal(t, ctx.errReported.(Error).errorType, errorType)
+}
+
+func TestUpdaterErrors(t *testing.T) {
+	testUpdaterError(t, PromptError)
+	testUpdaterError(t, VerifyError)
+	testUpdaterError(t, RestartError)
 }
 
 func TestUpdateNoAsset(t *testing.T) {
