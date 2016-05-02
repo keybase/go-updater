@@ -58,7 +58,7 @@ func NewUpdater(source UpdateSource, config Config, log logging.Logger) *Updater
 }
 
 // Update checks, downloads and performs an update
-func (u *Updater) Update(ctx Context) (*Update, *Error) {
+func (u *Updater) Update(ctx Context) (*Update, error) {
 	options := ctx.UpdateOptions()
 	update, err := u.update(ctx, options)
 	if err != nil {
