@@ -61,41 +61,38 @@ func (e Error) Error() string {
 	return fmt.Sprintf("Update Error (%s): %s", e.TypeString(), e.source.Error())
 }
 
-func cancelErrPtr(err error) *Error {
-	uerr := NewError(CancelError, err)
-	return &uerr
+func cancelErr(err error) Error {
+	return NewError(CancelError, err)
 }
 
-func promptErrPtr(err error) *Error {
-	uerr := NewError(PromptError, err)
-	return &uerr
+func promptErr(err error) Error {
+	return NewError(PromptError, err)
 }
 
-func findErrPtr(err error) *Error {
-	uerr := NewError(FindError, err)
-	return &uerr
+func findErr(err error) Error {
+	return NewError(FindError, err)
 }
 
-func downloadErrPtr(err error) *Error {
-	uerr := NewError(DownloadError, err)
-	return &uerr
+func downloadErr(err error) Error {
+	return NewError(DownloadError, err)
 }
 
-func verifyErrPtr(err error) *Error {
-	uerr := NewError(VerifyError, err)
-	return &uerr
+func verifyErr(err error) Error {
+	return NewError(VerifyError, err)
 }
 
-func applyErrPtr(err error) *Error {
-	uerr := NewError(ApplyError, err)
-	return &uerr
+func applyErr(err error) Error {
+	return NewError(ApplyError, err)
 }
 
-func restartErrPtr(err error) *Error {
-	uerr := NewError(RestartError, err)
-	return &uerr
+func restartErr(err error) Error {
+	return NewError(RestartError, err)
 }
 
 func configErr(err error) Error {
 	return NewError(ConfigError, err)
+}
+
+func errPtr(e Error) *Error {
+	return &e
 }

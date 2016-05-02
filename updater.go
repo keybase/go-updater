@@ -70,7 +70,7 @@ func (u *Updater) Update(ctx Context) (*Update, error) {
 func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	update, err := u.checkForUpdate(ctx, options)
 	if err != nil {
-		return nil, findErrPtr(err)
+		return nil, errPtr(findErr(err))
 	}
 	if update == nil {
 		// No update available
@@ -86,17 +86,17 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	// Prompt for update
 	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
 	if err != nil {
-		return update, promptErrPtr(err)
+		return update, errPtr(promptErr(err))
 	}
 	switch updateAction {
 	case UpdateActionApply, UpdateActionAuto:
 		// Continue
 	case UpdateActionSnooze:
-		return update, cancelErrPtr(fmt.Errorf("Snoozed update"))
+		return update, errPtr(cancelErr(fmt.Errorf("Snoozed update")))
 	case UpdateActionCancel:
-		return update, cancelErrPtr(fmt.Errorf("Canceled by user"))
+		return update, errPtr(cancelErr(fmt.Errorf("Canceled by user")))
 	case UpdateActionError:
-		return update, promptErrPtr(fmt.Errorf("Unknown prompt error"))
+		return update, errPtr(promptErr(fmt.Errorf("Unknown prompt error")))
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
@@ -107,7 +107,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	}
 	if update.Asset.LocalPath == "" {
 		if err := u.downloadAsset(update.Asset, options); err != nil {
-			return update, downloadErrPtr(err)
+			return update, errPtr(downloadErr(err))
 		}
 	}
 
@@ -115,31 +115,31 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, *Error) {
 	// the prompt.
 	exists, err := util.URLExists(update.Asset.URL, time.Minute, u.log)
 	if err != nil {
-		return update, downloadErrPtr(err)
+		return update, errPtr(downloadErr(err))
 	}
 	if !exists {
-		return update, downloadErrPtr(fmt.Errorf("Asset no longer exists: %s", update.Asset.URL))
+		return update, errPtr(downloadErr(fmt.Errorf("Asset no longer exists: %s", update.Asset.URL)))
 	}
 
 	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
 	if err := ctx.Verify(*update); err != nil {
-		return update, verifyErrPtr(err)
+		return update, errPtr(verifyErr(err))
 	}
 
 	if err := ctx.BeforeApply(*update); err != nil {
-		return update, applyErrPtr(err)
+		return update, errPtr(applyErr(err))
 	}
 
 	if err := u.platformApplyUpdate(*update, options); err != nil {
-		return update, applyErrPtr(err)
+		return update, errPtr(applyErr(err))
 	}
 
 	if err := ctx.AfterApply(*update); err != nil {
-		return update, applyErrPtr(err)
+		return update, errPtr(applyErr(err))
 	}
 
 	if err := ctx.Restart(); err != nil {
-		return update, restartErrPtr(err)
+		return update, errPtr(restartErr(err))
 	}
 
 	return update, nil
