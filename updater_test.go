@@ -39,8 +39,8 @@ type testUpdateUI struct {
 	promptErr      error
 	verifyErr      error
 	restartErr     error
-	actionReported UpdateAction
 	errReported    error
+	actionReported UpdateAction
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -113,7 +113,7 @@ func testUpdate(uri string) *Update {
 	return update
 }
 
-func (u testUpdateSource) FindUpdate(config UpdateOptions) (*Update, error) {
+func (u testUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
 	return u.update, u.findErr
 }
 
@@ -231,6 +231,18 @@ func TestUpdaterSnooze(t *testing.T) {
 	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
 }
 
+func TestUpdateNoAsset(t *testing.T) {
+	testServer := testServerNotFound(t)
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(""))
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
+	update, err := upr.Update(ctx)
+	assert.NoError(t, err)
+	assert.Nil(t, update.Asset)
+}
+
 func testUpdaterError(t *testing.T, errorType ErrorType) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
@@ -258,16 +270,4 @@ func TestUpdaterErrors(t *testing.T) {
 	testUpdaterError(t, PromptError)
 	testUpdaterError(t, VerifyError)
 	testUpdaterError(t, RestartError)
-}
-
-func TestUpdateNoAsset(t *testing.T) {
-	testServer := testServerNotFound(t)
-	defer testServer.Close()
-
-	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(""))
-	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
-	update, err := upr.Update(ctx)
-	assert.NoError(t, err)
-	assert.Nil(t, update.Asset)
 }
