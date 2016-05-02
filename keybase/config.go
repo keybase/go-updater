@@ -14,6 +14,7 @@ import (
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
 )
 
@@ -153,10 +154,10 @@ func (c config) updaterOptions() updater.UpdateOptions {
 }
 
 func (c config) keybaseExecVersion() string {
-	output, err := updater.RunCommand(c.pathToKeybase, []string{"version", "-S"}, 5*time.Second, c.log)
+	result, err := command.Exec(c.pathToKeybase, []string{"version", "-S"}, 5*time.Second, c.log)
 	if err != nil {
-		c.log.Warningf("Couldn't get keybase version: %s", err)
+		c.log.Warningf("Couldn't get keybase version: %s (%s)", err, result.CombinedOutput())
 		return ""
 	}
-	return strings.TrimSpace(output)
+	return strings.TrimSpace(result.Stdout.String())
 }

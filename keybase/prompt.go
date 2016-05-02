@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 )
 
 type updaterPromptInput struct {
@@ -42,7 +43,7 @@ func (c context) updatePrompt(promptCommand string, update updater.Update, optio
 		AutoUpdate bool   `json:"autoUpdate"`
 	}
 
-	if err := updater.RunJSONCommand(promptCommand, []string{string(promptJSONInput)}, &result, promptTimeout, c.log); err != nil {
+	if err := command.ExecForJSON(promptCommand, []string{string(promptJSONInput)}, &result, promptTimeout, c.log); err != nil {
 		return nil, fmt.Errorf("Error running command: %s", err)
 	}
 
