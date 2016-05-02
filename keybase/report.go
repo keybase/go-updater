@@ -27,7 +27,7 @@ func (c context) reportError(err error, options updater.UpdateOptions, uri strin
 	case updater.Error:
 		errorType = uerr.TypeString()
 	default:
-		errorType = "unknown"
+		errorType = string(updater.UnknownError)
 	}
 
 	data := url.Values{}
