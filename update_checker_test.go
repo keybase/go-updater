@@ -4,10 +4,12 @@
 package updater
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateChecker(t *testing.T) {
@@ -18,7 +20,10 @@ func TestUpdateChecker(t *testing.T) {
 
 	checker := newUpdateChecker(updater, testUpdateCheckUI{promptDelay: 10 * time.Millisecond}, log, time.Millisecond)
 	defer checker.Stop()
-	checker.Start()
+	started := checker.Start()
+	require.True(t, started)
+	started = checker.Start()
+	require.False(t, started)
 
 	time.Sleep(11 * time.Millisecond)
 
@@ -27,10 +32,13 @@ func TestUpdateChecker(t *testing.T) {
 
 type testUpdateCheckUI struct {
 	promptDelay time.Duration
+	verifyError error
 }
 
 func (u testUpdateCheckUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
-	time.Sleep(u.promptDelay)
+	if u.promptDelay > 0 {
+		time.Sleep(u.promptDelay)
+	}
 	return &UpdatePromptResponse{Action: UpdateActionApply}, nil
 }
 
@@ -47,7 +55,7 @@ func (u testUpdateCheckUI) GetUpdateUI() (UpdateUI, error) {
 }
 
 func (u testUpdateCheckUI) Verify(update Update) error {
-	return nil
+	return u.verifyError
 }
 
 func (u testUpdateCheckUI) Restart() error {
@@ -59,3 +67,14 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 }
 
 func (u testUpdateCheckUI) ReportError(_ error, _ UpdateOptions) {}
+
+func TestUpdateCheckerError(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+	updater, err := newTestUpdaterWithServer(t, testServer)
+	assert.NoError(t, err)
+
+	checker := NewUpdateChecker(updater, testUpdateCheckUI{verifyError: fmt.Errorf("Test verify error")}, log)
+	err = checker.check()
+	require.Error(t, err)
+}
