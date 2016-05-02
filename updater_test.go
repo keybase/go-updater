@@ -29,12 +29,24 @@ func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server) (*Updat
 	return NewUpdater(testUpdateSource{testServer: testServer}, &testConfig{}, log), nil
 }
 
+func newTestContext(options UpdateOptions, action UpdateAction) *testUpdateUI {
+	return &testUpdateUI{options: options, action: action}
+}
+
 type testUpdateUI struct {
-	options UpdateOptions
+	action      UpdateAction
+	options     UpdateOptions
+	promptErr   error
+	verifyErr   error
+	restartErr  error
+	errReported error
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
-	return &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true}, nil
+	if u.promptErr != nil {
+		return nil, u.promptErr
+	}
+	return &UpdatePromptResponse{Action: u.action, AutoUpdate: true}, nil
 }
 
 func (u testUpdateUI) BeforeApply(update Update) error {
@@ -50,11 +62,18 @@ func (u testUpdateUI) GetUpdateUI() (UpdateUI, error) {
 }
 
 func (u testUpdateUI) Verify(update Update) error {
+	if u.verifyErr != nil {
+		return u.verifyErr
+	}
 	return SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, log)
 }
 
 func (u testUpdateUI) Restart() error {
-	return nil
+	return u.restartErr
+}
+
+func (u *testUpdateUI) ReportError(err error, options UpdateOptions) {
+	u.errReported = err
 }
 
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
@@ -69,7 +88,7 @@ func (u testUpdateSource) Description() string {
 	return "Test"
 }
 
-func (u testUpdateSource) FindUpdate(config UpdateOptions) (*Update, error) {
+func (u testUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
 	update := Update{
 		Version:     "1.0.1",
 		Name:        "Test",
@@ -135,13 +154,13 @@ func testServerForError(t *testing.T, err error) *httptest.Server {
 	}))
 }
 
-func TestUpdater(t *testing.T) {
+func TestUpdaterApply(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
 
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
-	update, err := upr.Update(testUpdateUI{newDefaultTestUpdateOptions()})
+	update, err := upr.Update(newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply))
 	require.NoError(t, err)
 	require.NotNil(t, update)
 	t.Logf("Update: %#v\n", *update)
@@ -154,12 +173,67 @@ func TestUpdater(t *testing.T) {
 	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
 }
 
-func TestUpdaterSourceError(t *testing.T) {
+func TestUpdaterDownloadError(t *testing.T) {
 	testServer := testServerForError(t, fmt.Errorf("bad response"))
 	defer testServer.Close()
 
 	upr, err := newTestUpdaterWithServer(t, testServer)
 	assert.NoError(t, err)
-	_, err = upr.Update(testUpdateUI{newDefaultTestUpdateOptions()})
-	assert.Error(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (download): Responded with 500 Internal Server Error")
+
+	require.NotNil(t, ctx.errReported)
+	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
+}
+
+func TestUpdaterCancel(t *testing.T) {
+	testServer := testServerForError(t, fmt.Errorf("cancel"))
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer)
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionCancel)
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (cancel): Canceled by user")
+}
+
+func TestUpdaterSnooze(t *testing.T) {
+	testServer := testServerForError(t, fmt.Errorf("snooze"))
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer)
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionSnooze)
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
+}
+
+func testUpdaterError(t *testing.T, errorType ErrorType) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	upr, _ := newTestUpdaterWithServer(t, testServer)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), UpdateActionApply)
+	testErr := fmt.Errorf("Test error")
+	switch errorType {
+	case PromptError:
+		ctx.promptErr = testErr
+	case VerifyError:
+		ctx.verifyErr = testErr
+	case RestartError:
+		ctx.restartErr = testErr
+	}
+
+	_, err := upr.Update(ctx)
+	assert.EqualError(t, err, fmt.Sprintf("Update Error (%s): Test error", errorType.String()))
+
+	require.NotNil(t, ctx.errReported)
+	assert.Equal(t, ctx.errReported.(Error).errorType, errorType)
+}
+
+func TestUpdaterErrors(t *testing.T) {
+	testUpdaterError(t, PromptError)
+	testUpdaterError(t, VerifyError)
+	testUpdaterError(t, RestartError)
 }

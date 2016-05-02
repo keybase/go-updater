@@ -66,6 +66,8 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()
 }
 
+func (u testUpdateCheckUI) ReportError(_ error, _ UpdateOptions) {}
+
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()

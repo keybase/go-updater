@@ -61,7 +61,7 @@ func (c config) osVersion() string {
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	destinationPath := c.config.destinationPath()
 	if destinationPath == "" {
-		return nil, fmt.Errorf("No destination path")
+		return nil, fmt.Errorf("Unable to find update app: No destination path")
 	}
 	// For example, /Applications/Keybase.app/Contents/Resources/KeybaseUpdater.app/Contents/MacOS/Updater
 	promptPath := filepath.Join(destinationPath, "Contents", "Resources", "KeybaseUpdater.app", "Contents", "MacOS", "Updater")
