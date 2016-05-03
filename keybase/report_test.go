@@ -42,7 +42,7 @@ func TestReportErrorEmpty(t *testing.T) {
 	updateErr := updater.NewError(updater.UnknownError, nil)
 	emptyOptions := updater.UpdateOptions{}
 	ctx := testContext(t)
-	err := ctx.reportError(updateErr, &testUpdate, emptyOptions, server.URL, 5*time.Millisecond)
+	err := ctx.reportError(updateErr, nil, emptyOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }
 
