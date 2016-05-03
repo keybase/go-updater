@@ -40,6 +40,6 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	return nil, fmt.Errorf("Unsupported")
 }
 
-func (c context) PausedPrompt() error {
-	return fmt.Errorf("Unsupported")
+func (c context) PausedPrompt() bool {
+	return false
 }

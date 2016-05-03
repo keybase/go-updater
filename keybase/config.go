@@ -18,6 +18,13 @@ import (
 	"github.com/keybase/go-updater/util"
 )
 
+// Config is Keybase specific configuration for the updater
+type Config interface {
+	keybasePath() string
+	promptPath() (string, error)
+	updaterOptions() updater.UpdateOptions
+}
+
 type config struct {
 	// appName is the name of the app, e.g. "Keybase"
 	appName string
@@ -153,8 +160,12 @@ func (c config) updaterOptions() updater.UpdateOptions {
 	}
 }
 
+func (c config) keybasePath() string {
+	return c.pathToKeybase
+}
+
 func (c config) keybaseExecVersion() string {
-	result, err := command.Exec(c.pathToKeybase, []string{"version", "-S"}, 5*time.Second, c.log)
+	result, err := command.Exec(c.keybasePath(), []string{"version", "-S"}, 5*time.Second, c.log)
 	if err != nil {
 		c.log.Warningf("Couldn't get keybase version: %s (%s)", err, result.CombinedOutput())
 		return ""

@@ -4,6 +4,7 @@
 package keybase
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -23,7 +24,7 @@ var validCodeSigningKIDs = map[string]bool{
 // context is an updater.Context implementation
 type context struct {
 	// config is updater config
-	config *config
+	config Config
 	// log is the logger
 	log logging.Logger
 }
@@ -41,7 +42,7 @@ var defaultEndpoints = endpoints{
 	err:    "https://keybase.io/_/api/1.0/pkg/error.json",
 }
 
-func newContext(cfg *config, log logging.Logger) *context {
+func newContext(cfg Config, log logging.Logger) *context {
 	ctx := context{
 		config: cfg,
 		log:    log,
@@ -84,14 +85,27 @@ func (c context) Verify(update updater.Update) error {
 	return updater.SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, c.log)
 }
 
+type checkInUseResult struct {
+	InUse bool `json:"in_use"`
+}
+
+func (c context) checkInUse() (bool, error) {
+	var result checkInUseResult
+	if err := command.ExecForJSON(c.config.keybasePath(), []string{"update", "check-in-use"}, &result, time.Minute, c.log); err != nil {
+		return false, err
+	}
+	return result.InUse, nil
+}
+
 // BeforeApply is called before an update is applied
 func (c context) BeforeApply(update updater.Update) error {
-	result, err := command.Exec(c.config.pathToKeybase, []string{"update", "check-in-use"}, time.Minute, c.log)
+	inUse, err := c.checkInUse()
 	if err != nil {
-		// Returned non-zero exit code
-		c.log.Warningf("Error in before apply: %s (%s)", err, result.CombinedOutput())
-		if err := c.PausedPrompt(); err != nil {
-			return err
+		c.log.Warningf("Error trying to check in use: %s", err)
+	}
+	if inUse {
+		if cancel := c.PausedPrompt(); cancel {
+			return fmt.Errorf("Canceled by user from paused prompt")
 		}
 	}
 	return nil
@@ -99,7 +113,7 @@ func (c context) BeforeApply(update updater.Update) error {
 
 // AfterApply is called after an update is applied
 func (c context) AfterApply(update updater.Update) error {
-	result, err := command.Exec(c.config.pathToKeybase, []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
+	result, err := command.Exec(c.config.keybasePath(), []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
 	if err != nil {
 		c.log.Warningf("Error in after apply: %s (%s)", err, result.CombinedOutput())
 	}
