@@ -30,7 +30,7 @@ type UpdateSource interface {
 
 // Context defines state during an update session
 type Context interface {
-	GetUpdateUI() (UpdateUI, error)
+	GetUpdateUI() UpdateUI
 	UpdateOptions() UpdateOptions
 	Verify(update Update) error
 	BeforeApply(update Update) error
@@ -202,10 +202,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 		return UpdateActionAuto, nil
 	}
 
-	updateUI, err := ctx.GetUpdateUI()
-	if err != nil {
-		return UpdateActionError, err
-	}
+	updateUI := ctx.GetUpdateUI()
 
 	// If auto update never set, default to true
 	autoUpdate := !autoSet
