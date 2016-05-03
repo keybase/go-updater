@@ -30,14 +30,15 @@ type UpdateSource interface {
 
 // Context defines state during an update session
 type Context interface {
-	GetUpdateUI() (UpdateUI, error)
+	GetUpdateUI() UpdateUI
 	UpdateOptions() UpdateOptions
 	Verify(update Update) error
 	BeforeApply(update Update) error
 	AfterApply(update Update) error
 	Restart() error
-	ReportError(err error, options UpdateOptions)
-	ReportAction(action UpdateAction, options UpdateOptions)
+	ReportError(err error, update *Update, options UpdateOptions)
+	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
+	ReportSuccess(update *Update, options UpdateOptions)
 }
 
 // Config defines configuration for the Updater
@@ -62,7 +63,9 @@ func (u *Updater) Update(ctx Context) (*Update, error) {
 	options := ctx.UpdateOptions()
 	update, err := u.update(ctx, options)
 	if err != nil {
-		ctx.ReportError(err, options)
+		ctx.ReportError(err, update, options)
+	} else {
+		ctx.ReportSuccess(update, options)
 	}
 	return update, err
 }
@@ -84,14 +87,14 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 	switch updateAction {
 	case UpdateActionApply:
-		ctx.ReportAction(UpdateActionApply, options)
+		ctx.ReportAction(UpdateActionApply, update, options)
 	case UpdateActionAuto:
-		ctx.ReportAction(UpdateActionAuto, options)
+		ctx.ReportAction(UpdateActionAuto, update, options)
 	case UpdateActionSnooze:
-		ctx.ReportAction(UpdateActionSnooze, options)
+		ctx.ReportAction(UpdateActionSnooze, update, options)
 		return update, cancelErr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
-		ctx.ReportAction(UpdateActionCancel, options)
+		ctx.ReportAction(UpdateActionCancel, update, options)
 		return update, cancelErr(fmt.Errorf("Canceled"))
 	case UpdateActionError:
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
@@ -181,7 +184,7 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 	if update.InstallID != "" {
 		if err := u.config.SetInstallID(update.InstallID); err != nil {
 			u.log.Warningf("Error saving install ID: %s", err)
-			ctx.ReportError(configErr(fmt.Errorf("Error saving install ID: %s", err)), options)
+			ctx.ReportError(configErr(fmt.Errorf("Error saving install ID: %s", err)), update, options)
 		}
 	}
 
@@ -199,10 +202,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 		return UpdateActionAuto, nil
 	}
 
-	updateUI, err := ctx.GetUpdateUI()
-	if err != nil {
-		return UpdateActionError, err
-	}
+	updateUI := ctx.GetUpdateUI()
 
 	// If auto update never set, default to true
 	autoUpdate := !autoSet
@@ -215,7 +215,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	u.log.Debugf("Update prompt response: %#v", updatePromptResponse)
 	if err := u.config.SetUpdateAuto(updatePromptResponse.AutoUpdate); err != nil {
 		u.log.Warningf("Error setting auto preference: %s", err)
-		ctx.ReportError(configErr(fmt.Errorf("Error setting auto preference: %s", err)), options)
+		ctx.ReportError(configErr(fmt.Errorf("Error setting auto preference: %s", err)), &update, options)
 	}
 
 	return updatePromptResponse.Action, nil

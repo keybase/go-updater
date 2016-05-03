@@ -13,6 +13,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"github.com/keybase/go-updater/process"
 )
 
 // destinationPath returns the app bundle path where this executable is located
@@ -58,8 +59,8 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
-func (c context) promptPath() (string, error) {
-	destinationPath := c.config.destinationPath()
+func (c config) promptPath() (string, error) {
+	destinationPath := c.destinationPath()
 	if destinationPath == "" {
 		return "", fmt.Errorf("No destination path")
 	}
@@ -68,18 +69,46 @@ func (c context) promptPath() (string, error) {
 
 // UpdatePrompt is called when the user needs to accept an update
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	promptPath, err := c.promptPath()
+	promptPath, err := c.config.promptPath()
 	if err != nil {
 		return nil, err
 	}
 	return c.updatePrompt(promptPath, update, options, promptOptions)
 }
 
-// PausedPrompt is called when the we can't update cause the app is in use
-func (c context) PausedPrompt() error {
-	promptPath, err := c.promptPath()
+// PausedPrompt is called when the we can't update cause the app is in use.
+// We return true if the use wants to cancel the update.
+func (c context) PausedPrompt() bool {
+	promptPath, err := c.config.promptPath()
 	if err != nil {
-		return err
+		c.log.Warningf("Error trying to get prompt path: %s", err)
+		return false
 	}
-	return c.pausedPrompt(promptPath)
+	cancelUpdate, err := c.pausedPrompt(promptPath)
+	if err != nil {
+		c.log.Warningf("Error in paused prompt: %s", err)
+		return false
+	}
+	return cancelUpdate
+}
+
+func (c context) Restart() error {
+	appPath := c.config.destinationPath()
+	if appPath == "" {
+		return fmt.Errorf("No destination path for restart")
+	}
+
+	procName := filepath.Join(appPath, "Contents/MacOS/")
+	process.TerminateAll(procName, time.Second, c.log)
+
+	keybase := filepath.Join(appPath, "Contents/SharedSupport/bin/keybase")
+	process.TerminateAll(keybase, time.Second, c.log)
+
+	kbfs := filepath.Join(appPath, "Contents/SharedSupport/bin/kbfs")
+	process.TerminateAll(kbfs, time.Second, c.log)
+
+	if err := process.OpenAppDarwin(appPath, c.log); err != nil {
+		c.log.Warningf("Error opening app: %s", err)
+	}
+	return nil
 }

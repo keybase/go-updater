@@ -10,10 +10,6 @@ import (
 	"os/exec"
 )
 
-func (u *Updater) openApplication(applicationPath string) error {
-	return fmt.Errorf("Open application not supported on this platform")
-}
-
 func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
