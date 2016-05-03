@@ -218,3 +218,11 @@ func downloadLocal(localPath string, destinationPath string, options DownloadURL
 	}
 	return nil
 }
+
+// URLValueForBool returns "1" for true, otherwise "0"
+func URLValueForBool(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}

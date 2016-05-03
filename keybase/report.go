@@ -52,6 +52,8 @@ func (c context) reportAction(action updater.UpdateAction, options updater.Updat
 	data.Add("version", options.Version)
 	data.Add("upd_version", options.UpdaterVersion)
 	data.Add("action", action.String())
+	autoUpdate, _ := c.config.GetUpdateAuto()
+	data.Add("auto_update", util.URLValueForBool(autoUpdate))
 	return c.report(data, uri, timeout)
 }
 

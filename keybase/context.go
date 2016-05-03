@@ -58,7 +58,7 @@ func NewUpdaterContext(pathToKeybase string, log logging.Logger) (updater.Contex
 		log.Warningf("Error loading config for context: %s", err)
 	}
 
-	src := NewUpdateSource(log)
+	src := NewUpdateSource(cfg, log)
 	// For testing
 	// (cd /Applications; ditto -c -k --sequesterRsrc --keepParent Keybase.app /tmp/Keybase.zip)
 	//src := updater.NewLocalUpdateSource("/tmp/Keybase.zip", log)
