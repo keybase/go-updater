@@ -44,6 +44,7 @@ type testUpdateUI struct {
 	actionReported     UpdateAction
 	autoUpdateReported bool
 	successReported    bool
+	updateReported     *Update
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -76,17 +77,18 @@ func (u testUpdateUI) Restart() error {
 	return u.restartErr
 }
 
-func (u *testUpdateUI) ReportError(err error, options UpdateOptions) {
+func (u *testUpdateUI) ReportError(err error, update *Update, options UpdateOptions) {
 	u.errReported = err
 }
 
-func (u *testUpdateUI) ReportAction(action UpdateAction, options UpdateOptions) {
+func (u *testUpdateUI) ReportAction(action UpdateAction, update *Update, options UpdateOptions) {
 	u.actionReported = action
 	autoUpdate, _ := u.cfg.GetUpdateAuto()
 	u.autoUpdateReported = autoUpdate
+	u.updateReported = update
 }
 
-func (u *testUpdateUI) ReportSuccess(options UpdateOptions) {
+func (u *testUpdateUI) ReportSuccess(update *Update, options UpdateOptions) {
 	u.successReported = true
 }
 
@@ -110,6 +112,7 @@ func testUpdate(uri string) *Update {
 		Name:        "Test",
 		Description: "Bug fixes",
 		InstallID:   "deadbeef",
+		RequestID:   "cafedead",
 	}
 	if uri != "" {
 		update.Asset = &Asset{
@@ -204,6 +207,9 @@ func TestUpdaterApply(t *testing.T) {
 	assert.Equal(t, ctx.actionReported, UpdateActionApply)
 	assert.True(t, ctx.autoUpdateReported)
 	assert.True(t, ctx.successReported)
+	require.NotNil(t, ctx.updateReported)
+	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
+	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
 }
 
 func TestUpdaterDownloadError(t *testing.T) {
@@ -219,6 +225,8 @@ func TestUpdaterDownloadError(t *testing.T) {
 	require.NotNil(t, ctx.errReported)
 	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
 	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
+	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
 }
 
 func TestUpdaterCancel(t *testing.T) {

@@ -83,7 +83,7 @@ func TestContextVerifyBadSignature(t *testing.T) {
 
 func TestContextReportError(t *testing.T) {
 	ctx := testContext(t)
-	ctx.ReportError(updater.NewError(updater.UnknownError, nil), updater.UpdateOptions{})
+	ctx.ReportError(updater.NewError(updater.UnknownError, nil), &testUpdate, updater.UpdateOptions{})
 }
 
 type testConfigPausedPrompt struct {

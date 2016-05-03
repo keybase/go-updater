@@ -57,7 +57,7 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	}
 
 	urlValues := url.Values{}
-	urlValues.Add("install_id", options.InstallID)
+	urlValues.Add("install_id", k.cfg.GetInstallID())
 	urlValues.Add("version", options.Version)
 	urlValues.Add("platform", options.Platform)
 	urlValues.Add("run_mode", options.Env)
