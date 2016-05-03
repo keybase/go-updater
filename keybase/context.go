@@ -38,10 +38,10 @@ type endpoints struct {
 }
 
 var defaultEndpoints = endpoints{
-	update:  "https://keybase.io/_/api/1.0/pkg/update.json",
-	action:  "https://keybase.io/_/api/1.0/pkg/act.json",
-	success: "https://keybase.io/_/api/1.0/pkg/success.json",
-	err:     "https://keybase.io/_/api/1.0/pkg/error.json",
+	update:  "https://api.keybase.io/_/api/1.0/pkg/update.json",
+	action:  "https://api.keybase.io/_/api/1.0/pkg/act.json",
+	success: "https://api.keybase.io/_/api/1.0/pkg/success.json",
+	err:     "https://api.keybase.io/_/api/1.0/pkg/error.json",
 }
 
 func newContext(cfg Config, log logging.Logger) *context {
