@@ -9,19 +9,17 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestRestartDarwin(t *testing.T) {
+func TestOpenDarwin(t *testing.T) {
 	appPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
-	defer TerminateAll(appPath, log)
+	defer TerminateAll(appPath, 200*time.Millisecond, log)
 
 	err := OpenAppDarwin(appPath, log)
-	require.NoError(t, err)
-
-	err = RestartAppDarwin(appPath, log)
 	require.NoError(t, err)
 }
 

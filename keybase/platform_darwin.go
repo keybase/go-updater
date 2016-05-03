@@ -87,15 +87,21 @@ func (c context) PausedPrompt() error {
 
 func (c context) Restart() error {
 	appPath := c.config.destinationPath()
+	if appPath == "" {
+		return fmt.Errorf("No destination path for restart")
+	}
+
+	procName := filepath.Join(appPath, "Contents/MacOS/")
+	process.TerminateAll(procName, time.Second, c.log)
 
 	keybase := filepath.Join(appPath, "Contents/SharedSupport/bin/keybase")
-	process.TerminateAll(keybase, c.log)
+	process.TerminateAll(keybase, time.Second, c.log)
 
 	kbfs := filepath.Join(appPath, "Contents/SharedSupport/bin/kbfs")
-	process.TerminateAll(kbfs, c.log)
+	process.TerminateAll(kbfs, time.Second, c.log)
 
-	if err := process.RestartAppDarwin(appPath, c.log); err != nil {
-		c.log.Warningf("Error restarting app: %s", err)
+	if err := process.OpenAppDarwin(appPath, c.log); err != nil {
+		c.log.Warningf("Error opening app: %s", err)
 	}
 	return nil
 }

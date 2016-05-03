@@ -5,22 +5,11 @@ package process
 
 import (
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/command"
 )
-
-// RestartAppDarwin restarts an app. We will still call open if the kill fails.
-func RestartAppDarwin(appPath string, log logging.Logger) error {
-	if appPath == "" {
-		return fmt.Errorf("No app path to restart")
-	}
-	procName := filepath.Join(appPath, "Contents/MacOS/")
-	TerminateAll(procName, log)
-	return OpenAppDarwin(appPath, log)
-}
 
 // OpenAppDarwin starts an app
 func OpenAppDarwin(appPath string, log logging.Logger) error {

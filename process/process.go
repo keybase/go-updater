@@ -32,7 +32,7 @@ func findPIDs(prefix string, log logging.Logger) ([]int, error) {
 }
 
 // TerminateAll stops all processes with executable names that start with prefix
-func TerminateAll(prefix string, log logging.Logger) {
+func TerminateAll(prefix string, killDelay time.Duration, log logging.Logger) {
 	pids, err := findPIDs(prefix, log)
 	if err != nil {
 		log.Warningf("Error finding process: %s", err)
@@ -42,18 +42,18 @@ func TerminateAll(prefix string, log logging.Logger) {
 		return
 	}
 	for _, pid := range pids {
-		if err := TerminatePid(pid, log); err != nil {
+		if err := TerminatePid(pid, killDelay, log); err != nil {
 			log.Warningf("Error terminating %d: %s", pid, err)
 		}
 	}
 }
 
 // TerminatePid is an overly simple way to terminate a PID.
-// It calls SIGTERM, then waits a second and then calls SIGKILL.
+// It calls SIGTERM, then waits a killDelay and then calls SIGKILL.
 // We don't mind if we call SIGKILL on an already terminated process, since
 // there could be a race anyway where the process exits right after we check
 // if it's still running but before the SIGKILL.
-func TerminatePid(pid int, log logging.Logger) error {
+func TerminatePid(pid int, killDelay time.Duration, log logging.Logger) error {
 	log.Debugf("Searching OS for %d", pid)
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -68,7 +68,7 @@ func TerminatePid(pid int, log logging.Logger) error {
 	if err != nil {
 		log.Warningf("Error sending terminate: %s", err)
 	}
-	time.Sleep(time.Second)
+	time.Sleep(killDelay)
 	_ = process.Kill()
 	return nil
 }
