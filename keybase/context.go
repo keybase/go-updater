@@ -73,8 +73,8 @@ func (c *context) UpdateOptions() updater.UpdateOptions {
 }
 
 // GetUpdateUI returns Update UI
-func (c *context) GetUpdateUI() (updater.UpdateUI, error) {
-	return c, nil
+func (c *context) GetUpdateUI() updater.UpdateUI {
+	return c
 }
 
 // GetLog returns log
