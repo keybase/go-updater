@@ -34,13 +34,14 @@ func newTestContext(options UpdateOptions, action UpdateAction) *testUpdateUI {
 }
 
 type testUpdateUI struct {
-	action         UpdateAction
-	options        UpdateOptions
-	promptErr      error
-	verifyErr      error
-	restartErr     error
-	errReported    error
-	actionReported UpdateAction
+	action          UpdateAction
+	options         UpdateOptions
+	promptErr       error
+	verifyErr       error
+	restartErr      error
+	errReported     error
+	actionReported  UpdateAction
+	successReported bool
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -79,6 +80,10 @@ func (u *testUpdateUI) ReportError(err error, options UpdateOptions) {
 
 func (u *testUpdateUI) ReportAction(action UpdateAction, options UpdateOptions) {
 	u.actionReported = action
+}
+
+func (u *testUpdateUI) ReportSuccess(options UpdateOptions) {
+	u.successReported = true
 }
 
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
@@ -193,6 +198,7 @@ func TestUpdaterApply(t *testing.T) {
 
 	assert.Nil(t, ctx.errReported)
 	assert.Equal(t, ctx.actionReported, UpdateActionApply)
+	assert.True(t, ctx.successReported)
 }
 
 func TestUpdaterDownloadError(t *testing.T) {
@@ -207,6 +213,7 @@ func TestUpdaterDownloadError(t *testing.T) {
 
 	require.NotNil(t, ctx.errReported)
 	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
+	assert.False(t, ctx.successReported)
 }
 
 func TestUpdaterCancel(t *testing.T) {

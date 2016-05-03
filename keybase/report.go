@@ -55,6 +55,20 @@ func (c context) reportAction(action updater.UpdateAction, options updater.Updat
 	return c.report(data, uri, timeout)
 }
 
+func (c context) ReportSuccess(options updater.UpdateOptions) {
+	if err := c.reportSuccess(options, defaultEndpoints.success, time.Minute); err != nil {
+		c.log.Warningf("Error notifying about success: %s", err)
+	}
+}
+
+func (c context) reportSuccess(options updater.UpdateOptions, uri string, timeout time.Duration) error {
+	data := url.Values{}
+	data.Add("install_id", options.InstallID)
+	data.Add("version", options.Version)
+	data.Add("upd_version", options.UpdaterVersion)
+	return c.report(data, uri, timeout)
+}
+
 func (c context) report(data url.Values, uri string, timeout time.Duration) error {
 	req, err := http.NewRequest("POST", uri, bytes.NewBufferString(data.Encode()))
 	if err != nil {
