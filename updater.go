@@ -132,10 +132,6 @@ func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) error
 		return applyErr(err)
 	}
 
-	if err := ctx.BeforeApply(update); err != nil {
-		return applyErr(err)
-	}
-
 	if err := u.platformApplyUpdate(update, options); err != nil {
 		return applyErr(err)
 	}
