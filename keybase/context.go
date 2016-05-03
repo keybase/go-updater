@@ -105,7 +105,3 @@ func (c context) AfterApply(update updater.Update) error {
 	}
 	return nil
 }
-
-func (c context) Restart() error {
-	return nil
-}
