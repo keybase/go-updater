@@ -51,9 +51,16 @@ cT7Yh09F0QpFUd0ymEfv
 -----END CERTIFICATE-----`
 
 func httpClient(timeout time.Duration) (*http.Client, error) {
+	return httpClientWithCert(caCert, timeout)
+}
+
+func httpClientWithCert(cert string, timeout time.Duration) (*http.Client, error) {
 	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM([]byte(caCert)); !ok {
+	if ok := certPool.AppendCertsFromPEM([]byte(cert)); !ok {
 		return nil, fmt.Errorf("Unable to add cert")
+	}
+	if certPool == nil {
+		return nil, fmt.Errorf("No cert pool")
 	}
 	tlsConfig := &tls.Config{RootCAs: certPool}
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
