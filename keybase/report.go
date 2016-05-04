@@ -63,7 +63,7 @@ func (c context) report(data url.Values, uri string, timeout time.Duration) erro
 		return err
 	}
 	client := &http.Client{Timeout: timeout}
-	c.log.Infof("Reporting error: %s %v", uri, data)
+	c.log.Infof("Reporting: %s %v", uri, data)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)
 	if err != nil {
