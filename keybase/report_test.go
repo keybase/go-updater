@@ -87,8 +87,6 @@ func TestReportSuccess(t *testing.T) {
 	defer func() { defaultEndpoints.success = tmp }()
 
 	ctx := testContext(t)
-	ctx.ReportSuccess(testOptions)
-
 	err := ctx.reportSuccess(testOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }
