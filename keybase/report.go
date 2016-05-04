@@ -51,6 +51,17 @@ func (c context) reportAction(action updater.UpdateAction, update *updater.Updat
 	return c.report(data, update, options, uri, timeout)
 }
 
+func (c context) ReportSuccess(update *updater.Update, options updater.UpdateOptions) {
+	if err := c.reportSuccess(update, options, defaultEndpoints.success, time.Minute); err != nil {
+		c.log.Warningf("Error notifying about success: %s", err)
+	}
+}
+
+func (c context) reportSuccess(update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+	data := url.Values{}
+	return c.report(data, update, options, uri, timeout)
+}
+
 func (c context) report(data url.Values, update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
 	if update != nil {
 		data.Add("install_id", update.InstallID)
@@ -64,7 +75,7 @@ func (c context) report(data url.Values, update *updater.Update, options updater
 		return err
 	}
 	client := &http.Client{Timeout: timeout}
-	c.log.Infof("Reporting error: %s %v", uri, data)
+	c.log.Infof("Reporting: %s %v", uri, data)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)
 	if err != nil {

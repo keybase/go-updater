@@ -82,3 +82,16 @@ func TestReportActionEmpty(t *testing.T) {
 	err := ctx.reportAction("", &testUpdate, testOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }
+
+func TestReportSuccess(t *testing.T) {
+	server := newServer("{}")
+	defer server.Close()
+
+	tmp := defaultEndpoints.success
+	defaultEndpoints.success = server.URL
+	defer func() { defaultEndpoints.success = tmp }()
+
+	ctx := testContext(t)
+	err := ctx.reportSuccess(&testUpdate, testOptions, server.URL, 5*time.Millisecond)
+	assert.NoError(t, err)
+}

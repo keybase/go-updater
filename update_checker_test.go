@@ -70,6 +70,8 @@ func (u testUpdateCheckUI) ReportAction(_ UpdateAction, _ *Update, _ UpdateOptio
 
 func (u testUpdateCheckUI) ReportError(_ error, _ *Update, _ UpdateOptions) {}
 
+func (u testUpdateCheckUI) ReportSuccess(_ *Update, _ UpdateOptions) {}
+
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()

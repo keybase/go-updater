@@ -30,15 +30,17 @@ type context struct {
 
 // endpoints define all the url locations for reporting, etc
 type endpoints struct {
-	update string
-	action string
-	err    string
+	update  string
+	action  string
+	success string
+	err     string
 }
 
 var defaultEndpoints = endpoints{
-	update: "https://keybase.io/_/api/1.0/pkg/update.json",
-	action: "https://keybase.io/_/api/1.0/pkg/act.json",
-	err:    "https://keybase.io/_/api/1.0/pkg/error.json",
+	update:  "https://keybase.io/_/api/1.0/pkg/update.json",
+	action:  "https://keybase.io/_/api/1.0/pkg/act.json",
+	success: "https://keybase.io/_/api/1.0/pkg/success.json",
+	err:     "https://keybase.io/_/api/1.0/pkg/error.json",
 }
 
 func newContext(cfg *config, log logging.Logger) *context {

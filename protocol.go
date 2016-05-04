@@ -3,8 +3,6 @@
 
 package updater
 
-import "time"
-
 // Asset describes a downloadable file
 type Asset struct {
 	Name      string `codec:"name" json:"name"`
@@ -35,7 +33,7 @@ type Update struct {
 	InstallID   string     `json:"installId"`
 	RequestID   string     `json:"requestId"`
 	Type        UpdateType `json:"type"`
-	PublishedAt Time       `json:"publishedAt"`
+	PublishedAt int64      `json:"publishedAt"`
 	Asset       *Asset     `json:"asset,omitempty"`
 }
 
@@ -99,25 +97,4 @@ type UpdatePromptResponse struct {
 type UpdateUI interface {
 	// UpdatePrompt prompts for an update
 	UpdatePrompt(Update, UpdateOptions, UpdatePromptOptions) (*UpdatePromptResponse, error)
-}
-
-// Time is milliseconds since epoch
-type Time int64
-
-// FromTime converts protocol time to golang Time
-func FromTime(t Time) time.Time {
-	if t == 0 {
-		return time.Time{}
-	}
-	return time.Unix(0, int64(t)*1000000)
-}
-
-// ToTime converts golang Time to protocol Time
-func ToTime(t time.Time) Time {
-	// the result of calling UnixNano on the zero Time is undefined.
-	// https://golang.org/pkg/time/#Time.UnixNano
-	if t.IsZero() {
-		return 0
-	}
-	return Time(t.UnixNano() / 1000000)
 }

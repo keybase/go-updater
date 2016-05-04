@@ -34,9 +34,9 @@ func newTestContext(options UpdateOptions, cfg Config, action UpdateAction) *tes
 }
 
 type testUpdateUI struct {
-	options            UpdateOptions
-	cfg                Config
 	action             UpdateAction
+	cfg                Config
+	options            UpdateOptions
 	promptErr          error
 	verifyErr          error
 	restartErr         error
@@ -44,6 +44,7 @@ type testUpdateUI struct {
 	actionReported     UpdateAction
 	autoUpdateReported bool
 	updateReported     *Update
+	successReported    bool
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -84,6 +85,11 @@ func (u *testUpdateUI) ReportAction(action UpdateAction, update *Update, options
 	u.actionReported = action
 	autoUpdate, _ := u.cfg.GetUpdateAuto()
 	u.autoUpdateReported = autoUpdate
+	u.updateReported = update
+}
+
+func (u *testUpdateUI) ReportSuccess(update *Update, options UpdateOptions) {
+	u.successReported = true
 	u.updateReported = update
 }
 
@@ -204,6 +210,7 @@ func TestUpdaterApply(t *testing.T) {
 	require.NotNil(t, ctx.updateReported)
 	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
 	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
+	assert.True(t, ctx.successReported)
 }
 
 func TestUpdaterDownloadError(t *testing.T) {
@@ -220,6 +227,7 @@ func TestUpdaterDownloadError(t *testing.T) {
 	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
 	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
 	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
+	assert.False(t, ctx.successReported)
 }
 
 func TestUpdaterCancel(t *testing.T) {

@@ -38,6 +38,7 @@ type Context interface {
 	Restart() error
 	ReportError(err error, update *Update, options UpdateOptions)
 	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
+	ReportSuccess(update *Update, options UpdateOptions)
 }
 
 // Config defines configuration for the Updater
@@ -63,6 +64,8 @@ func (u *Updater) Update(ctx Context) (*Update, error) {
 	update, err := u.update(ctx, options)
 	if err != nil {
 		ctx.ReportError(err, update, options)
+	} else {
+		ctx.ReportSuccess(update, options)
 	}
 	return update, err
 }
@@ -125,10 +128,6 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 }
 
 func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) error {
-	if err := ctx.BeforeApply(update); err != nil {
-		return applyErr(err)
-	}
-
 	if err := ctx.BeforeApply(update); err != nil {
 		return applyErr(err)
 	}
