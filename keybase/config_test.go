@@ -62,7 +62,6 @@ func TestConfig(t *testing.T) {
 		DestinationPath: "",
 		Channel:         "test",
 		Env:             "prod",
-		InstallID:       "deadbeef",
 		Arch:            "amd64",
 		Force:           false,
 		OSVersion:       cfg.osVersion(),

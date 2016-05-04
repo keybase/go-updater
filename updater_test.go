@@ -34,15 +34,17 @@ func newTestContext(options UpdateOptions, cfg Config, action UpdateAction) *tes
 }
 
 type testUpdateUI struct {
-	options            UpdateOptions
-	cfg                Config
 	action             UpdateAction
+	cfg                Config
+	options            UpdateOptions
 	promptErr          error
 	verifyErr          error
 	restartErr         error
 	errReported        error
 	actionReported     UpdateAction
 	autoUpdateReported bool
+	updateReported     *Update
+	successReported    bool
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -75,14 +77,20 @@ func (u testUpdateUI) Restart() error {
 	return u.restartErr
 }
 
-func (u *testUpdateUI) ReportError(err error, options UpdateOptions) {
+func (u *testUpdateUI) ReportError(err error, update *Update, options UpdateOptions) {
 	u.errReported = err
 }
 
-func (u *testUpdateUI) ReportAction(action UpdateAction, options UpdateOptions) {
+func (u *testUpdateUI) ReportAction(action UpdateAction, update *Update, options UpdateOptions) {
 	u.actionReported = action
 	autoUpdate, _ := u.cfg.GetUpdateAuto()
 	u.autoUpdateReported = autoUpdate
+	u.updateReported = update
+}
+
+func (u *testUpdateUI) ReportSuccess(update *Update, options UpdateOptions) {
+	u.successReported = true
+	u.updateReported = update
 }
 
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
@@ -105,6 +113,7 @@ func testUpdate(uri string) *Update {
 		Name:        "Test",
 		Description: "Bug fixes",
 		InstallID:   "deadbeef",
+		RequestID:   "cafedead",
 	}
 	if uri != "" {
 		update.Asset = &Asset{
@@ -198,6 +207,10 @@ func TestUpdaterApply(t *testing.T) {
 	assert.Nil(t, ctx.errReported)
 	assert.Equal(t, ctx.actionReported, UpdateActionApply)
 	assert.True(t, ctx.autoUpdateReported)
+	require.NotNil(t, ctx.updateReported)
+	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
+	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
+	assert.True(t, ctx.successReported)
 }
 
 func TestUpdaterDownloadError(t *testing.T) {
@@ -212,6 +225,9 @@ func TestUpdaterDownloadError(t *testing.T) {
 
 	require.NotNil(t, ctx.errReported)
 	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
+	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
+	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
+	assert.False(t, ctx.successReported)
 }
 
 func TestUpdaterCancel(t *testing.T) {

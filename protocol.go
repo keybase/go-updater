@@ -3,8 +3,6 @@
 
 package updater
 
-import "time"
-
 // Asset describes a downloadable file
 type Asset struct {
 	Name      string `codec:"name" json:"name"`
@@ -33,8 +31,9 @@ type Update struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	InstallID   string     `json:"installId"`
+	RequestID   string     `json:"requestId"`
 	Type        UpdateType `json:"type"`
-	PublishedAt Time       `json:"publishedAt"`
+	PublishedAt int64      `json:"publishedAt"`
 	Asset       *Asset     `json:"asset,omitempty"`
 }
 
@@ -52,8 +51,6 @@ type UpdateOptions struct {
 	Channel string `json:"channel"`
 	// Env is an environment or run mode (prod, staging, devel)
 	Env string `json:"env"`
-	// InstallID is an identifier that the client can send with requests
-	InstallID string `json:"installId"`
 	// Arch is an architecure description (x64, i386, arm)
 	Arch string `json:"arch"`
 	// Force is whether to apply the update, even if older or same version
@@ -100,25 +97,4 @@ type UpdatePromptResponse struct {
 type UpdateUI interface {
 	// UpdatePrompt prompts for an update
 	UpdatePrompt(Update, UpdateOptions, UpdatePromptOptions) (*UpdatePromptResponse, error)
-}
-
-// Time is milliseconds since epoch
-type Time int64
-
-// FromTime converts protocol time to golang Time
-func FromTime(t Time) time.Time {
-	if t == 0 {
-		return time.Time{}
-	}
-	return time.Unix(0, int64(t)*1000000)
-}
-
-// ToTime converts golang Time to protocol Time
-func ToTime(t time.Time) Time {
-	// the result of calling UnixNano on the zero Time is undefined.
-	// https://golang.org/pkg/time/#Time.UnixNano
-	if t.IsZero() {
-		return 0
-	}
-	return Time(t.UnixNano() / 1000000)
 }
