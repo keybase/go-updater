@@ -66,11 +66,11 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()
 }
 
-func (u testUpdateCheckUI) ReportAction(_ UpdateAction, _ UpdateOptions) {}
+func (u testUpdateCheckUI) ReportAction(_ UpdateAction, _ *Update, _ UpdateOptions) {}
 
-func (u testUpdateCheckUI) ReportError(_ error, _ UpdateOptions) {}
+func (u testUpdateCheckUI) ReportError(_ error, _ *Update, _ UpdateOptions) {}
 
-func (u testUpdateCheckUI) ReportSuccess(_ UpdateOptions) {}
+func (u testUpdateCheckUI) ReportSuccess(_ *Update, _ UpdateOptions) {}
 
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)

@@ -15,9 +15,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testOptions = updater.UpdateOptions{
+var testUpdate = updater.Update{
 	InstallID: "deadbeef",
-	Version:   "1.2.3-400+abcdef",
+	RequestID: "cafedead",
+	Version:   "1.2.2+fedcba",
+}
+
+var testOptions = updater.UpdateOptions{
+	Version: "1.2.3-400+abcdef",
 }
 
 func TestReportError(t *testing.T) {
@@ -26,7 +31,7 @@ func TestReportError(t *testing.T) {
 
 	updateErr := updater.NewError(updater.PromptError, fmt.Errorf("Test error"))
 	ctx := testContext(t)
-	err := ctx.reportError(updateErr, testOptions, server.URL, 5*time.Millisecond)
+	err := ctx.reportError(updateErr, &testUpdate, testOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }
 
@@ -37,7 +42,7 @@ func TestReportErrorEmpty(t *testing.T) {
 	updateErr := updater.NewError(updater.UnknownError, nil)
 	emptyOptions := updater.UpdateOptions{}
 	ctx := testContext(t)
-	err := ctx.reportError(updateErr, emptyOptions, server.URL, 5*time.Millisecond)
+	err := ctx.reportError(updateErr, nil, emptyOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }
 
@@ -46,7 +51,7 @@ func TestReportBadResponse(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	err := ctx.report(url.Values{}, server.URL, 5*time.Millisecond)
+	err := ctx.report(url.Values{}, &testUpdate, testOptions, server.URL, 5*time.Millisecond)
 	assert.EqualError(t, err, "Notify error returned bad HTTP status 500 Internal Server Error")
 }
 
@@ -55,7 +60,7 @@ func TestReportTimeout(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	err := ctx.report(url.Values{}, server.URL, 2*time.Millisecond)
+	err := ctx.report(url.Values{}, &testUpdate, testOptions, server.URL, 2*time.Millisecond)
 	require.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "net/http: request canceled"))
 }
@@ -65,7 +70,7 @@ func TestReportActionApply(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	err := ctx.reportAction(updater.UpdateActionApply, testOptions, server.URL, 5*time.Millisecond)
+	err := ctx.reportAction(updater.UpdateActionApply, &testUpdate, testOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }
 
@@ -74,7 +79,7 @@ func TestReportActionEmpty(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	err := ctx.reportAction("", updater.UpdateOptions{}, server.URL, 5*time.Millisecond)
+	err := ctx.reportAction("", &testUpdate, testOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }
 
@@ -87,6 +92,6 @@ func TestReportSuccess(t *testing.T) {
 	defer func() { defaultEndpoints.success = tmp }()
 
 	ctx := testContext(t)
-	err := ctx.reportSuccess(testOptions, server.URL, 5*time.Millisecond)
+	err := ctx.reportSuccess(&testUpdate, testOptions, server.URL, 5*time.Millisecond)
 	assert.NoError(t, err)
 }

@@ -31,6 +31,7 @@ type Update struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	InstallID   string     `json:"installId"`
+	RequestID   string     `json:"requestId"`
 	Type        UpdateType `json:"type"`
 	PublishedAt int64      `json:"publishedAt"`
 	Asset       *Asset     `json:"asset,omitempty"`
@@ -50,8 +51,6 @@ type UpdateOptions struct {
 	Channel string `json:"channel"`
 	// Env is an environment or run mode (prod, staging, devel)
 	Env string `json:"env"`
-	// InstallID is an identifier that the client can send with requests
-	InstallID string `json:"installId"`
 	// Arch is an architecure description (x64, i386, arm)
 	Arch string `json:"arch"`
 	// Force is whether to apply the update, even if older or same version

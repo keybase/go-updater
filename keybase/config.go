@@ -147,7 +147,6 @@ func (c config) updaterOptions() updater.UpdateOptions {
 		Channel:         "test",
 		DestinationPath: c.destinationPath(),
 		Env:             "prod",
-		InstallID:       c.GetInstallID(),
 		OSVersion:       osVersion,
 		UpdaterVersion:  updater.Version,
 	}
