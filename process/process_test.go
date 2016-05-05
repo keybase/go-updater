@@ -39,20 +39,3 @@ func assertTerminated(t *testing.T, pid int) {
 	require.NoError(t, err)
 	assert.Equal(t, "signal: terminated", state.String())
 }
-
-func TestTerminateAll(t *testing.T) {
-	start := func() int {
-		cmd := exec.Command("sleep", "10")
-		err := cmd.Start()
-		require.NoError(t, err)
-		require.NotNil(t, cmd.Process)
-		return cmd.Process.Pid
-	}
-
-	pids := []int{}
-	pids = append(pids, start())
-	pids = append(pids, start())
-	TerminateAll("/bin/sleep", time.Millisecond, log)
-	assertTerminated(t, pids[0])
-	assertTerminated(t, pids[1])
-}
