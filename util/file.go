@@ -138,16 +138,19 @@ func FileExists(path string) (bool, error) {
 }
 
 // MakeParentDirs ensures parent directory exist for path
-func MakeParentDirs(path string, mode os.FileMode) error {
+func MakeParentDirs(path string, mode os.FileMode, log logging.Logger) error {
 	// 2nd return value here is filename (not an error), which is not needed
 	dir, _ := filepath.Split(path)
+	if dir == "" {
+		return fmt.Errorf("No base directory")
+	}
 	exists, err := FileExists(dir)
 	if err != nil {
 		return err
 	}
 
 	if !exists {
-		fmt.Printf("Creating: %s\n", dir)
+		log.Debugf("Creating: %s\n", dir)
 		err = os.MkdirAll(dir, mode)
 		if err != nil {
 			return err
@@ -225,7 +228,7 @@ func MoveFile(sourcePath string, destinationPath string, log logging.Logger) err
 		}
 	}
 
-	if err := MakeParentDirs(destinationPath, 0700); err != nil {
+	if err := MakeParentDirs(destinationPath, 0700, log); err != nil {
 		return err
 	}
 
@@ -252,7 +255,7 @@ func CopyFile(sourcePath string, destinationPath string, log logging.Logger) err
 		}
 	}
 
-	if err := MakeParentDirs(destinationPath, 0700); err != nil {
+	if err := MakeParentDirs(destinationPath, 0700, log); err != nil {
 		return err
 	}
 

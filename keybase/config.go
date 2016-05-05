@@ -119,7 +119,7 @@ func (c config) saveToPath(path string) error {
 		return fmt.Errorf("Error marshaling config: %s", err)
 	}
 	file := util.NewFile(path, b, 0600)
-	err = util.MakeParentDirs(path, 0700)
+	err = util.MakeParentDirs(path, 0700, c.log)
 	if err != nil {
 		return err
 	}

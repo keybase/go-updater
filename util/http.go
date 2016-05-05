@@ -201,7 +201,7 @@ func downloadURL(urlString string, destinationPath string, options DownloadURLOp
 		}
 	}
 
-	if err := MakeParentDirs(savePath, 0700); err != nil {
+	if err := MakeParentDirs(savePath, 0700, log); err != nil {
 		return cached, err
 	}
 
