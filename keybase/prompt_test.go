@@ -96,3 +96,31 @@ func TestPromptError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
+
+func testPausedPromptWithCommand(t *testing.T, promptCommand string, timeout time.Duration) (bool, error) {
+	cfg, _ := testConfig(t)
+	ctx := newContext(&cfg, log)
+	assert.NotNil(t, ctx)
+
+	if timeout > 0 {
+		defaultPromptTimeout := promptTimeout
+		promptTimeout = timeout
+		defer func() { promptTimeout = defaultPromptTimeout }()
+	}
+
+	return ctx.pausedPrompt(promptCommand)
+}
+
+func TestPausedPromptForce(t *testing.T) {
+	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-force.sh")
+	cancel, err := testPausedPromptWithCommand(t, promptCommand, time.Second)
+	assert.NoError(t, err)
+	assert.False(t, cancel)
+}
+
+func TestPausedPromptCancel(t *testing.T) {
+	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-cancel.sh")
+	cancel, err := testPausedPromptWithCommand(t, promptCommand, time.Second)
+	assert.NoError(t, err)
+	assert.True(t, cancel)
+}

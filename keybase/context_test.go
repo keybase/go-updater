@@ -80,3 +80,44 @@ func TestContextVerifyBadSignature(t *testing.T) {
 	err := ctx.Verify(testContextUpdate(testMessagePath, "BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. END KEYBASE SALTPACK DETACHED SIGNATURE."))
 	require.Error(t, err)
 }
+
+type testConfigPausedPrompt struct {
+	config
+	inUse bool
+	force bool
+}
+
+func (c testConfigPausedPrompt) promptPath() (string, error) {
+	if c.force {
+		return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-force.sh"), nil
+	}
+	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-cancel.sh"), nil
+}
+
+func (c testConfigPausedPrompt) keybasePath() string {
+	if c.inUse {
+		return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-check-in-use-true.sh")
+	}
+	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-check-in-use-false.sh")
+}
+
+func (c testConfigPausedPrompt) updaterOptions() updater.UpdateOptions {
+	return updater.UpdateOptions{}
+}
+
+func TestContextCheckInUse(t *testing.T) {
+	// In use, force
+	ctx := newContext(&testConfigPausedPrompt{inUse: true, force: true}, log)
+	err := ctx.BeforeApply(updater.Update{})
+	require.NoError(t, err)
+
+	// Not in use
+	ctx = newContext(&testConfigPausedPrompt{inUse: false}, log)
+	err = ctx.BeforeApply(updater.Update{})
+	require.NoError(t, err)
+
+	// In use, user cancels
+	ctx = newContext(&testConfigPausedPrompt{inUse: true, force: false}, log)
+	err = ctx.BeforeApply(updater.Update{})
+	require.EqualError(t, err, "Canceled by user from paused prompt")
+}

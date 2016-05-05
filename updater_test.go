@@ -34,9 +34,9 @@ func newTestContext(options UpdateOptions, cfg Config, action UpdateAction) *tes
 }
 
 type testUpdateUI struct {
-	action             UpdateAction
-	cfg                Config
 	options            UpdateOptions
+	cfg                Config
+	action             UpdateAction
 	promptErr          error
 	verifyErr          error
 	restartErr         error
@@ -207,6 +207,7 @@ func TestUpdaterApply(t *testing.T) {
 	assert.Nil(t, ctx.errReported)
 	assert.Equal(t, ctx.actionReported, UpdateActionApply)
 	assert.True(t, ctx.autoUpdateReported)
+
 	require.NotNil(t, ctx.updateReported)
 	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
 	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)

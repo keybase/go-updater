@@ -35,14 +35,17 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
+func (c config) promptPath() (string, error) {
+	return "", fmt.Errorf("Unsupported")
+}
+
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	// TODO
 	return nil, fmt.Errorf("Unsupported")
 }
 
-func (c context) PausedPrompt() error {
-	// TODO
-	return fmt.Errorf("Unsupported")
+func (c context) PausedPrompt() bool {
+	return false
 }
 
 func (c context) Restart() error {

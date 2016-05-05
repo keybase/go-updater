@@ -17,7 +17,7 @@ import (
 func findPIDs(prefix string, log logging.Logger) ([]int, error) {
 	processes, err := ps.Processes()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error listing processes: %s", err)
 	}
 	if processes == nil {
 		return nil, nil

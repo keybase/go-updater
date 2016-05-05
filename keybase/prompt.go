@@ -78,26 +78,34 @@ type promptInputResult struct {
 	Button string `json:"button"`
 }
 
-func (c context) pausedPrompt(promptCommand string) error {
+// pausedPrompt returns whether to cancel update and/or error.
+// If the user explicit wants to cancel the update, this may be different from
+// an error occurring, in which case
+func (c context) pausedPrompt(promptCommand string) (bool, error) {
+	const btnForce = "Force update"
+	const btnCancel = "Try again later"
 	promptJSONInput, err := json.Marshal(promptInput{
 		Type:    "generic",
 		Title:   "Update Paused",
 		Message: "You have files, folders or a terminal open in Keybase.\n\nYou can force the update. That would be like yanking a USB drive and plugging it right back in. It'll instantly give you the latest version of Keybase, but you'll need to reopen any files you're working with. If you're working in the terminal, you'll need to cd out of /keybase and back in.",
-		Buttons: []string{"Force update", "Try again later"},
+		Buttons: []string{btnForce, btnCancel},
 	})
 	if err != nil {
-		return fmt.Errorf("Error generating input: %s", err)
+		return false, fmt.Errorf("Error generating input: %s", err)
 	}
 
 	var result promptInputResult
 	if err := command.ExecForJSON(promptCommand, []string{string(promptJSONInput)}, &result, 5*time.Minute, c.log); err != nil {
-		return fmt.Errorf("Error running command: %s", err)
+		return false, fmt.Errorf("Error running command: %s", err)
 	}
 
 	switch result.Button {
-	case "Force update":
-		return nil
+	case btnForce:
+		return false, nil
+	case btnCancel:
+		// Cancel update
+		return true, nil
 	default:
-		return fmt.Errorf("Canceled by user (%s)", result.Button)
+		return false, fmt.Errorf("Unexpected button result: %s", result.Button)
 	}
 }
