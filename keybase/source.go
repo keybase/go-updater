@@ -74,7 +74,10 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{Timeout: timeout}
+	client, err := httpClient(timeout)
+	if err != nil {
+		return nil, err
+	}
 	k.log.Infof("Request %#v", urlString)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)

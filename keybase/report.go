@@ -74,7 +74,10 @@ func (c context) report(data url.Values, update *updater.Update, options updater
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Timeout: timeout}
+	client, err := httpClient(timeout)
+	if err != nil {
+		return err
+	}
 	c.log.Infof("Reporting: %s %v", uri, data)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)
