@@ -6,8 +6,13 @@
 package keybase
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/process"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,4 +24,30 @@ func TestAppBundleForPath(t *testing.T) {
 	assert.Equal(t, "/Applications/Keybase.app", appBundleForPath("/Applications/Keybase.app/Contents/Resources/Foo.app/Contents/MacOS/Foo"))
 	assert.Equal(t, "", appBundleForPath("/Applications/Keybase.ap"))
 	assert.Equal(t, "/Applications/Keybase.app", appBundleForPath("/Applications/Keybase.app/"))
+}
+
+type testConfigDarwin struct {
+	config
+}
+
+func (c testConfigDarwin) destinationPath() string {
+	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
+}
+
+func (c testConfigDarwin) promptPath() (string, error) {
+	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-apply.sh"), nil
+}
+
+func TestUpdatePrompt(t *testing.T) {
+	ctx := newContext(&testConfigDarwin{}, log)
+	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestRestart(t *testing.T) {
+	ctx := newContext(&testConfigDarwin{}, log)
+	err := ctx.Restart()
+	defer process.TerminateAll(ctx.config.destinationPath(), 200*time.Millisecond, log)
+	assert.NoError(t, err)
 }
