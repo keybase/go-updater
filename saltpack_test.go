@@ -30,11 +30,12 @@ const signature1 = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 
 var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
 
+// keybase sign -d -i test.zip
 const testZipSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 	kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy
-	Cco4N255JFdUr6I 7XDXrDPRUsFPSRq RK1iOiDNoTlRIXC u4Zi7tLmajqLHUU
-	Eo0ng5CsVDR7e4Y DF4S9ioSsqGaQtX euRrI6tMO2EVmEx pQqidbB0aJsKLle
-	B. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+	Cco4N255JFTAn8O 78IT0oJCfKGRxGx NGkFZsPsFKcFSjt pXUAgKgYFpxs8XM
+	2Nbn5qzg3t3rky3 bX8iMOXbqWLewah a7GnOT5bOlbzf8V 1uhiECJ0N6IvRBp
+	D. END KEYBASE SALTPACK DETACHED SIGNATURE.`
 
 func TestSaltpackVerify(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))

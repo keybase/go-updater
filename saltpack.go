@@ -42,7 +42,7 @@ func checkSender(key saltpack.BasePublicKey, validKIDs map[string]bool, log logg
 	if !validKIDs[skid] {
 		return fmt.Errorf("Unknown signer KID: %s", skid)
 	}
-	log.Debug("Valid KID: %s", skid)
+	log.Debugf("Valid KID: %s", skid)
 	return nil
 }
 

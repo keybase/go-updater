@@ -121,7 +121,7 @@ func testUpdate(uri string) *Update {
 		update.Asset = &Asset{
 			Name:      "test.zip",
 			URL:       uri,
-			Digest:    "4769edbb33b86cf960cebd39af33cb3baabf38f8e43a8dc89ff420faf1cf0d36",
+			Digest:    "3a147f31b25a6027bda15367def6f4499e29a9b531855c0ac881a8f3a83a12b9",
 			Signature: testZipSignature,
 		}
 	}
