@@ -21,6 +21,13 @@ var testCorruptedZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/ke
 // testInvalidZipPath is not a valid zip file
 var testInvalidZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test-invalid.zip")
 
+func assertFileExists(t *testing.T, path string) {
+	t.Logf("Checking %s", path)
+	fileExists, err := FileExists(path)
+	assert.NoError(t, err)
+	assert.True(t, fileExists)
+}
+
 func TestUnzipOverValid(t *testing.T) {
 	destinationPath := TempPath("", "TestUnzipOver.")
 	defer RemoveFileAtPath(destinationPath)
@@ -34,9 +41,11 @@ func TestUnzipOverValid(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, dirExists)
 
-	fileExists, err := FileExists(filepath.Join(destinationPath, "testfile"))
-	assert.NoError(t, err)
-	assert.True(t, fileExists)
+	assertFileExists(t, filepath.Join(destinationPath, "testfile"))
+	assertFileExists(t, filepath.Join(destinationPath, "testfolder"))
+	assertFileExists(t, filepath.Join(destinationPath, "testfolder", "testsubfolder"))
+	assertFileExists(t, filepath.Join(destinationPath, "testfolder", "testsubfolder", "testfile2"))
+	assertFileExists(t, filepath.Join(destinationPath, "testfolder", "testlink"))
 
 	// Unzip again over existing path
 	err = UnzipOver(testZipPath, "test", destinationPath, noCheck, log)
@@ -52,9 +61,11 @@ func TestUnzipOverValid(t *testing.T) {
 
 	// Unzip again over existing path, fail check
 	failCheck := func(sourcePath, destinationPath string) error { return fmt.Errorf("Failed check") }
-	// Unzip again over existing path
 	err = UnzipOver(testZipPath, "test", destinationPath, failCheck, log)
 	assert.Error(t, err)
+
+	err = unzipOver(testZipPath, destinationPath, log)
+	assert.NoError(t, err)
 }
 
 func TestUnzipOverInvalidPath(t *testing.T) {
@@ -68,6 +79,9 @@ func TestUnzipOverInvalidPath(t *testing.T) {
 	assert.Error(t, err)
 
 	err = UnzipOver("", "test", destinationPath, noCheck, log)
+	assert.Error(t, err)
+
+	err = unzipOver("", "", log)
 	assert.Error(t, err)
 }
 

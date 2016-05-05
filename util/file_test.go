@@ -13,6 +13,7 @@ import (
 
 	"github.com/keybase/go-logging"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var log = logging.Logger{Module: "test"}
@@ -38,7 +39,7 @@ func TestMakeParentDirs(t *testing.T) {
 	file := filepath.Join(dir, "testfile")
 	defer RemoveFileAtPath(file)
 
-	err := MakeParentDirs(file, 0700)
+	err := MakeParentDirs(file, 0700, log)
 	assert.NoError(t, err)
 
 	exists, err := FileExists(dir)
@@ -51,8 +52,13 @@ func TestMakeParentDirs(t *testing.T) {
 	assert.True(t, fileInfo.IsDir())
 
 	// Test making dir that already exists
-	err = MakeParentDirs(file, 0700)
+	err = MakeParentDirs(file, 0700, log)
 	assert.NoError(t, err)
+}
+
+func TestMakeParentDirsInvalid(t *testing.T) {
+	err := MakeParentDirs("\\\\invalid", 0700, log)
+	assert.EqualError(t, err, "No base directory")
 }
 
 func TestTempPathValid(t *testing.T) {
@@ -231,4 +237,38 @@ func TestCopyFileInvalidDest(t *testing.T) {
 	exists, err := FileExists(destinationPath)
 	assert.NoError(t, err)
 	assert.False(t, exists)
+}
+
+func TestCloseNil(t *testing.T) {
+	Close(nil)
+}
+
+func TestOpenTempFile(t *testing.T) {
+	path, tempFile, err := openTempFile("prefix", "suffix", 0)
+	defer Close(tempFile)
+	defer RemoveFileAtPath(path)
+	require.NoError(t, err)
+	require.NotNil(t, tempFile)
+
+	basePath := filepath.Base(path)
+	assert.True(t, strings.HasPrefix(basePath, "prefix"))
+	assert.True(t, strings.HasSuffix(basePath, "suffix"))
+}
+
+func TestFileExists(t *testing.T) {
+	exists, err := FileExists("/nope")
+	assert.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestReadFile(t *testing.T) {
+	dataIn := []byte("test")
+	sourcePath, err := WriteTempFile("TestReadFile", dataIn, 0600)
+
+	dataOut, err := ReadFile(sourcePath)
+	require.NoError(t, err)
+	assert.Equal(t, dataIn, dataOut)
+
+	_, err = ReadFile("/invalid")
+	assert.EqualError(t, err, "open /invalid: no such file or directory")
 }

@@ -16,12 +16,8 @@ import (
 )
 
 func testConfig(t *testing.T) (config, error) {
-	testAppName, err := util.RandString("KeybaseTest", 20)
-	if err != nil {
-		t.Fatalf("Unable to resolve test app name: %s", err)
-	}
 	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-version.sh")
-	return newConfig(testAppName, testPathToKeybase, log)
+	return newConfig("KeybaseTest", testPathToKeybase, log)
 }
 
 func TestConfig(t *testing.T) {
@@ -32,6 +28,7 @@ func TestConfig(t *testing.T) {
 	assert.NotEqual(t, path, "", "No config path")
 
 	configDir, err := cfg.dir()
+	defer util.RemoveFileAtPath(configDir)
 	assert.NoError(t, err)
 	assert.NotEqual(t, configDir, "", "Config dir empty")
 	defer util.RemoveFileAtPath(configDir)
@@ -143,4 +140,11 @@ func TestConfigPartial(t *testing.T) {
 	auto, autoSet := cfg.GetUpdateAuto()
 	assert.False(t, auto)
 	assert.False(t, autoSet)
+}
+
+func TestKeybaseVersionInvalid(t *testing.T) {
+	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/err.sh")
+	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, log)
+	version := cfg.keybaseVersion()
+	assert.Equal(t, "", version)
 }

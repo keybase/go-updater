@@ -9,10 +9,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDiscardAndCloseBodyNil(t *testing.T) {
@@ -23,12 +26,32 @@ func TestDiscardAndCloseBodyNil(t *testing.T) {
 }
 
 func testServer(t *testing.T, data string, delay time.Duration) *httptest.Server {
+	return testServerWithETag(t, data, delay, "")
+}
+
+func testServerWithETag(t *testing.T, data string, delay time.Duration, etag string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if delay > 0 {
 			time.Sleep(delay)
 		}
+
+		etagMatch := r.Header.Get("If-None-Match")
+		if etagMatch != "" {
+			t.Logf("Checking etag match: %s == %s", etag, etagMatch)
+			if etag == etagMatch {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(w, data)
+	}))
+}
+
+func testServerForError(err error) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, err.Error(), 500)
 	}))
 }
 
@@ -113,7 +136,7 @@ func TestURLExistsFile(t *testing.T) {
 func TestDownloadURLValid(t *testing.T) {
 	server := testServer(t, "ok", 0)
 	defer server.Close()
-	destinationPath := TempPath("", "TestDownloadURL.")
+	destinationPath := TempPath("", "TestDownloadURLValid.")
 	digest, err := Digest(bytes.NewReader([]byte("ok\n")))
 	assert.NoError(t, err)
 	err = DownloadURL(server.URL, destinationPath, DownloadURLOptions{Digest: digest, RequireDigest: true, Log: log})
@@ -163,4 +186,64 @@ func TestDownloadURLTimeout(t *testing.T) {
 	err := DownloadURL(server.URL, destinationPath, DownloadURLOptions{Timeout: time.Millisecond, Log: log})
 	t.Logf("Timeout error: %s", err)
 	assert.Error(t, err)
+}
+
+func TestDownloadURLParseError(t *testing.T) {
+	err := DownloadURL("invalid", "", DownloadURLOptions{})
+	assert.Error(t, err)
+}
+
+func TestDownloadURLError(t *testing.T) {
+	server := testServerForError(fmt.Errorf("Test error"))
+	defer server.Close()
+
+	err := DownloadURL(server.URL, "", DownloadURLOptions{})
+	assert.EqualError(t, err, "Responded with 500 Internal Server Error")
+}
+
+func TestDownloadURLLocal(t *testing.T) {
+	var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+	destinationPath := TempPath("", "TestDownloadURLLocal.")
+	defer RemoveFileAtPath(destinationPath)
+	err := DownloadURL(fmt.Sprintf("file://%s", testZipPath), destinationPath, DownloadURLOptions{})
+	assert.NoError(t, err)
+
+	exists, err := FileExists(destinationPath)
+	assert.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestDownloadURLETag(t *testing.T) {
+	data := []byte("ok\n")
+	etag := "eff5bc1ef8ec9d03e640fc4370f5eacd"
+	server := testServerWithETag(t, "ok", 0, etag)
+	defer server.Close()
+	destinationPath := TempPath("", "TestDownloadURLETag.")
+	err := ioutil.WriteFile(destinationPath, data, 0600)
+	require.NoError(t, err)
+	digest, err := Digest(bytes.NewReader(data))
+	assert.NoError(t, err)
+	cached, err := downloadURL(server.URL, destinationPath, DownloadURLOptions{Digest: digest, RequireDigest: true, UseETag: true, Log: log})
+	require.NoError(t, err)
+	assert.True(t, cached)
+}
+
+func TestURLExistsParseError(t *testing.T) {
+	exists, err := URLExists("invalid", time.Millisecond, log)
+	assert.False(t, exists)
+	assert.Error(t, err)
+}
+
+func TestURLExistsError(t *testing.T) {
+	server := testServerForError(fmt.Errorf("Test error"))
+	defer server.Close()
+
+	exists, err := URLExists(server.URL, time.Second, log)
+	assert.False(t, exists)
+	assert.EqualError(t, err, "Invalid status code (500)")
+}
+
+func TestURLValueForBool(t *testing.T) {
+	assert.Equal(t, "0", URLValueForBool(false))
+	assert.Equal(t, "1", URLValueForBool(true))
 }

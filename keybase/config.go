@@ -70,14 +70,9 @@ func (c *config) load() error {
 }
 
 func (c *config) loadFromPath(path string) error {
-	if _, serr := os.Stat(path); os.IsNotExist(serr) {
-		c.log.Warningf("Unable to load config, %s doesn't exist", path)
-		return serr
-	}
-
 	file, err := os.Open(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to open config file: %s", err)
 	}
 	if file == nil {
 		return fmt.Errorf("No file")
@@ -119,7 +114,7 @@ func (c config) saveToPath(path string) error {
 		return fmt.Errorf("Error marshaling config: %s", err)
 	}
 	file := util.NewFile(path, b, 0600)
-	err = util.MakeParentDirs(path, 0700)
+	err = util.MakeParentDirs(path, 0700, c.log)
 	if err != nil {
 		return err
 	}
@@ -146,7 +141,7 @@ func (c *config) SetInstallID(installID string) error {
 }
 
 func (c config) updaterOptions() updater.UpdateOptions {
-	version := c.keybaseExecVersion()
+	version := c.keybaseVersion()
 	osVersion := c.osVersion()
 
 	return updater.UpdateOptions{
@@ -165,7 +160,7 @@ func (c config) keybasePath() string {
 	return c.pathToKeybase
 }
 
-func (c config) keybaseExecVersion() string {
+func (c config) keybaseVersion() string {
 	result, err := command.Exec(c.keybasePath(), []string{"version", "-S"}, 5*time.Second, c.log)
 	if err != nil {
 		c.log.Warningf("Couldn't get keybase version: %s (%s)", err, result.CombinedOutput())

@@ -17,13 +17,18 @@ import (
 )
 
 // destinationPath returns the app bundle path where this executable is located
-func (c config) destinationPath() string {
+func (c config) execPath() string {
 	path, err := osext.Executable()
 	if err != nil {
-		c.log.Warningf("Error trying to determine our destination path: %s", err)
+		c.log.Warningf("Error trying to determine our executable path: %s", err)
 		return ""
 	}
-	return appBundleForPath(path)
+	return path
+}
+
+// destinationPath returns the app bundle path where this executable is located
+func (c config) destinationPath() string {
+	return appBundleForPath(c.execPath())
 }
 
 func appBundleForPath(path string) string {
