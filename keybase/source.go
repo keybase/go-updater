@@ -18,17 +18,19 @@ import (
 
 // UpdateSource finds releases/updates on keybase.io
 type UpdateSource struct {
+	cfg      config
 	log      logging.Logger
 	endpoint string
 }
 
 // NewUpdateSource contructs an update source for keybase.io
-func NewUpdateSource(log logging.Logger) UpdateSource {
-	return newUpdateSource(defaultEndpoints.update, log)
+func NewUpdateSource(cfg config, log logging.Logger) UpdateSource {
+	return newUpdateSource(cfg, defaultEndpoints.update, log)
 }
 
-func newUpdateSource(endpoint string, log logging.Logger) UpdateSource {
+func newUpdateSource(cfg config, endpoint string, log logging.Logger) UpdateSource {
 	return UpdateSource{
+		cfg:      cfg,
 		endpoint: endpoint,
 		log:      log,
 	}
@@ -53,13 +55,18 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	if err != nil {
 		return nil, err
 	}
+
 	urlValues := url.Values{}
-	urlValues.Add("install_id", options.InstallID)
+	urlValues.Add("install_id", k.cfg.GetInstallID())
 	urlValues.Add("version", options.Version)
 	urlValues.Add("platform", options.Platform)
 	urlValues.Add("run_mode", options.Env)
 	urlValues.Add("os_version", options.OSVersion)
 	urlValues.Add("upd_version", options.UpdaterVersion)
+
+	autoUpdate, _ := k.cfg.GetUpdateAuto()
+	urlValues.Add("auto_update", util.URLValueForBool(autoUpdate))
+
 	u.RawQuery = urlValues.Encode()
 	urlString := u.String()
 
@@ -67,7 +74,10 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{Timeout: timeout}
+	client, err := httpClient(timeout)
+	if err != nil {
+		return nil, err
+	}
 	k.log.Infof("Request %#v", urlString)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)

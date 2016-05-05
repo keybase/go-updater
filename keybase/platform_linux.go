@@ -53,3 +53,8 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 func (c context) PausedPrompt() bool {
 	return false
 }
+
+func (c context) Restart() error {
+	// TODO
+	return fmt.Errorf("Unsupported")
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"github.com/keybase/go-updater/process"
 )
 
 // destinationPath returns the app bundle path where this executable is located
@@ -89,4 +90,25 @@ func (c context) PausedPrompt() bool {
 		return false
 	}
 	return cancelUpdate
+}
+
+func (c context) Restart() error {
+	appPath := c.config.destinationPath()
+	if appPath == "" {
+		return fmt.Errorf("No destination path for restart")
+	}
+
+	procName := filepath.Join(appPath, "Contents/MacOS/")
+	process.TerminateAll(procName, time.Second, c.log)
+
+	keybase := filepath.Join(appPath, "Contents/SharedSupport/bin/keybase")
+	process.TerminateAll(keybase, time.Second, c.log)
+
+	kbfs := filepath.Join(appPath, "Contents/SharedSupport/bin/kbfs")
+	process.TerminateAll(kbfs, time.Second, c.log)
+
+	if err := process.OpenAppDarwin(appPath, c.log); err != nil {
+		c.log.Warningf("Error opening app: %s", err)
+	}
+	return nil
 }

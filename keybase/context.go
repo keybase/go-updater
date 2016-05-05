@@ -31,15 +31,17 @@ type context struct {
 
 // endpoints define all the url locations for reporting, etc
 type endpoints struct {
-	update string
-	action string
-	err    string
+	update  string
+	action  string
+	success string
+	err     string
 }
 
 var defaultEndpoints = endpoints{
-	update: "https://keybase.io/_/api/1.0/pkg/update.json",
-	action: "https://keybase.io/_/api/1.0/pkg/act.json",
-	err:    "https://keybase.io/_/api/1.0/pkg/error.json",
+	update:  "https://api.keybase.io/_/api/1.0/pkg/update.json",
+	action:  "https://api.keybase.io/_/api/1.0/pkg/act.json",
+	success: "https://api.keybase.io/_/api/1.0/pkg/success.json",
+	err:     "https://api.keybase.io/_/api/1.0/pkg/error.json",
 }
 
 func newContext(cfg Config, log logging.Logger) *context {
@@ -57,7 +59,7 @@ func NewUpdaterContext(pathToKeybase string, log logging.Logger) (updater.Contex
 		log.Warningf("Error loading config for context: %s", err)
 	}
 
-	src := NewUpdateSource(log)
+	src := NewUpdateSource(cfg, log)
 	// For testing
 	// (cd /Applications; ditto -c -k --sequesterRsrc --keepParent Keybase.app /tmp/Keybase.zip)
 	//src := updater.NewLocalUpdateSource("/tmp/Keybase.zip", log)
@@ -117,9 +119,5 @@ func (c context) AfterApply(update updater.Update) error {
 	if err != nil {
 		c.log.Warningf("Error in after apply: %s (%s)", err, result.CombinedOutput())
 	}
-	return nil
-}
-
-func (c context) Restart() error {
 	return nil
 }

@@ -81,12 +81,8 @@ func TestContextVerifyBadSignature(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestContextReportError(t *testing.T) {
-	ctx := testContext(t)
-	ctx.ReportError(updater.NewError(updater.UnknownError, nil), updater.UpdateOptions{})
-}
-
 type testConfigPausedPrompt struct {
+	config
 	inUse bool
 	force bool
 }
@@ -111,17 +107,17 @@ func (c testConfigPausedPrompt) updaterOptions() updater.UpdateOptions {
 
 func TestContextCheckInUse(t *testing.T) {
 	// In use, force
-	ctx := newContext(testConfigPausedPrompt{inUse: true, force: true}, log)
+	ctx := newContext(&testConfigPausedPrompt{inUse: true, force: true}, log)
 	err := ctx.BeforeApply(updater.Update{})
 	require.NoError(t, err)
 
 	// Not in use
-	ctx = newContext(testConfigPausedPrompt{inUse: false}, log)
+	ctx = newContext(&testConfigPausedPrompt{inUse: false}, log)
 	err = ctx.BeforeApply(updater.Update{})
 	require.NoError(t, err)
 
 	// In use, user cancels
-	ctx = newContext(testConfigPausedPrompt{inUse: true, force: false}, log)
+	ctx = newContext(&testConfigPausedPrompt{inUse: true, force: false}, log)
 	err = ctx.BeforeApply(updater.Update{})
 	require.EqualError(t, err, "Canceled by user from paused prompt")
 }

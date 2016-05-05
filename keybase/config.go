@@ -20,8 +20,10 @@ import (
 
 // Config is Keybase specific configuration for the updater
 type Config interface {
+	updater.Config
 	keybasePath() string
 	promptPath() (string, error)
+	destinationPath() string
 	updaterOptions() updater.UpdateOptions
 }
 
@@ -154,7 +156,6 @@ func (c config) updaterOptions() updater.UpdateOptions {
 		Channel:         "test",
 		DestinationPath: c.destinationPath(),
 		Env:             "prod",
-		InstallID:       c.GetInstallID(),
 		OSVersion:       osVersion,
 		UpdaterVersion:  updater.Version,
 	}

@@ -15,13 +15,13 @@ import (
 )
 
 // ReportError notifies the API server of a client updater error
-func (c context) ReportError(err error, options updater.UpdateOptions) {
-	if err := c.reportError(err, options, defaultEndpoints.err, time.Minute); err != nil {
+func (c context) ReportError(err error, update *updater.Update, options updater.UpdateOptions) {
+	if err := c.reportError(err, update, options, defaultEndpoints.err, time.Minute); err != nil {
 		c.log.Warningf("Error notifying about an error: %s", err)
 	}
 }
 
-func (c context) reportError(err error, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+func (c context) reportError(err error, update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
 	var errorType string
 	switch uerr := err.(type) {
 	case updater.Error:
@@ -31,37 +31,54 @@ func (c context) reportError(err error, options updater.UpdateOptions, uri strin
 	}
 
 	data := url.Values{}
-	data.Add("install_id", options.InstallID)
-	data.Add("version", options.Version)
-	data.Add("upd_version", options.UpdaterVersion)
 	data.Add("error_type", errorType)
 	data.Add("description", err.Error())
-	return c.report(data, uri, timeout)
+	return c.report(data, update, options, uri, timeout)
 }
 
 // ReportAction notifies the API server of a client updater action
-func (c context) ReportAction(action updater.UpdateAction, options updater.UpdateOptions) {
-	if err := c.reportAction(action, options, defaultEndpoints.action, time.Minute); err != nil {
+func (c context) ReportAction(action updater.UpdateAction, update *updater.Update, options updater.UpdateOptions) {
+	if err := c.reportAction(action, update, options, defaultEndpoints.action, time.Minute); err != nil {
 		c.log.Warningf("Error notifying about an action (%s): %s", action, err)
 	}
 }
 
-func (c context) reportAction(action updater.UpdateAction, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+func (c context) reportAction(action updater.UpdateAction, update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
 	data := url.Values{}
-	data.Add("install_id", options.InstallID)
-	data.Add("version", options.Version)
-	data.Add("upd_version", options.UpdaterVersion)
 	data.Add("action", action.String())
-	return c.report(data, uri, timeout)
+	autoUpdate, _ := c.config.GetUpdateAuto()
+	data.Add("auto_update", util.URLValueForBool(autoUpdate))
+	return c.report(data, update, options, uri, timeout)
 }
 
-func (c context) report(data url.Values, uri string, timeout time.Duration) error {
+func (c context) ReportSuccess(update *updater.Update, options updater.UpdateOptions) {
+	if err := c.reportSuccess(update, options, defaultEndpoints.success, time.Minute); err != nil {
+		c.log.Warningf("Error notifying about success: %s", err)
+	}
+}
+
+func (c context) reportSuccess(update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+	data := url.Values{}
+	return c.report(data, update, options, uri, timeout)
+}
+
+func (c context) report(data url.Values, update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+	if update != nil {
+		data.Add("install_id", update.InstallID)
+		data.Add("request_id", update.RequestID)
+	}
+	data.Add("version", options.Version)
+	data.Add("upd_version", options.UpdaterVersion)
+
 	req, err := http.NewRequest("POST", uri, bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Timeout: timeout}
-	c.log.Infof("Reporting error: %s %v", uri, data)
+	client, err := httpClient(timeout)
+	if err != nil {
+		return err
+	}
+	c.log.Infof("Reporting: %s %v", uri, data)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)
 	if err != nil {

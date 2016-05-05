@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keybase/go-updater"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,9 +33,9 @@ func TestUpdateSource(t *testing.T) {
 	server := newServer(updateJSONResponse)
 	defer server.Close()
 
-	updateSource := newUpdateSource(server.URL, log)
-	options := updater.UpdateOptions{}
-	update, err := updateSource.FindUpdate(options)
+	cfg, _ := testConfig(t)
+	updateSource := newUpdateSource(cfg, server.URL, log)
+	update, err := updateSource.FindUpdate(testOptions)
 	assert.NoError(t, err)
 	require.NotNil(t, update)
 	assert.Equal(t, update.Version, "1.0.15-20160414190014+fdfce90")
@@ -52,9 +51,9 @@ func TestUpdateSourceBadResponse(t *testing.T) {
 	server := newServerForError(fmt.Errorf("Bad response"))
 	defer server.Close()
 
-	updateSource := newUpdateSource(server.URL, log)
-	options := updater.UpdateOptions{}
-	update, err := updateSource.FindUpdate(options)
+	cfg, _ := testConfig(t)
+	updateSource := newUpdateSource(cfg, server.URL, log)
+	update, err := updateSource.FindUpdate(testOptions)
 	assert.EqualError(t, err, "Find update returned bad HTTP status 500 Internal Server Error")
 	assert.Nil(t, update, "Shouldn't have update")
 }
@@ -63,9 +62,9 @@ func TestUpdateSourceTimeout(t *testing.T) {
 	server := newServerWithDelay(updateJSONResponse, 5*time.Millisecond)
 	defer server.Close()
 
-	updateSource := newUpdateSource(server.URL, log)
-	options := updater.UpdateOptions{}
-	update, err := updateSource.findUpdate(options, 2*time.Millisecond)
+	cfg, _ := testConfig(t)
+	updateSource := newUpdateSource(cfg, server.URL, log)
+	update, err := updateSource.findUpdate(testOptions, 2*time.Millisecond)
 	require.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "net/http: request canceled"))
 	assert.Nil(t, update)
