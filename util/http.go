@@ -73,14 +73,23 @@ func DiscardAndCloseBodyIgnoreError(resp *http.Response) {
 	_ = DiscardAndCloseBody(resp)
 }
 
-// URLExists returns error if URL doesn't exist
-func URLExists(urlString string, timeout time.Duration, log logging.Logger) (bool, error) {
+// parseURL ensures error if parse error or no url was returned from url.Parse
+func parseURL(urlString string) (*url.URL, error) {
 	url, parseErr := url.Parse(urlString)
 	if parseErr != nil {
-		return false, parseErr
+		return nil, parseErr
 	}
 	if url == nil {
-		return false, fmt.Errorf("No URL")
+		return nil, fmt.Errorf("No URL")
+	}
+	return url, nil
+}
+
+// URLExists returns error if URL doesn't exist
+func URLExists(urlString string, timeout time.Duration, log logging.Logger) (bool, error) {
+	url, err := parseURL(urlString)
+	if err != nil {
+		return false, err
 	}
 
 	// Handle local files
@@ -121,25 +130,27 @@ type DownloadURLOptions struct {
 
 // DownloadURL downloads a URL to a path.
 func DownloadURL(urlString string, destinationPath string, options DownloadURLOptions) error {
+	_, err := downloadURL(urlString, destinationPath, options)
+	return err
+}
+
+func downloadURL(urlString string, destinationPath string, options DownloadURLOptions) (cached bool, _ error) {
 	log := options.Log
 
-	url, parseErr := url.Parse(urlString)
-	if parseErr != nil {
-		return parseErr
-	}
-	if url == nil {
-		return fmt.Errorf("No URL")
+	url, err := parseURL(urlString)
+	if err != nil {
+		return false, err
 	}
 
 	// Handle local files
 	if url.Scheme == "file" {
-		return downloadLocal(url.Path, destinationPath, options)
+		return cached, downloadLocal(url.Path, destinationPath, options)
 	}
 
 	// Compute ETag if the destinationPath already exists
 	etag := ""
 	if options.UseETag {
-		if _, err := os.Stat(destinationPath); err == nil {
+		if _, statErr := os.Stat(destinationPath); statErr == nil {
 			computedEtag, etagErr := ComputeEtag(destinationPath)
 			if etagErr != nil {
 				log.Warningf("Error computing etag", etagErr)
@@ -151,7 +162,7 @@ func DownloadURL(urlString string, destinationPath string, options DownloadURLOp
 
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
-		return err
+		return cached, err
 	}
 	if etag != "" {
 		log.Infof("Using etag: %s", etag)
@@ -166,44 +177,49 @@ func DownloadURL(urlString string, destinationPath string, options DownloadURLOp
 	log.Infof("Request %s", url.String())
 	resp, requestErr := client.Do(req)
 	if requestErr != nil {
-		return requestErr
+		return cached, requestErr
 	}
 	if resp == nil {
-		return fmt.Errorf("No response")
+		return cached, fmt.Errorf("No response")
 	}
 	defer DiscardAndCloseBodyIgnoreError(resp)
 	if resp.StatusCode == http.StatusNotModified {
+		cached = true
 		// ETag matched, we already have it
 		log.Infof("Using cached file: %s", destinationPath)
-		return nil
+		return cached, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Responded with %s", resp.Status)
+		return cached, fmt.Errorf("Responded with %s", resp.Status)
 	}
 
 	savePath := fmt.Sprintf("%s.download", destinationPath)
 	if _, ferr := os.Stat(savePath); ferr == nil {
 		log.Infof("Removing existing partial download: %s", savePath)
 		if rerr := os.Remove(savePath); rerr != nil {
-			return fmt.Errorf("Error removing existing partial download: %s", rerr)
+			return cached, fmt.Errorf("Error removing existing partial download: %s", rerr)
 		}
 	}
 
 	if err := MakeParentDirs(savePath, 0700); err != nil {
-		return err
+		return cached, err
 	}
 
 	if err := SaveHTTPResponse(resp, savePath, 0600, log); err != nil {
-		return err
+		return cached, err
 	}
 
 	if options.RequireDigest {
 		if err := CheckDigest(options.Digest, savePath, log); err != nil {
-			return err
+			return cached, err
 		}
 	}
 
-	return MoveFile(savePath, destinationPath, log)
+	if err := MoveFile(savePath, destinationPath, log); err != nil {
+		return cached, err
+	}
+
+	return cached, nil
 }
 
 func downloadLocal(localPath string, destinationPath string, options DownloadURLOptions) error {
