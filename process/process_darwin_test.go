@@ -27,8 +27,8 @@ func TestOpenDarwin(t *testing.T) {
 func TestFindPIDsLaunchd(t *testing.T) {
 	pids, err := findPIDs("/sbin/launchd", log)
 	assert.NoError(t, err)
-	require.Equal(t, 1, len(pids))
-	assert.Equal(t, 1, pids[0])
+	t.Logf("Pids: %#v", pids)
+	require.True(t, len(pids) >= 1)
 }
 
 func TestTerminateAll(t *testing.T) {
