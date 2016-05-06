@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keybase/go-ps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,11 +22,18 @@ func TestOpenDarwin(t *testing.T) {
 	defer TerminateAll(appPath, 200*time.Millisecond, log)
 
 	err := OpenAppDarwin(appPath, log)
-	require.NoError(t, err)
+	assert.NoError(t, err)
+}
+
+func TestOpenDarwinError(t *testing.T) {
+	binErr := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/err.sh")
+	appPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
+	err := openAppDarwin(binErr, appPath, time.Millisecond, log)
+	assert.Error(t, err)
 }
 
 func TestFindPIDsLaunchd(t *testing.T) {
-	pids, err := findPIDs("/sbin/launchd", log)
+	pids, err := findPIDsWithFn(ps.Processes, "/sbin/launchd", log)
 	assert.NoError(t, err)
 	t.Logf("Pids: %#v", pids)
 	require.True(t, len(pids) >= 1)

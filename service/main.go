@@ -30,7 +30,7 @@ func main() {
 	}
 
 	svc := serviceFromFlags(f)
-	ret := run(svc)
+	ret := svc.Run()
 	if ret != 0 {
 		os.Exit(ret)
 	}
@@ -47,8 +47,4 @@ func serviceFromFlags(f flags) *service {
 
 	ctx, upd := keybase.NewUpdaterContext(f.pathToKeybase, log)
 	return newService(upd, ctx, log)
-}
-
-func run(s *service) int {
-	return s.Run()
 }

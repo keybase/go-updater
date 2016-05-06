@@ -9,10 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFlags(t *testing.T) {
+func TestServiceFlags(t *testing.T) {
 	f := flags{
 		pathToKeybase: "keybase",
 	}
 	svc := serviceFromFlags(f)
+	require.NotNil(t, svc)
+}
+
+func TestServiceFlagsEmpty(t *testing.T) {
+	svc := serviceFromFlags(flags{})
 	require.NotNil(t, svc)
 }

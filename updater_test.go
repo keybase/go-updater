@@ -215,6 +215,8 @@ func TestUpdaterApply(t *testing.T) {
 	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
 	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
 	assert.True(t, ctx.successReported)
+
+	assert.Equal(t, "apply", UpdateActionApply.String())
 }
 
 func TestUpdaterDownloadError(t *testing.T) {

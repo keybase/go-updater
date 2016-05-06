@@ -27,19 +27,15 @@ func TestAppBundleForPath(t *testing.T) {
 }
 
 type testConfigDarwin struct {
-	config
+	testConfigPlatform
 }
 
 func (c testConfigDarwin) destinationPath() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
 }
 
-func (c testConfigDarwin) promptPath() (string, error) {
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-apply.sh"), nil
-}
-
 func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigDarwin{}, log)
+	ctx := newContext(&testConfigPlatform{}, log)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
