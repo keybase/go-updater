@@ -14,8 +14,10 @@ import (
 	"github.com/keybase/go-ps"
 )
 
-func findPIDs(prefix string, log logging.Logger) ([]int, error) {
-	processes, err := ps.Processes()
+type processesFn func() ([]ps.Process, error)
+
+func findPIDsWithFn(fn processesFn, prefix string, log logging.Logger) ([]int, error) {
+	processes, err := fn()
 	if err != nil {
 		return nil, fmt.Errorf("Error listing processes: %s", err)
 	}
@@ -33,27 +35,32 @@ func findPIDs(prefix string, log logging.Logger) ([]int, error) {
 
 // TerminateAll stops all processes with executable names that start with prefix
 func TerminateAll(prefix string, killDelay time.Duration, log logging.Logger) {
-	pids, err := findPIDs(prefix, log)
+	terminateAll(ps.Processes, prefix, killDelay, log)
+}
+
+func terminateAll(fn processesFn, prefix string, killDelay time.Duration, log logging.Logger) {
+	pids, err := findPIDsWithFn(fn, prefix, log)
 	if err != nil {
 		log.Warningf("Error finding process: %s", err)
+		return
 	}
 	if pids == nil {
 		log.Warningf("No processes found with prefix %q", prefix)
 		return
 	}
 	for _, pid := range pids {
-		if err := TerminatePid(pid, killDelay, log); err != nil {
+		if err := TerminatePID(pid, killDelay, log); err != nil {
 			log.Warningf("Error terminating %d: %s", pid, err)
 		}
 	}
 }
 
-// TerminatePid is an overly simple way to terminate a PID.
+// TerminatePID is an overly simple way to terminate a PID.
 // It calls SIGTERM, then waits a killDelay and then calls SIGKILL.
 // We don't mind if we call SIGKILL on an already terminated process, since
 // there could be a race anyway where the process exits right after we check
 // if it's still running but before the SIGKILL.
-func TerminatePid(pid int, killDelay time.Duration, log logging.Logger) error {
+func TerminatePID(pid int, killDelay time.Duration, log logging.Logger) error {
 	log.Debugf("Searching OS for %d", pid)
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -70,5 +77,5 @@ func TerminatePid(pid int, killDelay time.Duration, log logging.Logger) error {
 	}
 	time.Sleep(killDelay)
 	_ = process.Kill()
-	return nil
+	return err
 }
