@@ -5,11 +5,11 @@ package updater
 
 // Asset describes a downloadable file
 type Asset struct {
-	Name      string `codec:"name" json:"name"`
-	URL       string `codec:"url" json:"url"`
-	Digest    string `codec:"digest" json:"digest"`
-	Signature string `codec:"signature" json:"signature"`
-	LocalPath string `codec:"localPath" json:"localPath"`
+	Name      string `json:"name"`
+	URL       string `json:"url"`
+	Digest    string `json:"digest"`
+	Signature string `json:"signature"`
+	LocalPath string `json:"localPath"`
 }
 
 // UpdateType is the update type.
@@ -35,6 +35,7 @@ type Update struct {
 	Type        UpdateType `json:"type"`
 	PublishedAt int64      `json:"publishedAt"`
 	Asset       *Asset     `json:"asset,omitempty"`
+	NeedUpdate  bool       `json:"needUpdate"`
 }
 
 // UpdateOptions are options used to find an update

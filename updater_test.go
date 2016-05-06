@@ -110,12 +110,17 @@ func (u testUpdateSource) Description() string {
 }
 
 func testUpdate(uri string) *Update {
+	return newTestUpdate(uri, true)
+}
+
+func newTestUpdate(uri string, needUpdate bool) *Update {
 	update := &Update{
 		Version:     "1.0.1",
 		Name:        "Test",
 		Description: "Bug fixes",
 		InstallID:   "deadbeef",
 		RequestID:   "cafedead",
+		NeedUpdate:  needUpdate,
 	}
 	if uri != "" {
 		update.Asset = &Asset{
@@ -347,4 +352,16 @@ func TestUpdaterApplyError(t *testing.T) {
 	ctx.afterApplyErr = fmt.Errorf("Test after error")
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (apply): Test after error")
+}
+
+func TestUpdaterNotNeeded(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer, newTestUpdate(testServer.URL, false), &testConfig{})
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionSnooze)
+	update, err := upr.Update(ctx)
+	assert.NoError(t, err)
+	assert.Nil(t, update)
 }
