@@ -6,10 +6,6 @@ package keybase
 import (
 	"os"
 	"path/filepath"
-	"testing"
-
-	"github.com/keybase/go-updater"
-	"github.com/stretchr/testify/assert"
 )
 
 type testConfigPlatform struct {
@@ -18,11 +14,4 @@ type testConfigPlatform struct {
 
 func (c testConfigPlatform) promptPath() (string, error) {
 	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-apply.sh"), nil
-}
-
-func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigPlatform{}, log)
-	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
 }

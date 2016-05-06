@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/process"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,6 +32,13 @@ type testConfigDarwin struct {
 
 func (c testConfigDarwin) destinationPath() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
+}
+
+func TestUpdatePrompt(t *testing.T) {
+	ctx := newContext(&testConfigPlatform{}, log)
+	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
 }
 
 func TestRestart(t *testing.T) {
