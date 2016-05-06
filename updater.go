@@ -75,7 +75,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	if err != nil {
 		return nil, findErr(err)
 	}
-	if update == nil {
+	if update == nil || !update.NeedUpdate {
 		// No update available
 		return nil, nil
 	}
