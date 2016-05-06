@@ -62,14 +62,13 @@ func NewUpdater(source UpdateSource, config Config, log logging.Logger) *Updater
 func (u *Updater) Update(ctx Context) (*Update, error) {
 	options := ctx.UpdateOptions()
 	update, err := u.update(ctx, options)
-	if err != nil {
-		ctx.ReportError(err, update, options)
-	} else {
-		ctx.ReportSuccess(update, options)
-	}
+	report(ctx, err, update, options)
 	return update, err
 }
 
+// update returns the update received, and an error if the update was not
+// performed. The error with be of type Error. The error may be due to the user
+// (or system) canceling an update, in which case error.IsCancel() will be true.
 func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	update, err := u.checkForUpdate(ctx, options)
 	if err != nil {
@@ -219,4 +218,19 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	}
 
 	return updatePromptResponse.Action, nil
+}
+
+func report(ctx Context, err error, update *Update, options UpdateOptions) {
+	if err != nil {
+		// Don't report cancels
+		switch e := err.(type) {
+		case Error:
+			if e.IsCancel() {
+				return
+			}
+		}
+		ctx.ReportError(err, update, options)
+	} else {
+		ctx.ReportSuccess(update, options)
+	}
 }

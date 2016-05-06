@@ -250,6 +250,9 @@ func TestUpdaterCancel(t *testing.T) {
 	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionCancel)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (cancel): Canceled")
+
+	// Don't report error on user cancel
+	assert.NoError(t, ctx.errReported)
 }
 
 func TestUpdaterSnooze(t *testing.T) {
@@ -261,6 +264,9 @@ func TestUpdaterSnooze(t *testing.T) {
 	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionSnooze)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
+
+	// Don't report error on user snooze
+	assert.NoError(t, ctx.errReported)
 }
 
 func TestUpdateNoAsset(t *testing.T) {
