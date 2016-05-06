@@ -17,7 +17,7 @@ import (
 
 func testConfig(t *testing.T) (config, error) {
 	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-version.sh")
-	return newConfig("KeybaseTest", testPathToKeybase, log)
+	return newConfig("KeybaseTest", testPathToKeybase, testLog)
 }
 
 func TestConfig(t *testing.T) {
@@ -68,7 +68,7 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, options, expectedOptions)
 
 	// Load new config and make sure it has the same values
-	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, log)
+	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, testLog)
 	assert.NoError(t, err)
 	assert.NotEqual(t, cfg2.path, "", "No config path")
 
@@ -82,7 +82,7 @@ func TestConfig(t *testing.T) {
 }
 
 func TestConfigBadPath(t *testing.T) {
-	cfg := newDefaultConfig("", "", log)
+	cfg := newDefaultConfig("", "", testLog)
 
 	badPath := filepath.Join("/testdir", "updater.json") // Shouldn't be writable
 	err := cfg.loadFromPath(badPath)
@@ -111,7 +111,7 @@ func TestConfigExtra(t *testing.T) {
 	err := ioutil.WriteFile(path, []byte(data), 0644)
 	assert.NoError(t, err)
 
-	cfg := newDefaultConfig("", "", log)
+	cfg := newDefaultConfig("", "", testLog)
 	err = cfg.loadFromPath(path)
 	assert.NoError(t, err)
 
@@ -134,7 +134,7 @@ func TestConfigPartial(t *testing.T) {
 	err := ioutil.WriteFile(path, []byte(data), 0644)
 	assert.NoError(t, err)
 
-	cfg := newDefaultConfig("", "", log)
+	cfg := newDefaultConfig("", "", testLog)
 	err = cfg.loadFromPath(path)
 	assert.Error(t, err)
 	auto, autoSet := cfg.GetUpdateAuto()
@@ -144,7 +144,7 @@ func TestConfigPartial(t *testing.T) {
 
 func TestKeybaseVersionInvalid(t *testing.T) {
 	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/err.sh")
-	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, log)
+	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, testLog)
 	version := cfg.keybaseVersion()
 	assert.Equal(t, "", version)
 }

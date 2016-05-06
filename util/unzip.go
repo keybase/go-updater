@@ -67,8 +67,8 @@ func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
 		return err
 	}
 	defer func() {
-		if err := r.Close(); err != nil {
-			log.Warningf("Error in unzip closing zip file: %s", err)
+		if closeErr := r.Close(); closeErr != nil {
+			log.Warningf("Error in unzip closing zip file: %s", closeErr)
 		}
 	}()
 

@@ -16,8 +16,8 @@ import (
 
 // ReportError notifies the API server of a client updater error
 func (c context) ReportError(err error, update *updater.Update, options updater.UpdateOptions) {
-	if err := c.reportError(err, update, options, defaultEndpoints.err, time.Minute); err != nil {
-		c.log.Warningf("Error notifying about an error: %s", err)
+	if reportErr := c.reportError(err, update, options, defaultEndpoints.err, time.Minute); reportErr != nil {
+		c.log.Warningf("Error notifying about an error: %s", reportErr)
 	}
 }
 

@@ -259,8 +259,8 @@ func CopyFile(sourcePath string, destinationPath string, log logging.Logger) err
 		}
 	}
 
-	if err := MakeParentDirs(destinationPath, 0700, log); err != nil {
-		return err
+	if makeDirErr := MakeParentDirs(destinationPath, 0700, log); makeDirErr != nil {
+		return makeDirErr
 	}
 
 	out, err := os.Create(destinationPath)

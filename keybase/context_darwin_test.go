@@ -14,17 +14,17 @@ import (
 
 func TestContextCheckInUse(t *testing.T) {
 	// In use, force
-	ctx := newContext(&testConfigPausedPrompt{inUse: true, force: true}, log)
+	ctx := newContext(&testConfigPausedPrompt{inUse: true, force: true}, testLog)
 	err := ctx.BeforeApply(updater.Update{})
 	require.NoError(t, err)
 
 	// Not in use
-	ctx = newContext(&testConfigPausedPrompt{inUse: false}, log)
+	ctx = newContext(&testConfigPausedPrompt{inUse: false}, testLog)
 	err = ctx.BeforeApply(updater.Update{})
 	require.NoError(t, err)
 
 	// In use, user cancels
-	ctx = newContext(&testConfigPausedPrompt{inUse: true, force: false}, log)
+	ctx = newContext(&testConfigPausedPrompt{inUse: true, force: false}, testLog)
 	err = ctx.BeforeApply(updater.Update{})
 	require.EqualError(t, err, "Canceled by user from paused prompt")
 }

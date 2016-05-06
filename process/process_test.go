@@ -16,24 +16,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var log = logging.Logger{Module: "test"}
+var testLog = logging.Logger{Module: "test"}
 
 func TestFindPIDs(t *testing.T) {
-	pids, err := findPIDsWithFn(ps.Processes, "", log)
+	pids, err := findPIDsWithFn(ps.Processes, "", testLog)
 	assert.NoError(t, err)
 	assert.True(t, len(pids) > 1)
 
 	fn := func() ([]ps.Process, error) {
 		return nil, fmt.Errorf("Testing error")
 	}
-	processes, err := findPIDsWithFn(fn, "", log)
+	processes, err := findPIDsWithFn(fn, "", testLog)
 	assert.Nil(t, processes)
 	assert.Error(t, err)
 
 	fn = func() ([]ps.Process, error) {
 		return nil, nil
 	}
-	processes, err = findPIDsWithFn(fn, "", log)
+	processes, err = findPIDsWithFn(fn, "", testLog)
 	assert.Nil(t, processes)
 	assert.NoError(t, err)
 }
@@ -44,7 +44,7 @@ func TestTerminatePID(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cmd.Process)
 
-	err = TerminatePID(cmd.Process.Pid, time.Millisecond, log)
+	err = TerminatePID(cmd.Process.Pid, time.Millisecond, testLog)
 	assert.NoError(t, err)
 }
 
@@ -57,7 +57,7 @@ func assertTerminated(t *testing.T, pid int) {
 }
 
 func TestTerminatePIDInvalid(t *testing.T) {
-	err := TerminatePID(-5, time.Millisecond, log)
+	err := TerminatePID(-5, time.Millisecond, testLog)
 	assert.Error(t, err)
 }
 
@@ -65,10 +65,10 @@ func TestTerminateAllFn(t *testing.T) {
 	fn := func() ([]ps.Process, error) {
 		return nil, fmt.Errorf("Testing error")
 	}
-	terminateAll(fn, "", time.Millisecond, log)
+	terminateAll(fn, "", time.Millisecond, testLog)
 
 	fn = func() ([]ps.Process, error) {
 		return nil, nil
 	}
-	terminateAll(fn, "", time.Millisecond, log)
+	terminateAll(fn, "", time.Millisecond, testLog)
 }

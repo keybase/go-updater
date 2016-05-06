@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var log = logging.Logger{Module: "test"}
+var testLog = logging.Logger{Module: "test"}
 
 func TestService(t *testing.T) {
-	ctx, upd := keybase.NewUpdaterContext("keybase", log)
-	svc := newService(upd, ctx, log)
+	ctx, upd := keybase.NewUpdaterContext("keybase", testLog)
+	svc := newService(upd, ctx, testLog)
 	assert.NotNil(t, svc)
 
 	go func() {

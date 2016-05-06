@@ -34,7 +34,7 @@ func TestUpdateSource(t *testing.T) {
 	defer server.Close()
 
 	cfg, _ := testConfig(t)
-	updateSource := newUpdateSource(cfg, server.URL, log)
+	updateSource := newUpdateSource(cfg, server.URL, testLog)
 	update, err := updateSource.FindUpdate(testOptions)
 	assert.NoError(t, err)
 	require.NotNil(t, update)
@@ -52,7 +52,7 @@ func TestUpdateSourceBadResponse(t *testing.T) {
 	defer server.Close()
 
 	cfg, _ := testConfig(t)
-	updateSource := newUpdateSource(cfg, server.URL, log)
+	updateSource := newUpdateSource(cfg, server.URL, testLog)
 	update, err := updateSource.FindUpdate(testOptions)
 	assert.EqualError(t, err, "Find update returned bad HTTP status 500 Internal Server Error")
 	assert.Nil(t, update, "Shouldn't have update")
@@ -63,7 +63,7 @@ func TestUpdateSourceTimeout(t *testing.T) {
 	defer server.Close()
 
 	cfg, _ := testConfig(t)
-	updateSource := newUpdateSource(cfg, server.URL, log)
+	updateSource := newUpdateSource(cfg, server.URL, testLog)
 	update, err := updateSource.findUpdate(testOptions, 2*time.Millisecond)
 	require.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "net/http: request canceled"))

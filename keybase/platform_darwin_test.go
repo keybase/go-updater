@@ -35,15 +35,15 @@ func (c testConfigDarwin) destinationPath() string {
 }
 
 func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigPlatform{}, log)
+	ctx := newContext(&testConfigPlatform{}, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 }
 
 func TestRestart(t *testing.T) {
-	ctx := newContext(&testConfigDarwin{}, log)
+	ctx := newContext(&testConfigDarwin{}, testLog)
 	err := ctx.Restart()
-	defer process.TerminateAll(ctx.config.destinationPath(), 200*time.Millisecond, log)
+	defer process.TerminateAll(ctx.config.destinationPath(), 200*time.Millisecond, testLog)
 	assert.NoError(t, err)
 }

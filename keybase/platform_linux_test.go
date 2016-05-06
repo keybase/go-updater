@@ -13,19 +13,19 @@ import (
 )
 
 func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigPlatform{}, log)
+	ctx := newContext(&testConfigPlatform{}, testLog)
 	_, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.Error(t, err, "Unsupported")
 }
 
 func TestPausedPrompt(t *testing.T) {
-	ctx := newContext(&testConfigPlatform{}, log)
+	ctx := newContext(&testConfigPlatform{}, testLog)
 	cancel := ctx.PausedPrompt()
 	assert.False(t, cancel)
 }
 
 func TestRestart(t *testing.T) {
-	ctx := newContext(&config{}, log)
+	ctx := newContext(&config{}, testLog)
 	err := ctx.Restart()
 	assert.EqualError(t, err, "Unsupported")
 }

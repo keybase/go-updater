@@ -6,7 +6,11 @@ package util
 import (
 	"strings"
 	"testing"
+
+	"github.com/keybase/go-logging"
 )
+
+var testLog = logging.Logger{Module: "test"}
 
 func TestJoinPredicate(t *testing.T) {
 	f := func(s string) bool { return strings.HasPrefix(s, "f") }
