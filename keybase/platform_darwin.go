@@ -78,7 +78,7 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	if err != nil {
 		return nil, err
 	}
-	return c.updatePrompt(promptPath, update, options, promptOptions)
+	return c.updatePrompt(promptPath, update, options, promptOptions, time.Hour)
 }
 
 // PausedPrompt is called when the we can't update cause the app is in use.
@@ -89,7 +89,7 @@ func (c context) PausedPrompt() bool {
 		c.log.Warningf("Error trying to get prompt path: %s", err)
 		return false
 	}
-	cancelUpdate, err := c.pausedPrompt(promptPath)
+	cancelUpdate, err := c.pausedPrompt(promptPath, 5*time.Minute)
 	if err != nil {
 		c.log.Warningf("Error in paused prompt: %s", err)
 		return false

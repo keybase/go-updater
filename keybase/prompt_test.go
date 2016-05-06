@@ -27,14 +27,7 @@ func testPromptWithCommand(t *testing.T, promptCommand string, timeout time.Dura
 	updaterOptions := cfg.updaterOptions()
 
 	promptOptions := updater.UpdatePromptOptions{AutoUpdate: false}
-
-	if timeout > 0 {
-		defaultPromptTimeout := promptTimeout
-		promptTimeout = timeout
-		defer func() { promptTimeout = defaultPromptTimeout }()
-	}
-
-	return ctx.updatePrompt(promptCommand, update, updaterOptions, promptOptions)
+	return ctx.updatePrompt(promptCommand, update, updaterOptions, promptOptions, timeout)
 }
 
 func TestPromptTimeout(t *testing.T) {
@@ -46,14 +39,14 @@ func TestPromptTimeout(t *testing.T) {
 
 func TestPromptInvalidResponse(t *testing.T) {
 	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-invalid.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, 10*time.Millisecond)
+	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
 
 func TestPromptApply(t *testing.T) {
 	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-apply.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, 0)
+	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.True(t, resp.AutoUpdate)
@@ -63,7 +56,7 @@ func TestPromptApply(t *testing.T) {
 
 func TestPromptSnooze(t *testing.T) {
 	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-snooze.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, 0)
+	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.False(t, resp.AutoUpdate)
@@ -73,7 +66,7 @@ func TestPromptSnooze(t *testing.T) {
 
 func TestPromptCancel(t *testing.T) {
 	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-cancel.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, 0)
+	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.False(t, resp.AutoUpdate)
@@ -82,7 +75,7 @@ func TestPromptCancel(t *testing.T) {
 }
 
 func TestPromptNoOutput(t *testing.T) {
-	resp, err := testPromptWithCommand(t, "echo", 0)
+	resp, err := testPromptWithCommand(t, "echo", time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.False(t, resp.AutoUpdate)
@@ -92,7 +85,7 @@ func TestPromptNoOutput(t *testing.T) {
 
 func TestPromptError(t *testing.T) {
 	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-error.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, 0)
+	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
@@ -101,14 +94,7 @@ func testPausedPromptWithCommand(t *testing.T, promptCommand string, timeout tim
 	cfg, _ := testConfig(t)
 	ctx := newContext(&cfg, log)
 	assert.NotNil(t, ctx)
-
-	if timeout > 0 {
-		defaultPromptTimeout := promptTimeout
-		promptTimeout = timeout
-		defer func() { promptTimeout = defaultPromptTimeout }()
-	}
-
-	return ctx.pausedPrompt(promptCommand)
+	return ctx.pausedPrompt(promptCommand, timeout)
 }
 
 func TestPausedPromptForce(t *testing.T) {
