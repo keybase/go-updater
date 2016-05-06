@@ -53,6 +53,11 @@ func (e Error) TypeString() string {
 	return e.errorType.String()
 }
 
+// IsCancel returns true if error was from a cancel
+func (e Error) IsCancel() bool {
+	return e.errorType == CancelError
+}
+
 // Error returns description for an UpdateError
 func (e Error) Error() string {
 	if e.source == nil {
