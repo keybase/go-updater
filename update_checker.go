@@ -4,6 +4,7 @@
 package updater
 
 import (
+	"os"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -21,7 +22,7 @@ type UpdateChecker struct {
 
 // NewUpdateChecker creates an update checker
 func NewUpdateChecker(updater *Updater, ctx Context, log logging.Logger) UpdateChecker {
-	return newUpdateChecker(updater, ctx, log, DefaultTickDuration())
+	return newUpdateChecker(updater, ctx, log, time.Hour)
 }
 
 func newUpdateChecker(updater *Updater, ctx Context, log logging.Logger, tickDuration time.Duration) UpdateChecker {
@@ -35,7 +36,16 @@ func newUpdateChecker(updater *Updater, ctx Context, log logging.Logger, tickDur
 
 func (u *UpdateChecker) check() error {
 	u.count++
-	_, err := u.updater.Update(u.ctx)
+	update, err := u.updater.Update(u.ctx)
+	if update != nil {
+		// If we received an update from the check let's exit, so the watchdog
+		// process (e.g. launchd on darwin) can restart us, no matter what, even if
+		// there was an error, and even if the update was or wasn't applied.
+		// There is no difference between doing another update check in a loop after
+		// delay and restarting the service.
+		u.log.Info("Exiting for restart")
+		os.Exit(0)
+	}
 	return err
 }
 
@@ -71,9 +81,4 @@ func (u *UpdateChecker) Stop() {
 // Count is number of times the check has been called
 func (u UpdateChecker) Count() int {
 	return u.count
-}
-
-// DefaultTickDuration is how often to call check
-func DefaultTickDuration() time.Duration {
-	return time.Hour
 }

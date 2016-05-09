@@ -25,7 +25,7 @@ func TestTerminateAll(t *testing.T) {
 	pids := []int{}
 	pids = append(pids, start())
 	pids = append(pids, start())
-	TerminateAll("sleep", time.Millisecond, log)
+	TerminateAll("sleep", time.Millisecond, testLog)
 	assertTerminated(t, pids[0])
 	assertTerminated(t, pids[1])
 }

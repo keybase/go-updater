@@ -63,6 +63,8 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	urlValues.Add("run_mode", options.Env)
 	urlValues.Add("os_version", options.OSVersion)
 	urlValues.Add("upd_version", options.UpdaterVersion)
+	// Temporarily adding for testing
+	urlValues.Add("channel", "test")
 
 	autoUpdate, _ := k.cfg.GetUpdateAuto()
 	urlValues.Add("auto_update", util.URLValueForBool(autoUpdate))
