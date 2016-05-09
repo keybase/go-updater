@@ -39,7 +39,7 @@ func (u *UpdateChecker) check() error {
 	update, err := u.updater.Update(u.ctx)
 	if update != nil {
 		// If we received an update from the check let's exit, so the watchdog
-		// process (e.g. launchd of darwin) can restart us, no matter what, even if
+		// process (e.g. launchd on darwin) can restart us, no matter what, even if
 		// there was an error, and even if the update was or wasn't applied.
 		// There is no difference between doing another update check in a loop after
 		// delay and restarting the service.
