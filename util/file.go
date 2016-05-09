@@ -114,7 +114,7 @@ func RemoveFileAtPath(path string) {
 //   openTempFile(path.Join(os.TempDir(), "foo"), "", 0600) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
 //
 func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.File, error) {
-	filename, err := RandString(prefix, 20)
+	filename, err := RandomID(prefix)
 	if err != nil {
 		return "", nil, err
 	}
@@ -171,7 +171,7 @@ func TempPath(tempDir string, prefix string) string {
 	if tempDir == "" {
 		tempDir = os.TempDir()
 	}
-	filename, err := RandString(prefix, 20)
+	filename, err := RandomID(prefix)
 	if err != nil {
 		// We had an error getting random bytes, we'll use current nanoseconds
 		filename = fmt.Sprintf("%s%d", prefix, time.Now().UnixNano())

@@ -9,28 +9,19 @@ import (
 	"strings"
 )
 
-// JoinPredicate joins strings with predicate
-func JoinPredicate(arr []string, delimeter string, f func(s string) bool) string {
-	arrNew := make([]string, 0, len(arr))
-	for _, s := range arr {
-		if f(s) {
-			arrNew = append(arrNew, s)
-		}
-	}
-	return strings.Join(arrNew, delimeter)
-}
+var randRead = rand.Read
 
-// RandString returns random (base32) string with prefix.
-func RandString(prefix string, numbytes int) (string, error) {
-	buf, err := RandBytes(numbytes)
+// RandomID returns random ID (base32) string with prefix, using 256 bits as
+// recommended by tptacek: https://gist.github.com/tqbf/be58d2d39690c3b366ad
+func RandomID(prefix string) (string, error) {
+	buf, err := RandBytes(32)
 	if err != nil {
 		return "", err
 	}
 	str := prefix + base32.StdEncoding.EncodeToString(buf)
+	str = strings.Replace(str, "=", "", -1)
 	return str, nil
 }
-
-var randRead = rand.Read
 
 // RandBytes returns random bytes of length
 func RandBytes(length int) ([]byte, error) {
