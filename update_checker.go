@@ -4,6 +4,7 @@
 package updater
 
 import (
+	"os"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -35,7 +36,14 @@ func newUpdateChecker(updater *Updater, ctx Context, log logging.Logger, tickDur
 
 func (u *UpdateChecker) check() error {
 	u.count++
-	_, err := u.updater.Update(u.ctx)
+	update, err := u.updater.Update(u.ctx)
+	if update != nil {
+		// If we received an update let's exit, so the watchdog process can restart
+		// us, no matter what, even if there was an error, and even if the update
+		//  was or wasn't applied.
+		u.log.Info("Exiting for restart")
+		os.Exit(0)
+	}
 	return err
 }
 

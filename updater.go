@@ -11,7 +11,7 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.2.1"
+const Version = "0.2.2"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -119,6 +119,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, err
 	}
 
+	u.log.Info("Restarting")
 	if err := ctx.Restart(); err != nil {
 		return update, restartErr(err)
 	}
@@ -127,14 +128,17 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 }
 
 func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) error {
+	u.log.Info("Before apply")
 	if err := ctx.BeforeApply(update); err != nil {
 		return applyErr(err)
 	}
 
+	u.log.Info("Applying update")
 	if err := u.platformApplyUpdate(update, options); err != nil {
 		return applyErr(err)
 	}
 
+	u.log.Info("After apply")
 	if err := ctx.AfterApply(update); err != nil {
 		return applyErr(err)
 	}
