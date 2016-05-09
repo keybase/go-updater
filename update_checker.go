@@ -22,7 +22,7 @@ type UpdateChecker struct {
 
 // NewUpdateChecker creates an update checker
 func NewUpdateChecker(updater *Updater, ctx Context, log logging.Logger) UpdateChecker {
-	return newUpdateChecker(updater, ctx, log, DefaultTickDuration())
+	return newUpdateChecker(updater, ctx, log, time.Hour)
 }
 
 func newUpdateChecker(updater *Updater, ctx Context, log logging.Logger, tickDuration time.Duration) UpdateChecker {
@@ -81,9 +81,4 @@ func (u *UpdateChecker) Stop() {
 // Count is number of times the check has been called
 func (u UpdateChecker) Count() int {
 	return u.count
-}
-
-// DefaultTickDuration is how often to call check
-func DefaultTickDuration() time.Duration {
-	return time.Hour
 }
