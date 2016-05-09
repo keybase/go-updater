@@ -11,12 +11,12 @@ before_install:
   - go get github.com/modocache/gover
   - go get github.com/keybase/go-updater/test
 script:
-  - go test -coverprofile=command.coverprofile ./command
-  - go test -coverprofile=keybase.coverprofile ./keybase
-  - go test -coverprofile=process.coverprofile ./process
-  - go test -coverprofile=service.coverprofile ./service
-  - go test -coverprofile=sources.coverprofile ./sources
-  - go test -coverprofile=util.coverprofile ./util
-  - go test -coverprofile=main.coverprofile
+  - go test -v -coverprofile=command.coverprofile ./command
+  - go test -v -coverprofile=keybase.coverprofile ./keybase
+  - go test -v -coverprofile=process.coverprofile ./process
+  - go test -v -coverprofile=service.coverprofile ./service
+  - go test -v -coverprofile=sources.coverprofile ./sources
+  - go test -v -coverprofile=util.coverprofile ./util
+  - go test -v -coverprofile=main.coverprofile
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
