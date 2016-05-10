@@ -98,5 +98,11 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	}
 
 	k.log.Debugf("Received update: %#v", update)
+
+	if util.EnvBool("KEYBASE_UPDATER_FORCE", false) {
+		k.log.Info("KEYBASE_UPDATER_FORCE is true, enabling NeedUpdate")
+		update.NeedUpdate = true
+	}
+
 	return &update, nil
 }
