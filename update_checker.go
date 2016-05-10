@@ -21,11 +21,7 @@ type UpdateChecker struct {
 }
 
 // NewUpdateChecker creates an update checker
-func NewUpdateChecker(updater *Updater, ctx Context, log logging.Logger) UpdateChecker {
-	return newUpdateChecker(updater, ctx, log, time.Hour)
-}
-
-func newUpdateChecker(updater *Updater, ctx Context, log logging.Logger, tickDuration time.Duration) UpdateChecker {
+func NewUpdateChecker(updater *Updater, ctx Context, tickDuration time.Duration, log logging.Logger) UpdateChecker {
 	return UpdateChecker{
 		updater:      updater,
 		ctx:          ctx,
@@ -63,7 +59,7 @@ func (u *UpdateChecker) Start() bool {
 	}
 	u.ticker = time.NewTicker(u.tickDuration)
 	go func() {
-		u.log.Debug("Starting (ticker)")
+		u.log.Debugf("Starting (ticker %s)", u.tickDuration)
 		for range u.ticker.C {
 			u.log.Debug("Checking for update (ticker)")
 			u.Check()

@@ -4,9 +4,14 @@
 package main
 
 import (
+	"time"
+
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/util"
 )
+
+const defaultTickDuration = time.Hour
 
 type service struct {
 	updater       *updater.Updater
@@ -28,7 +33,8 @@ func newService(upd *updater.Updater, context updater.Context, log logging.Logge
 
 func (s *service) Start() {
 	if s.updateChecker == nil {
-		updateChecker := updater.NewUpdateChecker(s.updater, s.context, s.log)
+		tickDuration := util.EnvDuration("KEYBASE_UPDATER_DELAY", defaultTickDuration)
+		updateChecker := updater.NewUpdateChecker(s.updater, s.context, tickDuration, s.log)
 		s.updateChecker = &updateChecker
 	}
 	s.updateChecker.Start()

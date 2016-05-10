@@ -18,7 +18,7 @@ func TestUpdateChecker(t *testing.T) {
 	updater, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
 
-	checker := newUpdateChecker(updater, testUpdateCheckUI{promptDelay: 10 * time.Millisecond}, log, time.Millisecond)
+	checker := NewUpdateChecker(updater, testUpdateCheckUI{promptDelay: 10 * time.Millisecond}, time.Millisecond, log)
 	defer checker.Stop()
 	started := checker.Start()
 	require.True(t, started)
@@ -78,7 +78,7 @@ func TestUpdateCheckerError(t *testing.T) {
 	updater, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
 
-	checker := NewUpdateChecker(updater, testUpdateCheckUI{verifyError: fmt.Errorf("Test verify error")}, log)
+	checker := NewUpdateChecker(updater, testUpdateCheckUI{verifyError: fmt.Errorf("Test verify error")}, time.Minute, log)
 	err = checker.check()
 	require.Error(t, err)
 }
