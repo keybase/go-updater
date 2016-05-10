@@ -41,6 +41,10 @@ type testUpdateCheckUI struct {
 	verifyError error
 }
 
+func (u testUpdateCheckUI) BeforeUpdatePrompt(_ Update, _ UpdateOptions) error {
+	return nil
+}
+
 func (u testUpdateCheckUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
 	return &UpdatePromptResponse{Action: UpdateActionApply}, nil
 }

@@ -53,6 +53,10 @@ type testUpdateUI struct {
 	successReported    bool
 }
 
+func (u testUpdateUI) BeforeUpdatePrompt(_ Update, _ UpdateOptions) error {
+	return nil
+}
+
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
 	if u.promptErr != nil {
 		return nil, u.promptErr

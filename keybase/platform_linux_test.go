@@ -14,6 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestBeforeUpdatePrompt(t *testing.T) {
+	ctx := newContext(&testConfigPlatform{}, testLog)
+	err := ctx.BeforeUpdatePrompt(testUpdate, testOptions)
+	assert.EqualError(t, err, "Update Error (cancel): Linux uses system package manager")
+}
+
 func TestUpdatePrompt(t *testing.T) {
 	ctx := newContext(&testConfigPlatform{}, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})

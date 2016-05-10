@@ -22,6 +22,7 @@ type Config interface {
 	updater.Config
 	keybasePath() string
 	promptProgram() (command.Program, error)
+	notifyProgram() string
 	destinationPath() string
 	updaterOptions() updater.UpdateOptions
 }
