@@ -234,7 +234,7 @@ func report(ctx Context, err error, update *Update, options UpdateOptions) {
 			}
 		}
 		ctx.ReportError(err, update, options)
-	} else {
+	} else if update != nil {
 		ctx.ReportSuccess(update, options)
 	}
 }
