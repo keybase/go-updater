@@ -370,4 +370,6 @@ func TestUpdaterNotNeeded(t *testing.T) {
 	update, err := upr.Update(ctx)
 	assert.NoError(t, err)
 	assert.Nil(t, update)
+
+	assert.False(t, ctx.successReported)
 }
