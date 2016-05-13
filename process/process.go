@@ -45,7 +45,7 @@ func terminateAll(fn processesFn, prefix string, killDelay time.Duration, log lo
 		log.Warningf("Error finding process: %s", err)
 		return
 	}
-	if pids == nil {
+	if len(pids) == 0 {
 		log.Warningf("No processes found with prefix %q", prefix)
 		return
 	}
@@ -61,6 +61,7 @@ func terminateAll(fn processesFn, prefix string, killDelay time.Duration, log lo
 // SIGKILL. We don't mind if we call SIGKILL on an already terminated process,
 // since there could be a race anyway where the process exits right after we
 // check if it's still running but before the SIGKILL.
+// The killDelay is not used on windows.
 func TerminatePID(pid int, killDelay time.Duration, log logging.Logger) error {
 	log.Debugf("Searching OS for %d", pid)
 	process, err := os.FindProcess(pid)

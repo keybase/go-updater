@@ -1,12 +1,14 @@
 // Copyright 2015 Keybase, Inc. All rights reserved. Use of
 // this source code is governed by the included BSD license.
 
-// +build linux
+// +build windows
 
 package process
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -14,8 +16,9 @@ import (
 )
 
 func TestTerminateAll(t *testing.T) {
+	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	start := func() int {
-		cmd := exec.Command("sleep", "10")
+		cmd := exec.Command(path, "sleep")
 		err := cmd.Start()
 		require.NoError(t, err)
 		require.NotNil(t, cmd.Process)
@@ -25,7 +28,7 @@ func TestTerminateAll(t *testing.T) {
 	pids := []int{}
 	pids = append(pids, start())
 	pids = append(pids, start())
-	TerminateAll("sleep", time.Millisecond, testLog)
-	assertTerminated(t, pids[0], "signal: terminated")
-	assertTerminated(t, pids[1], "signal: terminated")
+	TerminateAll("test", time.Millisecond, testLog)
+	assertTerminated(t, pids[0], "exit status 1")
+	assertTerminated(t, pids[1], "exit status 1")
 }

@@ -48,12 +48,12 @@ func TestTerminatePID(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func assertTerminated(t *testing.T, pid int) {
+func assertTerminated(t *testing.T, pid int, stateStr string) {
 	process, err := os.FindProcess(pid)
 	require.NoError(t, err)
 	state, err := process.Wait()
 	require.NoError(t, err)
-	assert.Equal(t, "signal: terminated", state.String())
+	assert.Equal(t, stateStr, state.String())
 }
 
 func TestTerminatePIDInvalid(t *testing.T) {
