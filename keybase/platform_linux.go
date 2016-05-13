@@ -41,7 +41,7 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
-func (c config) promptProgram() (string, error) {
+func (c config) promptProgram() (command.Program, error) {
 	return command.Program{}, fmt.Errorf("Unsupported")
 }
 
