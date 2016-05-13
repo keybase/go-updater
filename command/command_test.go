@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,7 +28,8 @@ func TestExecEmpty(t *testing.T) {
 
 func TestExecInvalid(t *testing.T) {
 	result, err := Exec("invalidexecutable", nil, time.Second, testLog)
-	assert.EqualError(t, err, `exec: "invalidexecutable": executable file not found in $PATH`)
+	assert.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), `exec: "invalidexecutable": executable file not found in `))
 	assert.Equal(t, result.Stdout.String(), "")
 	assert.Equal(t, result.Stderr.String(), "")
 }
@@ -153,16 +155,28 @@ func TestExecTimeoutProcessKilled(t *testing.T) {
 	assert.NotNil(t, perr, "Should have errored killing since killing non-existant process should error")
 }
 
+// TestExecNoExit runs a go binary called test from package go-updater/test,
+// that should be installed prior to running the tests.
 func TestExecNoExit(t *testing.T) {
 	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
-	_, err := Exec(path, []string{}, 10*time.Millisecond, testLog)
+	_, err := Exec(path, []string{"noexit"}, 10*time.Millisecond, testLog)
 	require.EqualError(t, err, "Error running command: timed out")
 }
 
 func TestExecOutput(t *testing.T) {
-	testCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/echo-out-err.sh")
-	result, err := execWithFunc(testCommand, nil, exec.Command, time.Second, testLog)
+	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
+	result, err := execWithFunc(path, []string{"output"}, exec.Command, time.Second, testLog)
 	assert.NoError(t, err)
 	assert.Equal(t, "stdout output\n", result.Stdout.String())
 	assert.Equal(t, "stderr output\n", result.Stderr.String())
+}
+
+func TestProgramArgsWith(t *testing.T) {
+	assert.Equal(t, []string(nil), Program{Args: nil}.ArgsWith(nil))
+	assert.Equal(t, []string(nil), Program{Args: []string{}}.ArgsWith(nil))
+	assert.Equal(t, []string{}, Program{Args: nil}.ArgsWith([]string{}))
+	assert.Equal(t, []string{}, Program{Args: []string{}}.ArgsWith([]string{}))
+	assert.Equal(t, []string{"1"}, Program{Args: []string{"1"}}.ArgsWith(nil))
+	assert.Equal(t, []string{"1", "2"}, Program{Args: []string{"1"}}.ArgsWith([]string{"2"}))
+	assert.Equal(t, []string{"2"}, Program{Args: []string{}}.ArgsWith([]string{"2"}))
 }

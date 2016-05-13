@@ -6,6 +6,7 @@ package process
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -56,10 +57,10 @@ func terminateAll(fn processesFn, prefix string, killDelay time.Duration, log lo
 }
 
 // TerminatePID is an overly simple way to terminate a PID.
-// It calls SIGTERM, then waits a killDelay and then calls SIGKILL.
-// We don't mind if we call SIGKILL on an already terminated process, since
-// there could be a race anyway where the process exits right after we check
-// if it's still running but before the SIGKILL.
+// On darwin and linux, it calls SIGTERM, then waits a killDelay and then calls
+// SIGKILL. We don't mind if we call SIGKILL on an already terminated process,
+// since there could be a race anyway where the process exits right after we
+// check if it's still running but before the SIGKILL.
 func TerminatePID(pid int, killDelay time.Duration, log logging.Logger) error {
 	log.Debugf("Searching OS for %d", pid)
 	process, err := os.FindProcess(pid)
@@ -70,12 +71,15 @@ func TerminatePID(pid int, killDelay time.Duration, log logging.Logger) error {
 		return fmt.Errorf("No process found with pid %d", pid)
 	}
 
-	log.Debugf("Terminating: %#v", process)
-	err = process.Signal(syscall.SIGTERM)
-	if err != nil {
-		log.Warningf("Error sending terminate: %s", err)
+	// Sending TERM is not supported on windows
+	if runtime.GOOS != "windows" {
+		log.Debugf("Terminating: %#v", process)
+		err = process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Warningf("Error sending terminate: %s", err)
+		}
+		time.Sleep(killDelay)
 	}
-	time.Sleep(killDelay)
 	_ = process.Kill()
 	return err
 }

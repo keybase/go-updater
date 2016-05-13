@@ -16,7 +16,7 @@ import (
 )
 
 func testConfig(t *testing.T) (config, error) {
-	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-version.sh")
+	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	return newConfig("KeybaseTest", testPathToKeybase, testLog)
 }
 
@@ -59,7 +59,7 @@ func TestConfig(t *testing.T) {
 		DestinationPath: "",
 		Channel:         "test",
 		Env:             "prod",
-		Arch:            "amd64",
+		Arch:            runtime.GOARCH,
 		Force:           false,
 		OSVersion:       cfg.osVersion(),
 		UpdaterVersion:  updater.Version,

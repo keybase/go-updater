@@ -124,11 +124,11 @@ func TestURLExistsTimeout(t *testing.T) {
 func TestURLExistsFile(t *testing.T) {
 	path, err := WriteTempFile("TestURLExistsFile", []byte(""), 0600)
 	assert.NoError(t, err)
-	exists, err := URLExists(fmt.Sprintf("file://%s", path), 0, testLog)
+	exists, err := URLExists(URLStringForPath(path), 0, testLog)
 	assert.NoError(t, err)
 	assert.True(t, exists)
 
-	exists, err = URLExists("file:///invalid", 0, testLog)
+	exists, err = URLExists(URLStringForPath("/invalid"), 0, testLog)
 	assert.NoError(t, err)
 	assert.False(t, exists)
 }
@@ -205,7 +205,7 @@ func TestDownloadURLLocal(t *testing.T) {
 	var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
 	destinationPath := TempPath("", "TestDownloadURLLocal.")
 	defer RemoveFileAtPath(destinationPath)
-	err := DownloadURL(fmt.Sprintf("file://%s", testZipPath), destinationPath, DownloadURLOptions{})
+	err := DownloadURL(URLStringForPath(testZipPath), destinationPath, DownloadURLOptions{})
 	assert.NoError(t, err)
 
 	exists, err := FileExists(destinationPath)

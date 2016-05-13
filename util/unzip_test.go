@@ -7,13 +7,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // testZipPath is a valid zip file
 var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+
+// testSymZipPath is a valid zip file with a symbolic link
+var testSymZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test-with-sym.zip")
 
 // testCorruptedZipPath is a corrupted zip file (flipped a bit)
 var testCorruptedZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test-corrupted2.zip")
@@ -28,14 +33,13 @@ func assertFileExists(t *testing.T, path string) {
 	assert.True(t, fileExists)
 }
 
-func TestUnzipOverValid(t *testing.T) {
+func testUnzipOverValid(t *testing.T, path string) string {
 	destinationPath := TempPath("", "TestUnzipOver.")
-	defer RemoveFileAtPath(destinationPath)
 
 	noCheck := func(sourcePath, destinationPath string) error { return nil }
 
-	err := UnzipOver(testZipPath, "test", destinationPath, noCheck, testLog)
-	assert.NoError(t, err)
+	err := UnzipOver(path, "test", destinationPath, noCheck, testLog)
+	require.NoError(t, err)
 
 	dirExists, err := FileExists(destinationPath)
 	assert.NoError(t, err)
@@ -45,27 +49,39 @@ func TestUnzipOverValid(t *testing.T) {
 	assertFileExists(t, filepath.Join(destinationPath, "testfolder"))
 	assertFileExists(t, filepath.Join(destinationPath, "testfolder", "testsubfolder"))
 	assertFileExists(t, filepath.Join(destinationPath, "testfolder", "testsubfolder", "testfile2"))
-	assertFileExists(t, filepath.Join(destinationPath, "testfolder", "testlink"))
 
 	// Unzip again over existing path
-	err = UnzipOver(testZipPath, "test", destinationPath, noCheck, testLog)
-	assert.NoError(t, err)
+	err = UnzipOver(path, "test", destinationPath, noCheck, testLog)
+	require.NoError(t, err)
 
 	dirExists2, err := FileExists(destinationPath)
-	assert.NoError(t, err)
-	assert.True(t, dirExists2)
+	require.NoError(t, err)
+	require.True(t, dirExists2)
 
 	fileExists2, err := FileExists(filepath.Join(destinationPath, "testfile"))
-	assert.NoError(t, err)
-	assert.True(t, fileExists2)
+	require.NoError(t, err)
+	require.True(t, fileExists2)
 
 	// Unzip again over existing path, fail check
 	failCheck := func(sourcePath, destinationPath string) error { return fmt.Errorf("Failed check") }
 	err = UnzipOver(testZipPath, "test", destinationPath, failCheck, testLog)
 	assert.Error(t, err)
 
-	err = unzipOver(testZipPath, destinationPath, testLog)
-	assert.NoError(t, err)
+	return destinationPath
+}
+
+func TestUnzipOverValid(t *testing.T) {
+	destinationPath := testUnzipOverValid(t, testZipPath)
+	defer RemoveFileAtPath(destinationPath)
+}
+
+func TestUnzipOverSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Symlink in zip unsupported on Windows")
+	}
+	destinationPath := testUnzipOverValid(t, testSymZipPath)
+	defer RemoveFileAtPath(destinationPath)
+	assertFileExists(t, filepath.Join(destinationPath, "testfolder", "testlink"))
 }
 
 func TestUnzipOverInvalidPath(t *testing.T) {

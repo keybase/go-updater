@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -110,5 +111,6 @@ func TestSaltpackCheckNoKID(t *testing.T) {
 
 func TestSaltpackVerifyNoFile(t *testing.T) {
 	err := SaltpackVerifyDetachedFileAtPath("/invalid", signature1, validCodeSigningKIDs, log)
-	require.EqualError(t, err, "open /invalid: no such file or directory")
+	assert.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), "open /invalid: "))
 }

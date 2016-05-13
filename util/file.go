@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -131,6 +134,7 @@ func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.F
 
 // FileExists returns whether the given file or directory exists or not
 func FileExists(path string) (bool, error) {
+	fmt.Printf("%s\n", path)
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -288,4 +292,34 @@ func ReadFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+// URLStringForPath returns an URL as string with file scheme for path.
+// For example,
+//     /usr/local/go/bin => file:///usr/local/go/bin
+//     C:\Go\bin => file:///C:/Go/bin
+func URLStringForPath(path string) string {
+	switch runtime.GOOS {
+	case "windows":
+		// Include leading slash on windows
+		return fmt.Sprintf("%s:///%s", fileScheme, filepath.ToSlash(path))
+	default:
+		return fmt.Sprintf("%s://%s", fileScheme, path)
+	}
+}
+
+// PathFromURL returns path for file URL scheme
+// For example,
+//     file:///usr/local/go/bin => /usr/local/go/bin
+//     file:///C:/Go/bin => C:\Go\bin
+func PathFromURL(u *url.URL) string {
+	path := u.Path
+	if runtime.GOOS == "windows" && u.Scheme == fileScheme {
+		// Remove leading slash for Windows
+		if strings.HasPrefix(path, "/") {
+			path = path[1:]
+		}
+		path = filepath.FromSlash(path)
+	}
+	return path
 }

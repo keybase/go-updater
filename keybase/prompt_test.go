@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 	"github.com/stretchr/testify/assert"
 )
 
-func testPromptWithCommand(t *testing.T, promptCommand string, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
+func testPromptWithProgram(t *testing.T, promptProgram command.Program, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
 	cfg, _ := testConfig(t)
 	ctx := newContext(&cfg, testLog)
 	assert.NotNil(t, ctx)
@@ -27,26 +28,38 @@ func testPromptWithCommand(t *testing.T, promptCommand string, timeout time.Dura
 	updaterOptions := cfg.updaterOptions()
 
 	promptOptions := updater.UpdatePromptOptions{AutoUpdate: false}
-	return ctx.updatePrompt(promptCommand, update, updaterOptions, promptOptions, timeout)
+	return ctx.updatePrompt(promptProgram, update, updaterOptions, promptOptions, timeout)
 }
 
 func TestPromptTimeout(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-sleep.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, 10*time.Millisecond)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"sleep"},
+	}
+	resp, err := testPromptWithProgram(t, promptProgram, 10*time.Millisecond)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
 
 func TestPromptInvalidResponse(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-invalid.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{invalid}`},
+	}
+	resp, err := testPromptWithProgram(t, promptProgram, time.Second)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
 
 func TestPromptApply(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-apply.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{
+  		"action": "apply",
+  		"autoUpdate": true
+		}`},
+	}
+	resp, err := testPromptWithProgram(t, promptProgram, time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.True(t, resp.AutoUpdate)
@@ -55,8 +68,14 @@ func TestPromptApply(t *testing.T) {
 }
 
 func TestPromptSnooze(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-snooze.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{
+  		"action": "snooze",
+  		"autoUpdate": true
+		}`},
+	}
+	resp, err := testPromptWithProgram(t, promptProgram, time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.False(t, resp.AutoUpdate)
@@ -65,8 +84,14 @@ func TestPromptSnooze(t *testing.T) {
 }
 
 func TestPromptCancel(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-cancel.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{
+  		"action": "cancel",
+  		"autoUpdate": true
+		}`},
+	}
+	resp, err := testPromptWithProgram(t, promptProgram, time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.False(t, resp.AutoUpdate)
@@ -75,7 +100,11 @@ func TestPromptCancel(t *testing.T) {
 }
 
 func TestPromptNoOutput(t *testing.T) {
-	resp, err := testPromptWithCommand(t, "echo", time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo"},
+	}
+	resp, err := testPromptWithProgram(t, promptProgram, time.Second)
 	assert.NoError(t, err)
 	if assert.NotNil(t, resp) {
 		assert.False(t, resp.AutoUpdate)
@@ -84,29 +113,38 @@ func TestPromptNoOutput(t *testing.T) {
 }
 
 func TestPromptError(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-error.sh")
-	resp, err := testPromptWithCommand(t, promptCommand, time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"err"},
+	}
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, time.Second)
 	assert.Error(t, err)
-	assert.Nil(t, resp)
+	assert.False(t, cancel)
 }
 
-func testPausedPromptWithCommand(t *testing.T, promptCommand string, timeout time.Duration) (bool, error) {
+func testPausedPromptWithProgram(t *testing.T, promptProgram command.Program, timeout time.Duration) (bool, error) {
 	cfg, _ := testConfig(t)
 	ctx := newContext(&cfg, testLog)
 	assert.NotNil(t, ctx)
-	return ctx.pausedPrompt(promptCommand, timeout)
+	return ctx.pausedPrompt(promptProgram, timeout)
 }
 
 func TestPausedPromptForce(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-force.sh")
-	cancel, err := testPausedPromptWithCommand(t, promptCommand, time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{"button": "Force update"}`},
+	}
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, time.Second)
 	assert.NoError(t, err)
 	assert.False(t, cancel)
 }
 
 func TestPausedPromptCancel(t *testing.T) {
-	promptCommand := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-cancel.sh")
-	cancel, err := testPausedPromptWithCommand(t, promptCommand, time.Second)
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{"button": "Try again later"}`},
+	}
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, time.Second)
 	assert.NoError(t, err)
 	assert.True(t, cancel)
 }

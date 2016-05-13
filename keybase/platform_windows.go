@@ -35,8 +35,8 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
-func (c config) promptPath() (string, error) {
-	return "", fmt.Errorf("Unsupported")
+func (c config) promptProgram() (command.Program, error) {
+	return command.Program{}, fmt.Errorf("Unsupported")
 }
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
