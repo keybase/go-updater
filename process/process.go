@@ -28,8 +28,8 @@ func findPIDsWithFn(fn processesFn, prefix string, log logging.Logger) ([]int, e
 	for _, p := range processes {
 		path, err := p.Path()
 		if err != nil {
-			log.Warningf("Unable to get path for process: %s (%d)", err, p.Pid())
-			continue
+			log.Warningf("Unable to get path for process: %s (will use executable name)", err)
+			path = p.Executable()
 		}
 		if strings.HasPrefix(path, prefix) {
 			pids = append(pids, p.Pid())
