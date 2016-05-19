@@ -113,7 +113,7 @@ func TestMoveFileValid(t *testing.T) {
 	defer RemoveFileAtPath(sourcePath)
 	assert.NoError(t, err)
 
-	err = MoveFile(sourcePath, destinationPath, testLog)
+	err = MoveFile(sourcePath, destinationPath, "", testLog)
 	assert.NoError(t, err)
 	exists, err := FileExists(destinationPath)
 	assert.NoError(t, err)
@@ -127,7 +127,7 @@ func TestMoveFileValid(t *testing.T) {
 
 	// Move again with different source data, and overwrite
 	sourcePath2, err := WriteTempFile("TestMoveFile", []byte("test2"), 0600)
-	err = MoveFile(sourcePath2, destinationPath, testLog)
+	err = MoveFile(sourcePath2, destinationPath, "", testLog)
 	assert.NoError(t, err)
 	exists, err = FileExists(destinationPath)
 	assert.NoError(t, err)
@@ -148,7 +148,7 @@ func TestMoveFileDirValid(t *testing.T) {
 	defer RemoveFileAtPath(sourcePath)
 	assert.NoError(t, err)
 
-	err = MoveFile(sourcePath, destinationPath, testLog)
+	err = MoveFile(sourcePath, destinationPath, "", testLog)
 	assert.NoError(t, err)
 	exists, err := FileExists(destinationPath)
 	assert.NoError(t, err)
@@ -156,7 +156,7 @@ func TestMoveFileDirValid(t *testing.T) {
 
 	// Move again with different source data, and overwrite
 	sourcePath2, err := WriteTempDir("TestMoveDir", 0700)
-	err = MoveFile(sourcePath2, destinationPath, testLog)
+	err = MoveFile(sourcePath2, destinationPath, "", testLog)
 	assert.NoError(t, err)
 	exists, err = FileExists(destinationPath)
 	assert.NoError(t, err)
@@ -166,7 +166,7 @@ func TestMoveFileDirValid(t *testing.T) {
 func TestMoveFileInvalidSource(t *testing.T) {
 	sourcePath := "/invalid"
 	destinationPath := TempPath("", "TestMoveFileDestination")
-	err := MoveFile(sourcePath, destinationPath, testLog)
+	err := MoveFile(sourcePath, destinationPath, "", testLog)
 	assert.Error(t, err)
 
 	exists, err := FileExists(destinationPath)
@@ -177,7 +177,7 @@ func TestMoveFileInvalidSource(t *testing.T) {
 func TestMoveFileInvalidDest(t *testing.T) {
 	sourcePath := "/invalid"
 	destinationPath := TempPath("", "TestMoveFileDestination")
-	err := MoveFile(sourcePath, destinationPath, testLog)
+	err := MoveFile(sourcePath, destinationPath, "", testLog)
 	assert.Error(t, err)
 
 	exists, err := FileExists(destinationPath)

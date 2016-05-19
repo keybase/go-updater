@@ -148,6 +148,11 @@ func MakeParentDirs(path string, mode os.FileMode, log logging.Logger) error {
 	if dir == "" {
 		return fmt.Errorf("No base directory")
 	}
+	return MakeDirs(dir, mode, log)
+}
+
+// MakeDirs ensures directory exists for path
+func MakeDirs(dir string, mode os.FileMode, log logging.Logger) error {
 	exists, err := FileExists(dir)
 	if err != nil {
 		return err
@@ -223,12 +228,21 @@ func IsDirReal(path string) (bool, error) {
 
 // MoveFile moves a file safely.
 // It will create parent directories for destinationPath if they don't exist.
-// It will overwrite an existing destinationPath.
-func MoveFile(sourcePath string, destinationPath string, log logging.Logger) error {
+// If the destination already exists and you specify a tmpDir, it will move
+// it there, otherwise it will be removed.
+func MoveFile(sourcePath string, destinationPath string, tmpDir string, log logging.Logger) error {
 	if _, statErr := os.Stat(destinationPath); statErr == nil {
-		log.Infof("Removing existing destination path: %s", destinationPath)
-		if removeErr := os.RemoveAll(destinationPath); removeErr != nil {
-			return removeErr
+		if tmpDir == "" {
+			log.Infof("Removing existing destination path: %s", destinationPath)
+			if removeErr := os.RemoveAll(destinationPath); removeErr != nil {
+				return removeErr
+			}
+		} else {
+			tmpPath := filepath.Join(tmpDir, filepath.Base(destinationPath))
+			log.Infof("Moving existing destination %q to %q", destinationPath, tmpPath)
+			if tmpMoveErr := os.Rename(destinationPath, tmpPath); tmpMoveErr != nil {
+				return tmpMoveErr
+			}
 		}
 	}
 
