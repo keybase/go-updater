@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -107,16 +108,20 @@ func TestIsDirReal(t *testing.T) {
 	assert.False(t, ok)
 
 	// Windows requires privileges to create symbolic links
-	if runtime.GOOS != "windows" {
-		symLinkPath := TempPath("", "TestIsDirReal")
-		err = os.Symlink(os.TempDir(), symLinkPath)
-		defer RemoveFileAtPath(symLinkPath)
+	symLinkPath := TempPath("", "TestIsDirReal")
+	defer RemoveFileAtPath(symLinkPath)
+	target := os.TempDir()
+	if runtime.GOOS == "windows" {
+		err = exec.Command("cmd", "/C", "mklink", "/J", symLinkPath, target).Run()
 		assert.NoError(t, err)
-		ok, err = IsDirReal(symLinkPath)
-		assert.Error(t, err)
-		assert.Equal(t, "Path is a symlink", err.Error())
-		assert.False(t, ok)
+	} else {
+		err = os.Symlink(target, symLinkPath)
+		assert.NoError(t, err)
 	}
+	ok, err = IsDirReal(symLinkPath)
+	assert.Error(t, err)
+	assert.Equal(t, "Path is a symlink", err.Error())
+	assert.False(t, ok)
 }
 
 func TestMoveFileValid(t *testing.T) {
@@ -285,22 +290,42 @@ func TestReadFile(t *testing.T) {
 	require.True(t, strings.HasPrefix(err.Error(), "open /invalid: "))
 }
 
+func TestURLStringForPathWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows only test")
+	}
+	assert.Equal(t, "file:///C:/Go/bin", URLStringForPath(`C:\Go\bin`))
+	assert.Equal(t, "file:///C:/Program%20Files", URLStringForPath(`C:\Program Files`))
+	assert.Equal(t, "file:///C:/test%20%E2%9C%93%E2%9C%93", URLStringForPath(`C:\test ✓✓`))
+}
+
 func TestURLStringForPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		assert.Equal(t, "file:///C:/Go/bin", URLStringForPath(`C:\Go\bin`))
-	} else {
-		assert.Equal(t, "file:///usr/local/go/bin", URLStringForPath("/usr/local/go/bin"))
+		t.Skip("See TestURLStringForPathWindows")
 	}
+	assert.Equal(t, "file:///usr/local/go/bin", URLStringForPath("/usr/local/go/bin"))
+	assert.Equal(t, "file:///Applications/System%20Preferences.app", URLStringForPath("/Applications/System Preferences.app"))
+	assert.Equal(t, "file:///test%20%E2%9C%93%E2%9C%93", URLStringForPath("/test ✓✓"))
+}
+
+func TestPathFromURLWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows only test")
+	}
+	url, err := url.Parse("file:///C:/Go/bin")
+	require.NoError(t, err)
+	assert.Equal(t, `C:\Go\bin`, PathFromURL(url))
 }
 
 func TestPathFromURL(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		url, err := url.Parse("file:///C:/Go/bin")
-		require.NoError(t, err)
-		assert.Equal(t, `C:\Go\bin`, PathFromURL(url))
-	} else {
-		url, err := url.Parse("file:///usr/local/go/bin")
-		require.NoError(t, err)
-		assert.Equal(t, "/usr/local/go/bin", PathFromURL(url))
+		t.Skip("See TestPathFromURLWindows")
 	}
+	url, err := url.Parse("file:///usr/local/go/bin")
+	require.NoError(t, err)
+	assert.Equal(t, "/usr/local/go/bin", PathFromURL(url))
+
+	url, err = url.Parse("file:///Applications/System%20Preferences.app")
+	require.NoError(t, err)
+	assert.Equal(t, "/Applications/System Preferences.app", PathFromURL(url))
 }

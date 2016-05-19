@@ -134,7 +134,6 @@ func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.F
 
 // FileExists returns whether the given file or directory exists or not
 func FileExists(path string) (bool, error) {
-	fmt.Printf("%s\n", path)
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -299,12 +298,15 @@ func ReadFile(path string) ([]byte, error) {
 //     /usr/local/go/bin => file:///usr/local/go/bin
 //     C:\Go\bin => file:///C:/Go/bin
 func URLStringForPath(path string) string {
+	u := &url.URL{Path: filepath.ToSlash(path)}
+	encodedPath := u.String()
+
 	switch runtime.GOOS {
 	case "windows":
 		// Include leading slash on windows
-		return fmt.Sprintf("%s:///%s", fileScheme, filepath.ToSlash(path))
+		return fmt.Sprintf("%s:///%s", fileScheme, encodedPath)
 	default:
-		return fmt.Sprintf("%s://%s", fileScheme, path)
+		return fmt.Sprintf("%s://%s", fileScheme, encodedPath)
 	}
 }
 
