@@ -60,7 +60,8 @@ func unzipOver(sourcePath string, destinationPath string, log logging.Logger) er
 }
 
 // Unzip unpacks a zip file to a destination.
-// See https://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang/20357902
+// This unpacks files using the current user and time (it doesn't preserve).
+// This code was modified from https://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang/20357902
 func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
 	r, err := zip.OpenReader(sourcePath)
 	if err != nil {
