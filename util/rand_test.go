@@ -9,12 +9,12 @@ import (
 )
 
 func TestRandString(t *testing.T) {
-	s, err := RandomID("prefix.")
+	s, err := RandomID("prefix=")
 	t.Logf("Rand string: %s", s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(s, "prefix.") {
+	if !strings.HasPrefix(s, "prefix=") {
 		t.Errorf("Invalid prefix: %s", s)
 	}
 	if len(s)-len("prefix.") != 52 {
