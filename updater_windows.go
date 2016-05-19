@@ -10,7 +10,7 @@ import (
 	"os/exec"
 )
 
-func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
+func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions, tmpDir string) error {
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
