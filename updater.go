@@ -78,6 +78,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		// No update available
 		return nil, nil
 	}
+	u.log.Infof("Got update with version: %s", update.Version)
 
 	// Prompt for update
 	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
@@ -184,14 +185,13 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 	}
 
 	// Save InstallID if we received one
-	if update.InstallID != "" {
+	if update.InstallID != "" && u.config.GetInstallID() != update.InstallID {
 		if err := u.config.SetInstallID(update.InstallID); err != nil {
 			u.log.Warningf("Error saving install ID: %s", err)
 			ctx.ReportError(configErr(fmt.Errorf("Error saving install ID: %s", err)), update, options)
 		}
 	}
 
-	u.log.Infof("Got update with version: %s", update.Version)
 	return update, nil
 }
 
