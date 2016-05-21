@@ -72,6 +72,6 @@ func (r RemoteUpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.
 		return nil, fmt.Errorf("Bad updater remote response %s", err)
 	}
 
-	r.log.Debugf("Received update %#v", update)
+	r.log.Debugf("Received update response: %#v", update)
 	return &update, nil
 }

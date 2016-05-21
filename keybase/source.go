@@ -97,7 +97,7 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 		return nil, fmt.Errorf("Invalid API response %s", err)
 	}
 
-	k.log.Debugf("Received update: %#v", update)
+	k.log.Debugf("Received update response: %#v", update)
 
 	if util.EnvBool("KEYBASE_UPDATER_FORCE", false) {
 		k.log.Info("KEYBASE_UPDATER_FORCE is true, enabling NeedUpdate")
