@@ -89,10 +89,6 @@ func TestReportSuccess(t *testing.T) {
 	server := newServer("{}")
 	defer server.Close()
 
-	tmp := defaultEndpoints.success
-	defaultEndpoints.success = server.URL
-	defer func() { defaultEndpoints.success = tmp }()
-
 	ctx := testContext(t)
 	err := ctx.reportSuccess(&testUpdate, testOptions, server.URL, testReportTimeout)
 	assert.NoError(t, err)
