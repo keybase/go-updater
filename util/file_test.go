@@ -62,7 +62,7 @@ func TestTempPathValid(t *testing.T) {
 	tempPath := TempPath("", "TempPrefix.")
 	t.Logf("Temp path: %s", tempPath)
 	assert.True(t, strings.HasPrefix(filepath.Base(tempPath), "TempPrefix."))
-	assert.Equal(t, len(filepath.Base(tempPath)), 43)
+	assert.Equal(t, len(filepath.Base(tempPath)), 63)
 }
 
 func TestTempPathRandFail(t *testing.T) {
