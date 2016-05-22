@@ -1,12 +1,10 @@
+# environment variables
 environment:
   global:
     GOPATH: c:\work\
-# clone directory
-clone_folder: c:\work\src\github.com\keybase\go-updater
 
-#---------------------------------#
-#       build configuration       #
-#---------------------------------#
+# clone path
+clone_folder: c:\work\src\github.com\keybase\go-updater
 
 # build platform, i.e. x86, x64, Any CPU. This setting is optional.
 #platform: Any CPU
@@ -21,12 +19,13 @@ after_build:
 build_script:
   - go version
   - go build
+  - go get github.com/stretchr/testify/assert
+  - go get github.com/stretchr/testify/require
   - go get github.com/keybase/go-updater/test
+  - go test -short -v
 
-# to disable automatic builds
-#build: off
+# to disable automatic tests
+test: off
 
-# to run your custom scripts instead of automatic tests
-test_script:
-  - go list ./... | find /V "vendor" > testlist.txt
-  - for /f %%i in (testlist.txt) do (appveyor AddTest %%i -Outcome Running -Framework gotest -Filename %%i & go test -timeout 30m %%i && appveyor UpdateTest %%i -Outcome Passed -Framework gotest -Filename %%i -Duration 0) || (appveyor UpdateTest %%i -Outcome Failed -Framework gotest -Filename %%i -Duration 0 & exit /b 1)
+# to disable deployment
+deploy: off

@@ -1,6 +1,7 @@
 # Updater
 
 [![Build Status](https://travis-ci.org/keybase/go-updater.svg?branch=master)](https://travis-ci.org/keybase/go-updater)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/keybase/go-updaterbranch=master&svg=true)](https://ci.appveyor.com/project/keybase/go-updater)
 [![Coverage Status](https://coveralls.io/repos/github/keybase/go-updater/badge.svg?branch=master)](https://coveralls.io/github/keybase/go-updater?branch=master)
 [![GoDoc](https://godoc.org/github.com/keybase/go-updater?status.svg)](https://godoc.org/github.com/keybase/go-updater)
 
