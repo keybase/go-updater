@@ -77,15 +77,21 @@ func TerminatePID(pid int, killDelay time.Duration, log logging.Logger) error {
 		return fmt.Errorf("No process found with pid %d", pid)
 	}
 
-	// Sending TERM is not supported on windows
-	if runtime.GOOS != "windows" {
-		log.Debugf("Terminating: %#v", process)
-		err = process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Warningf("Error sending terminate: %s", err)
-		}
-		time.Sleep(killDelay)
+	// Sending SIGTERM is not supported on windows, so we can use process.Kill()
+	if runtime.GOOS == "windows" {
+		return process.Kill()
 	}
+
+	log.Debugf("Terminating: %#v", process)
+	err = process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Warningf("Error sending terminate: %s", err)
+	}
+	time.Sleep(killDelay)
+	// Ignore SIGKILL error since it will be that the process wasn't running if
+	// the terminate above succeeded. If terminate didn't succeed above, then
+	// this SIGKILL is a measure of last resort, and an error would signify that
+	// something in the environment has gone terribly wrong.
 	_ = process.Kill()
 	return err
 }
