@@ -74,6 +74,7 @@ func (c context) report(data url.Values, update *updater.Update, options updater
 	if err != nil {
 		return err
 	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 	client, err := httpClient(timeout)
 	if err != nil {
 		return err
