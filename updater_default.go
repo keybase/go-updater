@@ -5,6 +5,6 @@
 
 package updater
 
-func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
+func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions, tmpDir string) error {
 	return nil
 }

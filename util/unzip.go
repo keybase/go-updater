@@ -19,12 +19,14 @@ import (
 // The filename must have a ".zip" extension.
 // You can specify a check function, which will run before moving the unzipped
 // directory into place.
+// If you specify a tmpDir and destination path exists, it will be moved there
+// instead of being removed.
 //
 // To unzip Keybase-1.2.3.zip and move the contents Keybase.app to /Applications/Keybase.app
 //
-//   UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, log)
+//   UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, "", log)
 //
-func UnzipOver(sourcePath string, path string, destinationPath string, check func(sourcePath, destinationPath string) error, log logging.Logger) error {
+func UnzipOver(sourcePath string, path string, destinationPath string, check func(sourcePath, destinationPath string) error, tmpDir string, log logging.Logger) error {
 	unzipPath := fmt.Sprintf("%s.unzipped", sourcePath)
 	defer RemoveFileAtPath(unzipPath)
 	err := unzipOver(sourcePath, unzipPath, log)
@@ -39,7 +41,7 @@ func UnzipOver(sourcePath string, path string, destinationPath string, check fun
 		return err
 	}
 
-	return MoveFile(contentPath, destinationPath, log)
+	return MoveFile(contentPath, destinationPath, tmpDir, log)
 }
 
 func unzipOver(sourcePath string, destinationPath string, log logging.Logger) error {

@@ -217,7 +217,7 @@ func downloadURL(urlString string, destinationPath string, options DownloadURLOp
 		}
 	}
 
-	if err := MoveFile(savePath, destinationPath, log); err != nil {
+	if err := MoveFile(savePath, destinationPath, "", log); err != nil {
 		return cached, err
 	}
 

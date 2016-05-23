@@ -5,6 +5,7 @@ package updater
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/util"
@@ -116,7 +117,9 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, verifyErr(err)
 	}
 
-	if err := u.apply(ctx, *update, options); err != nil {
+	tmpDir := u.tempDir()
+	defer u.Cleanup(tmpDir)
+	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
 		return update, err
 	}
 
@@ -128,14 +131,14 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	return update, nil
 }
 
-func (u *Updater) apply(ctx Context, update Update, options UpdateOptions) error {
+func (u *Updater) apply(ctx Context, update Update, options UpdateOptions, tmpDir string) error {
 	u.log.Info("Before apply")
 	if err := ctx.BeforeApply(update); err != nil {
 		return applyErr(err)
 	}
 
 	u.log.Info("Applying update")
-	if err := u.platformApplyUpdate(update, options); err != nil {
+	if err := u.platformApplyUpdate(update, options, tmpDir); err != nil {
 		return applyErr(err)
 	}
 
@@ -236,5 +239,26 @@ func report(ctx Context, err error, update *Update, options UpdateOptions) {
 		ctx.ReportError(err, update, options)
 	} else if update != nil {
 		ctx.ReportSuccess(update, options)
+	}
+}
+
+// tempDir, if specified, will contain files that were replaced during an update
+// and will be removed after an update. The temp dir should exist.
+func (u *Updater) tempDir() string {
+	tmpDir := util.TempPath("", "Updater")
+	if err := util.MakeDirs(tmpDir, 0700, u.log); err != nil {
+		u.log.Warningf("Error trying to create temp dir: %s", err)
+		return ""
+	}
+	return tmpDir
+}
+
+// Cleanup removes temporary files
+func (u *Updater) Cleanup(tmpDir string) {
+	if tmpDir != "" {
+		u.log.Debugf("Remove temporary directory: %q", tmpDir)
+		if err := os.RemoveAll(tmpDir); err != nil {
+			u.log.Warningf("Error removing temporary directory %q: %s", tmpDir, err)
+		}
 	}
 }

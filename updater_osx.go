@@ -26,13 +26,13 @@ func (u *Updater) check(sourcePath string, destinationPath string) error {
 	return nil
 }
 
-func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions) error {
+func (u *Updater) platformApplyUpdate(update Update, options UpdateOptions, tmpDir string) error {
 	localPath := update.Asset.LocalPath
 	destinationPath := options.DestinationPath
 
 	// The file name we unzip over should match the (base) file in the destination path
 	filename := filepath.Base(destinationPath)
-	if err := util.UnzipOver(localPath, filename, destinationPath, u.check, u.log); err != nil {
+	if err := util.UnzipOver(localPath, filename, destinationPath, u.check, tmpDir, u.log); err != nil {
 		return err
 	}
 
