@@ -46,18 +46,22 @@ type WindowsProcess struct {
 	exe  string
 }
 
+// Pid returns process id
 func (p *WindowsProcess) Pid() int {
 	return p.pid
 }
 
+// PPid returns parent process id
 func (p *WindowsProcess) PPid() int {
 	return p.ppid
 }
 
+// Executable returns process executable name
 func (p *WindowsProcess) Executable() string {
 	return p.exe
 }
 
+// Path returns path to process executable
 func (p *WindowsProcess) Path() (string, error) {
 	processModules, err := modules(p.pid)
 	if err != nil {
@@ -88,9 +92,13 @@ func newWindowsProcess(e *PROCESSENTRY32) *WindowsProcess {
 }
 
 func findProcess(pid int) (Process, error) {
-	ps, err := processes()
+	return findProcessWithFn(processes, pid)
+}
+
+func findProcessWithFn(processesFn processesFn, pid int) (Process, error) {
+	ps, err := processesFn()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error listing processes: %s", err)
 	}
 
 	for _, p := range ps {
