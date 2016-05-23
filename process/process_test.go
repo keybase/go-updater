@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"testing"
 	"time"
 
@@ -18,23 +19,25 @@ import (
 
 var testLog = logging.Logger{Module: "test"}
 
-func TestFindPIDs(t *testing.T) {
-	pids, err := findPIDsWithFn(ps.Processes, "", testLog)
+var matchAll = func(p ps.Process) bool { return true }
+
+func TestFindPIDsWithFn(t *testing.T) {
+	pids, err := findPIDsWithFn(ps.Processes, matchAll, testLog)
 	assert.NoError(t, err)
 	assert.True(t, len(pids) > 1)
 
 	fn := func() ([]ps.Process, error) {
 		return nil, fmt.Errorf("Testing error")
 	}
-	processes, err := findPIDsWithFn(fn, "", testLog)
+	processes, err := findPIDsWithFn(fn, matchAll, testLog)
 	assert.Nil(t, processes)
 	assert.Error(t, err)
 
 	fn = func() ([]ps.Process, error) {
 		return nil, nil
 	}
-	processes, err = findPIDsWithFn(fn, "", testLog)
-	assert.Nil(t, processes)
+	processes, err = findPIDsWithFn(fn, matchAll, testLog)
+	assert.Equal(t, []int{}, processes)
 	assert.NoError(t, err)
 }
 
@@ -71,4 +74,42 @@ func TestTerminateAllFn(t *testing.T) {
 		return nil, nil
 	}
 	terminateAll(fn, "", time.Millisecond, testLog)
+}
+
+// process returns this test process' path that is running
+func process(t *testing.T) (int, string) {
+	pid := os.Getpid()
+	proc, err := findProcessWithPID(pid)
+	require.NoError(t, err)
+	path, err := proc.Path()
+	require.NoError(t, err)
+	return pid, path
+}
+
+func TestFindProcessTest(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		t.Skip("Unsupported until we have process path on linux")
+	}
+	pid, path := process(t)
+	procs, err := FindProcesses(path, 0, 0, testLog)
+	require.NoError(t, err)
+	require.True(t, len(procs) == 1)
+	assert.Equal(t, pid, procs[0].Pid())
+}
+
+func TestFindProcessWait(t *testing.T) {
+	path := "/bin/echo"
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		cmd := exec.Command(path, "hi")
+		err := cmd.Start()
+		require.NoError(t, err)
+	}()
+	procs, err := FindProcesses(path, time.Millisecond, 0, testLog)
+	require.NoError(t, err)
+	require.True(t, len(procs) == 0)
+
+	procs, err = FindProcesses(path, 20*time.Millisecond, 0, testLog)
+	require.NoError(t, err)
+	require.True(t, len(procs) == 1)
 }

@@ -33,7 +33,9 @@ func TestOpenDarwinError(t *testing.T) {
 }
 
 func TestFindPIDsLaunchd(t *testing.T) {
-	pids, err := findPIDsWithFn(ps.Processes, "/sbin/launchd", testLog)
+	match := "/sbin/launchd"
+	matchPath := func(p ps.Process) bool { return matchPath(p, match, testLog) }
+	pids, err := findPIDsWithFn(ps.Processes, matchPath, testLog)
 	assert.NoError(t, err)
 	t.Logf("Pids: %#v", pids)
 	require.True(t, len(pids) >= 1)

@@ -14,6 +14,7 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/process"
+	"github.com/keybase/go-updater/util"
 )
 
 // destinationPath returns the app bundle path where this executable is located
@@ -105,17 +106,33 @@ func (c context) Restart() error {
 		return fmt.Errorf("No destination path for restart")
 	}
 
-	procName := filepath.Join(appPath, "Contents/MacOS/")
-	process.TerminateAll(procName, time.Second, c.log)
+	serviceProcPath := "Keybase.app/Contents/SharedSupport/bin/keybase"
+	kbfsProcPath := "Keybase.app/Contents/SharedSupport/bin/kbfs"
+	appProcPath := "Keybase.app/Contents/MacOS/"
 
-	keybase := filepath.Join(appPath, "Contents/SharedSupport/bin/keybase")
-	process.TerminateAll(keybase, time.Second, c.log)
-
-	kbfs := filepath.Join(appPath, "Contents/SharedSupport/bin/kbfs")
-	process.TerminateAll(kbfs, time.Second, c.log)
+	process.TerminateAll(appProcPath, time.Second, c.log)
+	process.TerminateAll(serviceProcPath, time.Second, c.log)
+	process.TerminateAll(kbfsProcPath, time.Second, c.log)
 
 	if err := process.OpenAppDarwin(appPath, c.log); err != nil {
 		c.log.Warningf("Error opening app: %s", err)
+	}
+
+	// Check to make sure processes restarted
+	serviceProcErr := c.checkProcess(serviceProcPath)
+	kbfsProcErr := c.checkProcess(kbfsProcPath)
+	appProcErr := c.checkProcess(appProcPath)
+
+	return util.CombineErrors(serviceProcErr, kbfsProcErr, appProcErr)
+}
+
+func (c context) checkProcess(match string) error {
+	procs, err := process.FindProcesses(match, 10*time.Second, time.Second, c.log)
+	if err != nil {
+		return fmt.Errorf("Error checking on process (%s): %s", match, err)
+	}
+	if len(procs) == 0 {
+		return fmt.Errorf("No process found for %s", match)
 	}
 	return nil
 }
