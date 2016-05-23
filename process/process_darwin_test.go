@@ -19,8 +19,8 @@ import (
 
 func TestOpenDarwin(t *testing.T) {
 	appPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
-	defer TerminateAll(appPath, 200*time.Millisecond, testLog)
-
+	matcher := NewMatcher(appPath, PathEqual, testLog)
+	defer TerminateAll(matcher, 200*time.Millisecond, testLog)
 	err := OpenAppDarwin(appPath, testLog)
 	assert.NoError(t, err)
 }
@@ -33,17 +33,18 @@ func TestOpenDarwinError(t *testing.T) {
 }
 
 func TestFindPIDsLaunchd(t *testing.T) {
-	match := "/sbin/launchd"
-	matchPath := func(p ps.Process) bool { return matchPath(p, match, testLog) }
-	pids, err := findPIDsWithFn(ps.Processes, matchPath, testLog)
+	procPath := "/sbin/launchd"
+	matcher := NewMatcher(procPath, PathEqual, testLog)
+	pids, err := findPIDsWithFn(ps.Processes, matcher.Fn(), testLog)
 	assert.NoError(t, err)
 	t.Logf("Pids: %#v", pids)
 	require.True(t, len(pids) >= 1)
 }
 
 func TestTerminateAll(t *testing.T) {
+	procPath := procPath(t)
 	start := func() int {
-		cmd := exec.Command("sleep", "10")
+		cmd := exec.Command(procPath, "10")
 		err := cmd.Start()
 		require.NoError(t, err)
 		require.NotNil(t, cmd.Process)
@@ -53,7 +54,8 @@ func TestTerminateAll(t *testing.T) {
 	pids := []int{}
 	pids = append(pids, start())
 	pids = append(pids, start())
-	TerminateAll("/bin/sleep", time.Millisecond, testLog)
+	matcher := NewMatcher(procPath, PathEqual, testLog)
+	TerminateAll(matcher, time.Millisecond, testLog)
 	assertTerminated(t, pids[0], "signal: terminated")
 	assertTerminated(t, pids[1], "signal: terminated")
 }

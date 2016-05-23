@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strings"
 	"syscall"
 	"time"
 
@@ -17,39 +16,20 @@ import (
 
 type processesFn func() ([]ps.Process, error)
 
-type matchFn func(ps.Process) bool
-
-func matchPath(p ps.Process, match string, log logging.Logger) bool {
-	path, err := p.Path()
-	if err != nil {
-		log.Warningf("Unable to get path for process: %s", err)
-		return false
-	}
-	return path == match
-}
-
-func containsPath(p ps.Process, match string, log logging.Logger) bool {
-	path, err := p.Path()
-	if err != nil {
-		log.Warningf("Unable to get path for process: %s", err)
-		return false
-	}
-	return strings.Contains(path, match)
-}
-
 // FindProcesses returns processes containing string matching process path
-func FindProcesses(match string, wait time.Duration, delay time.Duration, log logging.Logger) ([]ps.Process, error) {
-	log.Infof("Finding process %q (max wait %s)", match, wait)
-	matchPath := func(p ps.Process) bool { return containsPath(p, match, log) }
+func FindProcesses(matcher Matcher, wait time.Duration, delay time.Duration, log logging.Logger) ([]ps.Process, error) {
 	start := time.Now()
-	for i := 0; time.Since(start) < wait || i == 0; i++ {
-		log.Debugf("Find process %q (%s < %s)", match, time.Since(start), wait)
-		procs, err := findProcessesWithFn(ps.Processes, matchPath, 0)
+	for {
+		log.Debugf("Find process %s (%s < %s)", matcher.match, time.Since(start), wait)
+		procs, err := findProcessesWithFn(ps.Processes, matcher.Fn(), 0)
 		if err != nil {
 			return nil, err
 		}
 		if len(procs) > 0 {
 			return procs, nil
+		}
+		if time.Since(start) >= wait {
+			break
 		}
 		time.Sleep(delay)
 	}
@@ -69,12 +49,12 @@ func findProcessWithPID(pid int) (ps.Process, error) {
 	return procs[0], nil
 }
 
-// Ignore deadcode warning
+// Currently findProcessWithPID is only used in tests, ignore deadcode warning
 var _ = findProcessWithPID
 
 // findProcessesWithFn finds processes using match function.
 // If max is != 0, then we will return that max number of processes.
-func findProcessesWithFn(processesFn processesFn, matchFn matchFn, max int) ([]ps.Process, error) {
+func findProcessesWithFn(processesFn processesFn, matchFn MatchFn, max int) ([]ps.Process, error) {
 	processes, err := processesFn()
 	if err != nil {
 		return nil, fmt.Errorf("Error listing processes: %s", err)
@@ -94,7 +74,7 @@ func findProcessesWithFn(processesFn processesFn, matchFn matchFn, max int) ([]p
 	return procs, nil
 }
 
-func findPIDsWithFn(fn processesFn, matchFn matchFn, log logging.Logger) ([]int, error) {
+func findPIDsWithFn(fn processesFn, matchFn MatchFn, log logging.Logger) ([]int, error) {
 	procs, err := findProcessesWithFn(fn, matchFn, 0)
 	if err != nil {
 		return nil, err
@@ -107,19 +87,19 @@ func findPIDsWithFn(fn processesFn, matchFn matchFn, log logging.Logger) ([]int,
 }
 
 // TerminateAll stops all processes with executable names that contains the matching string
-func TerminateAll(match string, killDelay time.Duration, log logging.Logger) {
-	terminateAll(ps.Processes, match, killDelay, log)
+func TerminateAll(matcher Matcher, killDelay time.Duration, log logging.Logger) {
+	log.Infof("Terminating %s", matcher.match)
+	terminateAll(ps.Processes, matcher.Fn(), killDelay, log)
 }
 
-func terminateAll(fn processesFn, match string, killDelay time.Duration, log logging.Logger) {
-	matchPath := func(p ps.Process) bool { return containsPath(p, match, log) }
-	pids, err := findPIDsWithFn(fn, matchPath, log)
+func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log logging.Logger) {
+	pids, err := findPIDsWithFn(fn, matchFn, log)
 	if err != nil {
 		log.Warningf("Error finding process: %s", err)
 		return
 	}
 	if len(pids) == 0 {
-		log.Warningf("No processes found matching %q", match)
+		log.Warningf("No processes found")
 		return
 	}
 	for _, pid := range pids {

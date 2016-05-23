@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-ps"
+	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,6 +22,26 @@ import (
 var testLog = logging.Logger{Module: "test"}
 
 var matchAll = func(p ps.Process) bool { return true }
+
+func cleanupProc(cmd *exec.Cmd, procPath string) {
+	if cmd != nil && cmd.Process != nil {
+		_ = cmd.Process.Kill()
+	}
+	_ = os.Remove(procPath)
+}
+
+func procPath(t *testing.T) string {
+	// Copy sleep executable to tmp
+	procPath := filepath.Join(os.TempDir(), "sleeptest")
+	err := util.CopyFile("/bin/sleep", procPath, testLog)
+	require.NoError(t, err)
+	err = os.Chmod(procPath, 0777)
+	require.NoError(t, err)
+	// Temp dir might have symlinks in which case we need the eval'ed path
+	procPath, err = filepath.EvalSymlinks(procPath)
+	require.NoError(t, err)
+	return procPath
+}
 
 func TestFindPIDsWithFn(t *testing.T) {
 	pids, err := findPIDsWithFn(ps.Processes, matchAll, testLog)
@@ -42,8 +64,10 @@ func TestFindPIDsWithFn(t *testing.T) {
 }
 
 func TestTerminatePID(t *testing.T) {
-	cmd := exec.Command("sleep", "10")
+	procPath := procPath(t)
+	cmd := exec.Command(procPath, "10")
 	err := cmd.Start()
+	defer cleanupProc(cmd, procPath)
 	require.NoError(t, err)
 	require.NotNil(t, cmd.Process)
 
@@ -68,12 +92,12 @@ func TestTerminateAllFn(t *testing.T) {
 	fn := func() ([]ps.Process, error) {
 		return nil, fmt.Errorf("Testing error")
 	}
-	terminateAll(fn, "", time.Millisecond, testLog)
+	terminateAll(fn, matchAll, time.Millisecond, testLog)
 
 	fn = func() ([]ps.Process, error) {
 		return nil, nil
 	}
-	terminateAll(fn, "", time.Millisecond, testLog)
+	terminateAll(fn, matchAll, time.Millisecond, testLog)
 }
 
 // process returns this test process' path that is running
@@ -91,25 +115,27 @@ func TestFindProcessTest(t *testing.T) {
 		t.Skip("Unsupported until we have process path on linux")
 	}
 	pid, path := process(t)
-	procs, err := FindProcesses(path, 0, 0, testLog)
+	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), 0, 0, testLog)
 	require.NoError(t, err)
 	require.True(t, len(procs) == 1)
 	assert.Equal(t, pid, procs[0].Pid())
 }
 
 func TestFindProcessWait(t *testing.T) {
-	path := "/bin/echo"
+	procPath := procPath(t)
+	cmd := exec.Command(procPath, "10")
+	defer cleanupProc(cmd, procPath)
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		cmd := exec.Command(path, "hi")
 		err := cmd.Start()
 		require.NoError(t, err)
 	}()
-	procs, err := FindProcesses(path, time.Millisecond, 0, testLog)
+	procs, err := FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Millisecond, 0, testLog)
 	require.NoError(t, err)
-	require.True(t, len(procs) == 0)
+	require.Equal(t, 0, len(procs))
 
-	procs, err = FindProcesses(path, 20*time.Millisecond, 0, testLog)
+	// Wait up to second for process to be running
+	procs, err = FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Second, 0, testLog)
 	require.NoError(t, err)
 	require.True(t, len(procs) == 1)
 }

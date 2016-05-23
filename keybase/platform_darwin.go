@@ -100,34 +100,50 @@ func (c context) PausedPrompt() bool {
 	return cancelUpdate
 }
 
+const serviceInBundlePath = "/Contents/SharedSupport/bin/keybase"
+const kbfsInBundlePath = "/Contents/SharedSupport/bin/kbfs"
+
+// Restart will stop the services and app, and then start the app.
+// The supervisor/watchdog process is in charge of restarting the services.
 func (c context) Restart() error {
-	appPath := c.config.destinationPath()
+	return c.restart(10*time.Second, time.Second)
+}
+
+// restart will stop the services and app, and then start the app.
+// The supervisor/watchdog process is in charge of restarting the services.
+// The wait is how log to wait for processes and the app to start before
+// reporting that an error occurred.
+func (c context) restart(wait time.Duration, delay time.Duration) error {
+	appPath := c.config.destinationPath() // "/Applications/Keybase.app"
 	if appPath == "" {
 		return fmt.Errorf("No destination path for restart")
 	}
 
-	serviceProcPath := "Keybase.app/Contents/SharedSupport/bin/keybase"
-	kbfsProcPath := "Keybase.app/Contents/SharedSupport/bin/kbfs"
-	appProcPath := "Keybase.app/Contents/MacOS/"
+	appBundleName := filepath.Base(appPath) // "Keybase.app"
 
-	process.TerminateAll(appProcPath, time.Second, c.log)
-	process.TerminateAll(serviceProcPath, time.Second, c.log)
-	process.TerminateAll(kbfsProcPath, time.Second, c.log)
+	serviceProcPath := appBundleName + serviceInBundlePath
+	kbfsProcPath := appBundleName + kbfsInBundlePath
+	appProcPath := appBundleName + "/Contents/MacOS/"
+
+	process.TerminateAll(process.NewMatcher(appProcPath, process.PathContains, c.log), time.Second, c.log)
+	process.TerminateAll(process.NewMatcher(serviceProcPath, process.PathContains, c.log), time.Second, c.log)
+	process.TerminateAll(process.NewMatcher(kbfsProcPath, process.PathContains, c.log), time.Second, c.log)
 
 	if err := process.OpenAppDarwin(appPath, c.log); err != nil {
 		c.log.Warningf("Error opening app: %s", err)
 	}
 
 	// Check to make sure processes restarted
-	serviceProcErr := c.checkProcess(serviceProcPath)
-	kbfsProcErr := c.checkProcess(kbfsProcPath)
-	appProcErr := c.checkProcess(appProcPath)
+	serviceProcErr := c.checkProcess(serviceProcPath, wait, delay)
+	kbfsProcErr := c.checkProcess(kbfsProcPath, wait, delay)
+	appProcErr := c.checkProcess(appProcPath, wait, delay)
 
 	return util.CombineErrors(serviceProcErr, kbfsProcErr, appProcErr)
 }
 
-func (c context) checkProcess(match string) error {
-	procs, err := process.FindProcesses(match, 10*time.Second, time.Second, c.log)
+func (c context) checkProcess(match string, wait time.Duration, delay time.Duration) error {
+	matcher := process.NewMatcher(match, process.PathContains, c.log)
+	procs, err := process.FindProcesses(matcher, wait, delay, c.log)
 	if err != nil {
 		return fmt.Errorf("Error checking on process (%s): %s", match, err)
 	}
