@@ -6,8 +6,11 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -25,8 +28,11 @@ func TestNewFile(t *testing.T) {
 
 	fileInfo, err := os.Stat(filename)
 	assert.NoError(t, err)
-	assert.True(t, 0600 == fileInfo.Mode().Perm())
 	assert.False(t, fileInfo.IsDir())
+
+	if runtime.GOOS != "windows" {
+		assert.True(t, 0600 == fileInfo.Mode().Perm())
+	}
 }
 
 func TestMakeParentDirs(t *testing.T) {
@@ -45,8 +51,10 @@ func TestMakeParentDirs(t *testing.T) {
 
 	fileInfo, err := os.Stat(dir)
 	assert.NoError(t, err)
-	assert.True(t, 0700 == fileInfo.Mode().Perm())
 	assert.True(t, fileInfo.IsDir())
+	if runtime.GOOS != "windows" {
+		assert.True(t, 0700 == fileInfo.Mode().Perm())
+	}
 
 	// Test making dir that already exists
 	err = MakeParentDirs(file, 0700, testLog)
@@ -55,7 +63,11 @@ func TestMakeParentDirs(t *testing.T) {
 
 func TestMakeParentDirsInvalid(t *testing.T) {
 	err := MakeParentDirs("\\\\invalid", 0700, testLog)
-	assert.EqualError(t, err, "No base directory")
+	if runtime.GOOS != "windows" {
+		assert.EqualError(t, err, "No base directory")
+	} else {
+		assert.Error(t, err)
+	}
 }
 
 func TestTempPathValid(t *testing.T) {
@@ -95,10 +107,17 @@ func TestIsDirReal(t *testing.T) {
 	assert.Equal(t, "Path is not a directory", err.Error())
 	assert.False(t, ok)
 
+	// Windows requires privileges to create symbolic links
 	symLinkPath := TempPath("", "TestIsDirReal")
-	err = os.Symlink(os.TempDir(), symLinkPath)
 	defer RemoveFileAtPath(symLinkPath)
-	assert.NoError(t, err)
+	target := os.TempDir()
+	if runtime.GOOS == "windows" {
+		err = exec.Command("cmd", "/C", "mklink", "/J", symLinkPath, target).Run()
+		assert.NoError(t, err)
+	} else {
+		err = os.Symlink(target, symLinkPath)
+		assert.NoError(t, err)
+	}
 	ok, err = IsDirReal(symLinkPath)
 	assert.Error(t, err)
 	assert.Equal(t, "Path is a symlink", err.Error())
@@ -267,5 +286,46 @@ func TestReadFile(t *testing.T) {
 	assert.Equal(t, dataIn, dataOut)
 
 	_, err = ReadFile("/invalid")
-	assert.EqualError(t, err, "open /invalid: no such file or directory")
+	assert.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), "open /invalid: "))
+}
+
+func TestURLStringForPathWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows only test")
+	}
+	assert.Equal(t, "file:///C:/Go/bin", URLStringForPath(`C:\Go\bin`))
+	assert.Equal(t, "file:///C:/Program%20Files", URLStringForPath(`C:\Program Files`))
+	assert.Equal(t, "file:///C:/test%20%E2%9C%93%E2%9C%93", URLStringForPath(`C:\test ✓✓`))
+}
+
+func TestURLStringForPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("See TestURLStringForPathWindows")
+	}
+	assert.Equal(t, "file:///usr/local/go/bin", URLStringForPath("/usr/local/go/bin"))
+	assert.Equal(t, "file:///Applications/System%20Preferences.app", URLStringForPath("/Applications/System Preferences.app"))
+	assert.Equal(t, "file:///test%20%E2%9C%93%E2%9C%93", URLStringForPath("/test ✓✓"))
+}
+
+func TestPathFromURLWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows only test")
+	}
+	url, err := url.Parse("file:///C:/Go/bin")
+	require.NoError(t, err)
+	assert.Equal(t, `C:\Go\bin`, PathFromURL(url))
+}
+
+func TestPathFromURL(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("See TestPathFromURLWindows")
+	}
+	url, err := url.Parse("file:///usr/local/go/bin")
+	require.NoError(t, err)
+	assert.Equal(t, "/usr/local/go/bin", PathFromURL(url))
+
+	url, err = url.Parse("file:///Applications/System%20Preferences.app")
+	require.NoError(t, err)
+	assert.Equal(t, "/Applications/System Preferences.app", PathFromURL(url))
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -87,11 +88,17 @@ type testConfigPausedPrompt struct {
 	force bool
 }
 
-func (c testConfigPausedPrompt) promptPath() (string, error) {
+func (c testConfigPausedPrompt) promptProgram() (command.Program, error) {
 	if c.force {
-		return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-force.sh"), nil
+		return command.Program{
+			Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+			Args: []string{"echo", `{"button": "Force update"}`},
+		}, nil
 	}
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/prompt-paused-cancel.sh"), nil
+	return command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{"button": "Try again later"}`},
+	}, nil
 }
 
 func (c testConfigPausedPrompt) keybasePath() string {

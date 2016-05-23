@@ -64,32 +64,34 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
-func (c config) promptPath() (string, error) {
+func (c config) promptProgram() (command.Program, error) {
 	destinationPath := c.destinationPath()
 	if destinationPath == "" {
-		return "", fmt.Errorf("No destination path")
+		return command.Program{}, fmt.Errorf("No destination path")
 	}
-	return filepath.Join(destinationPath, "Contents", "Resources", "KeybaseUpdater.app", "Contents", "MacOS", "Updater"), nil
+	return command.Program{
+		Path: filepath.Join(destinationPath, "Contents", "Resources", "KeybaseUpdater.app", "Contents", "MacOS", "Updater"),
+	}, nil
 }
 
 // UpdatePrompt is called when the user needs to accept an update
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	promptPath, err := c.config.promptPath()
+	promptProgram, err := c.config.promptProgram()
 	if err != nil {
 		return nil, err
 	}
-	return c.updatePrompt(promptPath, update, options, promptOptions, time.Hour)
+	return c.updatePrompt(promptProgram, update, options, promptOptions, time.Hour)
 }
 
 // PausedPrompt is called when the we can't update cause the app is in use.
 // We return true if the use wants to cancel the update.
 func (c context) PausedPrompt() bool {
-	promptPath, err := c.config.promptPath()
+	promptProgram, err := c.config.promptProgram()
 	if err != nil {
 		c.log.Warningf("Error trying to get prompt path: %s", err)
 		return false
 	}
-	cancelUpdate, err := c.pausedPrompt(promptPath, 5*time.Minute)
+	cancelUpdate, err := c.pausedPrompt(promptProgram, 5*time.Minute)
 	if err != nil {
 		c.log.Warningf("Error in paused prompt: %s", err)
 		return false

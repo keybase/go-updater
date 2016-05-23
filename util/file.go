@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/keybase/go-logging"
@@ -288,4 +291,37 @@ func ReadFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+// URLStringForPath returns an URL as string with file scheme for path.
+// For example,
+//     /usr/local/go/bin => file:///usr/local/go/bin
+//     C:\Go\bin => file:///C:/Go/bin
+func URLStringForPath(path string) string {
+	u := &url.URL{Path: filepath.ToSlash(path)}
+	encodedPath := u.String()
+
+	switch runtime.GOOS {
+	case "windows":
+		// Include leading slash on windows
+		return fmt.Sprintf("%s:///%s", fileScheme, encodedPath)
+	default:
+		return fmt.Sprintf("%s://%s", fileScheme, encodedPath)
+	}
+}
+
+// PathFromURL returns path for file URL scheme
+// For example,
+//     file:///usr/local/go/bin => /usr/local/go/bin
+//     file:///C:/Go/bin => C:\Go\bin
+func PathFromURL(u *url.URL) string {
+	path := u.Path
+	if runtime.GOOS == "windows" && u.Scheme == fileScheme {
+		// Remove leading slash for Windows
+		if strings.HasPrefix(path, "/") {
+			path = path[1:]
+		}
+		path = filepath.FromSlash(path)
+	}
+	return path
 }

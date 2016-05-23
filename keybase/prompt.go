@@ -24,7 +24,7 @@ type updaterPromptInputResult struct {
 	AutoUpdate bool   `json:"autoUpdate"`
 }
 
-func (c context) updatePrompt(promptCommand string, update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
+func (c context) updatePrompt(promptProgram command.Program, update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
 	description := update.Description
 	if description == "" {
 		description = "Please visit https://keybase.io for more information."
@@ -41,7 +41,7 @@ func (c context) updatePrompt(promptCommand string, update updater.Update, optio
 	}
 
 	var result updaterPromptInputResult
-	if err := command.ExecForJSON(promptCommand, []string{string(promptJSONInput)}, &result, timeout, c.log); err != nil {
+	if err := command.ExecForJSON(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONInput)}), &result, timeout, c.log); err != nil {
 		return nil, fmt.Errorf("Error running command: %s", err)
 	}
 
@@ -78,7 +78,7 @@ type promptInputResult struct {
 // pausedPrompt returns whether to cancel update and/or error.
 // If the user explicit wants to cancel the update, this may be different from
 // an error occurring, in which case
-func (c context) pausedPrompt(promptCommand string, timeout time.Duration) (bool, error) {
+func (c context) pausedPrompt(promptProgram command.Program, timeout time.Duration) (bool, error) {
 	const btnForce = "Force update"
 	const btnCancel = "Try again later"
 	promptJSONInput, err := json.Marshal(promptInput{
@@ -92,7 +92,7 @@ func (c context) pausedPrompt(promptCommand string, timeout time.Duration) (bool
 	}
 
 	var result promptInputResult
-	if err := command.ExecForJSON(promptCommand, []string{string(promptJSONInput)}, &result, timeout, c.log); err != nil {
+	if err := command.ExecForJSON(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONInput)}), &result, timeout, c.log); err != nil {
 		return false, fmt.Errorf("Error running command: %s", err)
 	}
 
