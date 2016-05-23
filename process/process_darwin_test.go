@@ -52,6 +52,6 @@ func TestTerminateAll(t *testing.T) {
 	pids = append(pids, start())
 	pids = append(pids, start())
 	TerminateAll("/bin/sleep", time.Millisecond, testLog)
-	assertTerminated(t, pids[0])
-	assertTerminated(t, pids[1])
+	assertTerminated(t, pids[0], "signal: terminated")
+	assertTerminated(t, pids[1], "signal: terminated")
 }

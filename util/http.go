@@ -15,6 +15,8 @@ import (
 	"github.com/keybase/go-logging"
 )
 
+const fileScheme = "file"
+
 func discardAndClose(rc io.ReadCloser) error {
 	_, _ = io.Copy(ioutil.Discard, rc)
 	return rc.Close()
@@ -94,7 +96,7 @@ func URLExists(urlString string, timeout time.Duration, log logging.Logger) (boo
 
 	// Handle local files
 	if url.Scheme == "file" {
-		return FileExists(url.Path)
+		return FileExists(PathFromURL(url))
 	}
 
 	log.Debugf("Checking URL exists: %s", urlString)
@@ -143,8 +145,8 @@ func downloadURL(urlString string, destinationPath string, options DownloadURLOp
 	}
 
 	// Handle local files
-	if url.Scheme == "file" {
-		return cached, downloadLocal(url.Path, destinationPath, options)
+	if url.Scheme == fileScheme {
+		return cached, downloadLocal(PathFromURL(url), destinationPath, options)
 	}
 
 	// Compute ETag if the destinationPath already exists

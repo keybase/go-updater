@@ -42,10 +42,9 @@ func (s *service) Start() {
 	//s.updateChecker.Check()
 }
 
-func (s *service) Run() int {
+func (s *service) Run() {
 	s.Start()
 	<-s.ch
-	return 0
 }
 
 func (s *service) Quit() {

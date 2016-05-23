@@ -15,6 +15,23 @@ import (
 	"github.com/keybase/go-logging"
 )
 
+// Program is a program at path with arguments
+type Program struct {
+	Path string
+	Args []string
+}
+
+// ArgsWith returns program args with passed in args
+func (p Program) ArgsWith(args []string) []string {
+	if p.Args == nil || len(p.Args) == 0 {
+		return args
+	}
+	if len(args) == 0 {
+		return p.Args
+	}
+	return append(p.Args, args...)
+}
+
 // Result is the result of running a command
 type Result struct {
 	Stdout  bytes.Buffer

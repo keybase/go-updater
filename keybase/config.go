@@ -22,7 +22,7 @@ import (
 type Config interface {
 	updater.Config
 	keybasePath() string
-	promptPath() (string, error)
+	promptProgram() (command.Program, error)
 	destinationPath() string
 	updaterOptions() updater.UpdateOptions
 }
