@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testLog = logging.Logger{Module: "test"}
+var testLog = &logging.Logger{Module: "test"}
 
 func TestService(t *testing.T) {
 	ctx, upd := keybase.NewUpdaterContext("keybase", testLog)

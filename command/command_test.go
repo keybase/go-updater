@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testLog = logging.Logger{Module: "test"}
+var testLog = &logging.Logger{Module: "test"}
 
 func TestExecEmpty(t *testing.T) {
 	result, err := Exec("", nil, time.Second, testLog)

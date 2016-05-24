@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/util"
 )
 
@@ -18,7 +17,7 @@ const Version = "0.2.4"
 type Updater struct {
 	source UpdateSource
 	config Config
-	log    logging.Logger
+	log    Log
 }
 
 // UpdateSource defines where the updater can find updates
@@ -50,8 +49,18 @@ type Config interface {
 	SetInstallID(installID string) error
 }
 
+// Log is the logging interface for the util package
+type Log interface {
+	Debug(...interface{})
+	Info(...interface{})
+	Debugf(s string, args ...interface{})
+	Infof(s string, args ...interface{})
+	Warningf(s string, args ...interface{})
+	Errorf(s string, args ...interface{})
+}
+
 // NewUpdater constructs an Updater
-func NewUpdater(source UpdateSource, config Config, log logging.Logger) *Updater {
+func NewUpdater(source UpdateSource, config Config, log Log) *Updater {
 	return &Updater{
 		source: source,
 		config: config,

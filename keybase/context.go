@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 )
@@ -21,12 +20,22 @@ var validCodeSigningKIDs = map[string]bool{
 	"03d86864fb20e310590042ad3d5492c3f5d06728620175b03c717c211bfaccc2": true, // chris (paper key, clay harbor)
 }
 
+// Log is the logging interface for the keybase package
+type Log interface {
+	Debug(...interface{})
+	Info(...interface{})
+	Debugf(s string, args ...interface{})
+	Infof(s string, args ...interface{})
+	Warningf(s string, args ...interface{})
+	Errorf(s string, args ...interface{})
+}
+
 // context is an updater.Context implementation
 type context struct {
 	// config is updater config
 	config Config
 	// log is the logger
-	log logging.Logger
+	log Log
 }
 
 // endpoints define all the url locations for reporting, etc
@@ -44,7 +53,7 @@ var defaultEndpoints = endpoints{
 	err:     "https://api.keybase.io/_/api/1.0/pkg/error.json",
 }
 
-func newContext(cfg Config, log logging.Logger) *context {
+func newContext(cfg Config, log Log) *context {
 	ctx := context{
 		config: cfg,
 		log:    log,
@@ -53,7 +62,7 @@ func newContext(cfg Config, log logging.Logger) *context {
 }
 
 // NewUpdaterContext returns an updater context for Keybase
-func NewUpdaterContext(pathToKeybase string, log logging.Logger) (updater.Context, *updater.Updater) {
+func NewUpdaterContext(pathToKeybase string, log Log) (updater.Context, *updater.Updater) {
 	cfg, err := newConfig("Keybase", pathToKeybase, log)
 	if err != nil {
 		log.Warningf("Error loading config for context: %s", err)
@@ -78,7 +87,7 @@ func (c *context) GetUpdateUI() updater.UpdateUI {
 }
 
 // GetLog returns log
-func (c context) GetLog() logging.Logger {
+func (c context) GetLog() Log {
 	return c.log
 }
 

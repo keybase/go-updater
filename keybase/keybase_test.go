@@ -12,7 +12,7 @@ import (
 	"github.com/keybase/go-logging"
 )
 
-var testLog = logging.Logger{Module: "test"}
+var testLog = &logging.Logger{Module: "test"}
 
 func newServer(updateJSON string) *httptest.Server {
 	return newServerWithDelay(updateJSON, 0)

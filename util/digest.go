@@ -9,12 +9,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/keybase/go-logging"
 )
 
 // CheckDigest returns no error if digest matches file
-func CheckDigest(digest string, path string, log logging.Logger) error {
+func CheckDigest(digest string, path string, log Log) error {
 	if digest == "" {
 		return fmt.Errorf("Missing digest")
 	}

@@ -10,14 +10,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-ps"
 )
+
+// Log is the logging interface for the process package
+type Log interface {
+	Debugf(s string, args ...interface{})
+	Infof(s string, args ...interface{})
+	Warningf(s string, args ...interface{})
+	Errorf(s string, args ...interface{})
+}
 
 type processesFn func() ([]ps.Process, error)
 
 // FindProcesses returns processes containing string matching process path
-func FindProcesses(matcher Matcher, wait time.Duration, delay time.Duration, log logging.Logger) ([]ps.Process, error) {
+func FindProcesses(matcher Matcher, wait time.Duration, delay time.Duration, log Log) ([]ps.Process, error) {
 	start := time.Now()
 	for {
 		log.Debugf("Find process %s (%s < %s)", matcher.match, time.Since(start), wait)
@@ -36,7 +43,9 @@ func FindProcesses(matcher Matcher, wait time.Duration, delay time.Duration, log
 	return nil, nil
 }
 
-// findProcessWithPID with return process for a pid
+// findProcessWithPID returns a process for a pid.
+// Consider using os.FindProcess instead if suitable since this may be
+// inefficient.
 func findProcessWithPID(pid int) (ps.Process, error) {
 	matchPID := func(p ps.Process) bool { return p.Pid() == pid }
 	procs, err := findProcessesWithFn(ps.Processes, matchPID, 1)
@@ -74,7 +83,7 @@ func findProcessesWithFn(fn processesFn, matchFn MatchFn, max int) ([]ps.Process
 	return procs, nil
 }
 
-func findPIDsWithFn(fn processesFn, matchFn MatchFn, log logging.Logger) ([]int, error) {
+func findPIDsWithFn(fn processesFn, matchFn MatchFn, log Log) ([]int, error) {
 	procs, err := findProcessesWithFn(fn, matchFn, 0)
 	if err != nil {
 		return nil, err
@@ -87,12 +96,12 @@ func findPIDsWithFn(fn processesFn, matchFn MatchFn, log logging.Logger) ([]int,
 }
 
 // TerminateAll stops all processes with executable names that contains the matching string
-func TerminateAll(matcher Matcher, killDelay time.Duration, log logging.Logger) {
+func TerminateAll(matcher Matcher, killDelay time.Duration, log Log) {
 	log.Infof("Terminating %s", matcher.match)
 	terminateAll(ps.Processes, matcher.Fn(), killDelay, log)
 }
 
-func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log logging.Logger) {
+func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log Log) {
 	pids, err := findPIDsWithFn(fn, matchFn, log)
 	if err != nil {
 		log.Warningf("Error finding process: %s", err)
@@ -115,7 +124,7 @@ func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log 
 // since there could be a race anyway where the process exits right after we
 // check if it's still running but before the SIGKILL.
 // The killDelay is not used on windows.
-func TerminatePID(pid int, killDelay time.Duration, log logging.Logger) error {
+func TerminatePID(pid int, killDelay time.Duration, log Log) error {
 	log.Debugf("Searching OS for %d", pid)
 	process, err := os.FindProcess(pid)
 	if err != nil {

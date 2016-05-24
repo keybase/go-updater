@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/util"
 )
@@ -19,16 +18,16 @@ import (
 // UpdateSource finds releases/updates on keybase.io
 type UpdateSource struct {
 	cfg      config
-	log      logging.Logger
+	log      Log
 	endpoint string
 }
 
 // NewUpdateSource contructs an update source for keybase.io
-func NewUpdateSource(cfg config, log logging.Logger) UpdateSource {
+func NewUpdateSource(cfg config, log Log) UpdateSource {
 	return newUpdateSource(cfg, defaultEndpoints.update, log)
 }
 
-func newUpdateSource(cfg config, endpoint string, log logging.Logger) UpdateSource {
+func newUpdateSource(cfg config, endpoint string, log Log) UpdateSource {
 	return UpdateSource{
 		cfg:      cfg,
 		endpoint: endpoint,

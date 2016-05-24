@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
@@ -33,7 +32,7 @@ type config struct {
 	// pathToKeybase is the location of the keybase executable
 	pathToKeybase string
 	// log is the logging location
-	log logging.Logger
+	log Log
 	// store is the config values
 	store store
 }
@@ -51,13 +50,13 @@ type store struct {
 }
 
 // newConfig loads a config, which is valid even if it has an error
-func newConfig(appName string, pathToKeybase string, log logging.Logger) (config, error) {
+func newConfig(appName string, pathToKeybase string, log Log) (config, error) {
 	cfg := newDefaultConfig(appName, pathToKeybase, log)
 	err := cfg.load()
 	return cfg, err
 }
 
-func newDefaultConfig(appName string, pathToKeybase string, log logging.Logger) config {
+func newDefaultConfig(appName string, pathToKeybase string, log Log) config {
 	return config{
 		appName:       appName,
 		pathToKeybase: pathToKeybase,

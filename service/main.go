@@ -53,7 +53,7 @@ func run(f flags) {
 }
 
 func serviceFromFlags(f flags) *service {
-	log := logging.Logger{Module: "service"}
+	log := &logging.Logger{Module: "service"}
 
 	log.Infof("Updater %s", updater.Version)
 
@@ -66,7 +66,7 @@ func serviceFromFlags(f flags) *service {
 }
 
 func updateCheckFromFlags(f flags) error {
-	log := logging.Logger{Module: "client"}
+	log := &logging.Logger{Module: "client"}
 
 	ctx, updater := keybase.NewUpdaterContext(f.pathToKeybase, log)
 	_, err := updater.Update(ctx)

@@ -6,22 +6,31 @@ package main
 import (
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/util"
 )
 
 const defaultTickDuration = time.Hour
 
+// Log is the logging interface for the service package
+type Log interface {
+	Debug(...interface{})
+	Info(...interface{})
+	Debugf(s string, args ...interface{})
+	Infof(s string, args ...interface{})
+	Warningf(s string, args ...interface{})
+	Errorf(s string, args ...interface{})
+}
+
 type service struct {
 	updater       *updater.Updater
 	updateChecker *updater.UpdateChecker
 	context       updater.Context
-	log           logging.Logger
+	log           Log
 	ch            chan int
 }
 
-func newService(upd *updater.Updater, context updater.Context, log logging.Logger) *service {
+func newService(upd *updater.Updater, context updater.Context, log Log) *service {
 	svc := service{
 		updater: upd,
 		context: context,

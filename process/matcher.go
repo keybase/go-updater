@@ -6,7 +6,6 @@ package process
 import (
 	"strings"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-ps"
 )
 
@@ -17,7 +16,7 @@ type MatchFn func(ps.Process) bool
 type Matcher struct {
 	match     string
 	matchType MatchType
-	log       logging.Logger
+	log       Log
 }
 
 // MatchType is how to match
@@ -33,7 +32,7 @@ const (
 )
 
 // NewMatcher returns a new matcher
-func NewMatcher(match string, matchType MatchType, log logging.Logger) Matcher {
+func NewMatcher(match string, matchType MatchType, log Log) Matcher {
 	return Matcher{match: match, matchType: matchType, log: log}
 }
 
