@@ -54,8 +54,8 @@ var _ = findProcessWithPID
 
 // findProcessesWithFn finds processes using match function.
 // If max is != 0, then we will return that max number of processes.
-func findProcessesWithFn(processesFn processesFn, matchFn MatchFn, max int) ([]ps.Process, error) {
-	processes, err := processesFn()
+func findProcessesWithFn(fn processesFn, matchFn MatchFn, max int) ([]ps.Process, error) {
+	processes, err := fn()
 	if err != nil {
 		return nil, fmt.Errorf("Error listing processes: %s", err)
 	}
