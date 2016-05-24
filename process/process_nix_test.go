@@ -16,6 +16,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestFindProcessWait(t *testing.T) {
+	procPath := procPath(t)
+	cmd := exec.Command(procPath, "10")
+	defer cleanupProc(cmd, procPath)
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		err := cmd.Start()
+		require.NoError(t, err)
+	}()
+	procs, err := FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Millisecond, 0, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(procs))
+
+	// Wait up to second for process to be running
+	procs, err = FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Second, 0, testLog)
+	require.NoError(t, err)
+	require.True(t, len(procs) == 1)
+}
+
 func TestTerminateAll(t *testing.T) {
 	procPath := procPath(t)
 	defer util.RemoveFileAtPath(procPath)
