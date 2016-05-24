@@ -7,7 +7,6 @@ package process
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -39,23 +38,4 @@ func TestFindPIDsLaunchd(t *testing.T) {
 	assert.NoError(t, err)
 	t.Logf("Pids: %#v", pids)
 	require.True(t, len(pids) >= 1)
-}
-
-func TestTerminateAll(t *testing.T) {
-	procPath := procPath(t)
-	start := func() int {
-		cmd := exec.Command(procPath, "10")
-		err := cmd.Start()
-		require.NoError(t, err)
-		require.NotNil(t, cmd.Process)
-		return cmd.Process.Pid
-	}
-
-	pids := []int{}
-	pids = append(pids, start())
-	pids = append(pids, start())
-	matcher := NewMatcher(procPath, PathEqual, testLog)
-	TerminateAll(matcher, time.Millisecond, testLog)
-	assertTerminated(t, pids[0], "signal: terminated")
-	assertTerminated(t, pids[1], "signal: terminated")
 }
