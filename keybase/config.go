@@ -40,9 +40,14 @@ type config struct {
 
 // store is the config values
 type store struct {
+	// InstallID is an identifier returned by the API on first update that is a
+	// sent on subsequent requests.
 	InstallID string `json:"installId"`
-	Auto      bool   `json:"auto"`
-	AutoSet   bool   `json:"autoSet"`
+	// Auto is the whether to update automatically; this value and AutoSet below
+	// should be true for an update to be automatically applied.
+	Auto bool `json:"auto"`
+	// AutoSet is whether a user set the Auto config
+	AutoSet bool `json:"autoSet"`
 }
 
 // newConfig loads a config, which is valid even if it has an error
@@ -121,6 +126,9 @@ func (c config) saveToPath(path string) error {
 	return file.Save(c.log)
 }
 
+// GetUpdateAuto is the whether to update automatically and whether the user has
+// set this value. Both shouble be true for an update to be automatically
+// applied.
 func (c config) GetUpdateAuto() (bool, bool) {
 	return c.store.Auto, c.store.AutoSet
 }
@@ -131,6 +139,8 @@ func (c *config) SetUpdateAuto(auto bool) error {
 	return c.save()
 }
 
+// GetInstallID is an identifier returned by the API on first update that is a
+// sent on subsequent requests.
 func (c config) GetInstallID() string {
 	return c.store.InstallID
 }
