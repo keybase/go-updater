@@ -68,6 +68,7 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 
 	force := util.EnvBool("KEYBASE_UPDATER_FORCE", false)
 	if force {
+		k.log.Info("KEYBASE_UPDATER_FORCE is true, will force update")
 		urlValues.Add("force", util.URLValueForBool(force))
 	}
 
