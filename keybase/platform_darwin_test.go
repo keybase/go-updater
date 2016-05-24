@@ -14,6 +14,7 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/process"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAppBundleForPath(t *testing.T) {
@@ -43,7 +44,16 @@ func TestUpdatePrompt(t *testing.T) {
 
 func TestRestart(t *testing.T) {
 	ctx := newContext(&testConfigDarwin{}, testLog)
-	err := ctx.Restart()
-	defer process.TerminateAll(ctx.config.destinationPath(), 200*time.Millisecond, testLog)
-	assert.NoError(t, err)
+	appPath := ctx.config.destinationPath()
+
+	err := process.OpenAppDarwin(appPath, testLog)
+	defer func() {
+		process.TerminateAll(process.NewMatcher(appPath, process.PathPrefix, testLog), 200*time.Millisecond, testLog)
+	}()
+	require.NoError(t, err)
+
+	// TODO: We don't have watchdog available in tests yet, coming next, so let's
+	// test the error that the app was ok, but the services didn't restart.
+	err = ctx.restart(20*time.Millisecond, 20*time.Millisecond)
+	assert.EqualError(t, err, "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs")
 }

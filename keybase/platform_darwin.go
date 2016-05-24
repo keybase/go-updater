@@ -14,6 +14,7 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/process"
+	"github.com/keybase/go-updater/util"
 )
 
 // destinationPath returns the app bundle path where this executable is located
@@ -99,23 +100,55 @@ func (c context) PausedPrompt() bool {
 	return cancelUpdate
 }
 
+const serviceInBundlePath = "/Contents/SharedSupport/bin/keybase"
+const kbfsInBundlePath = "/Contents/SharedSupport/bin/kbfs"
+
+// Restart will stop the services and app, and then start the app.
+// The supervisor/watchdog process is in charge of restarting the services.
 func (c context) Restart() error {
-	appPath := c.config.destinationPath()
+	return c.restart(10*time.Second, time.Second)
+}
+
+// restart will stop the services and app, and then start the app.
+// The supervisor/watchdog process is in charge of restarting the services.
+// The wait is how log to wait for processes and the app to start before
+// reporting that an error occurred.
+func (c context) restart(wait time.Duration, delay time.Duration) error {
+	appPath := c.config.destinationPath() // "/Applications/Keybase.app"
 	if appPath == "" {
 		return fmt.Errorf("No destination path for restart")
 	}
 
-	procName := filepath.Join(appPath, "Contents/MacOS/")
-	process.TerminateAll(procName, time.Second, c.log)
+	appBundleName := filepath.Base(appPath) // "Keybase.app"
 
-	keybase := filepath.Join(appPath, "Contents/SharedSupport/bin/keybase")
-	process.TerminateAll(keybase, time.Second, c.log)
+	serviceProcPath := appBundleName + serviceInBundlePath
+	kbfsProcPath := appBundleName + kbfsInBundlePath
+	appProcPath := appBundleName + "/Contents/MacOS/"
 
-	kbfs := filepath.Join(appPath, "Contents/SharedSupport/bin/kbfs")
-	process.TerminateAll(kbfs, time.Second, c.log)
+	process.TerminateAll(process.NewMatcher(appProcPath, process.PathContains, c.log), time.Second, c.log)
+	process.TerminateAll(process.NewMatcher(serviceProcPath, process.PathContains, c.log), time.Second, c.log)
+	process.TerminateAll(process.NewMatcher(kbfsProcPath, process.PathContains, c.log), time.Second, c.log)
 
 	if err := process.OpenAppDarwin(appPath, c.log); err != nil {
 		c.log.Warningf("Error opening app: %s", err)
+	}
+
+	// Check to make sure processes restarted
+	serviceProcErr := c.checkProcess(serviceProcPath, wait, delay)
+	kbfsProcErr := c.checkProcess(kbfsProcPath, wait, delay)
+	appProcErr := c.checkProcess(appProcPath, wait, delay)
+
+	return util.CombineErrors(serviceProcErr, kbfsProcErr, appProcErr)
+}
+
+func (c context) checkProcess(match string, wait time.Duration, delay time.Duration) error {
+	matcher := process.NewMatcher(match, process.PathContains, c.log)
+	procs, err := process.FindProcesses(matcher, wait, delay, c.log)
+	if err != nil {
+		return fmt.Errorf("Error checking on process (%s): %s", match, err)
+	}
+	if len(procs) == 0 {
+		return fmt.Errorf("No process found for %s", match)
 	}
 	return nil
 }
