@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/util"
 )
@@ -17,11 +16,11 @@ import (
 type LocalUpdateSource struct {
 	path     string
 	jsonPath string
-	log      logging.Logger
+	log      Log
 }
 
 // NewLocalUpdateSource returns local update source
-func NewLocalUpdateSource(path string, jsonPath string, log logging.Logger) LocalUpdateSource {
+func NewLocalUpdateSource(path string, jsonPath string, log Log) LocalUpdateSource {
 	return LocalUpdateSource{
 		path:     path,
 		jsonPath: jsonPath,

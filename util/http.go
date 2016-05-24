@@ -11,8 +11,6 @@ import (
 	"net/url"
 	"os"
 	"time"
-
-	"github.com/keybase/go-logging"
 )
 
 const fileScheme = "file"
@@ -48,7 +46,7 @@ func DiscardAndCloseBody(resp *http.Response) error {
 }
 
 // SaveHTTPResponse saves an http.Response to path
-func SaveHTTPResponse(resp *http.Response, savePath string, mode os.FileMode, log logging.Logger) error {
+func SaveHTTPResponse(resp *http.Response, savePath string, mode os.FileMode, log Log) error {
 	if resp == nil {
 		return fmt.Errorf("No response")
 	}
@@ -88,7 +86,7 @@ func parseURL(urlString string) (*url.URL, error) {
 }
 
 // URLExists returns error if URL doesn't exist
-func URLExists(urlString string, timeout time.Duration, log logging.Logger) (bool, error) {
+func URLExists(urlString string, timeout time.Duration, log Log) (bool, error) {
 	url, err := parseURL(urlString)
 	if err != nil {
 		return false, err
@@ -127,7 +125,7 @@ type DownloadURLOptions struct {
 	RequireDigest bool
 	UseETag       bool
 	Timeout       time.Duration
-	Log           logging.Logger
+	Log           Log
 }
 
 // DownloadURL downloads a URL to a path.

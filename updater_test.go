@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var log = logging.Logger{Module: "test"}
+var log = &logging.Logger{Module: "test"}
 
 func newTestUpdater(t *testing.T) (*Updater, error) {
 	return newTestUpdaterWithServer(t, nil, nil, &testConfig{})

@@ -9,14 +9,13 @@ import (
 	"io"
 	"os"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/util"
 	"github.com/keybase/saltpack"
 	"github.com/keybase/saltpack/basic"
 )
 
 // SaltpackVerifyDetachedFileAtPath verifies a file
-func SaltpackVerifyDetachedFileAtPath(path string, signature string, validKIDs map[string]bool, log logging.Logger) error {
+func SaltpackVerifyDetachedFileAtPath(path string, signature string, validKIDs map[string]bool, log Log) error {
 	file, err := os.Open(path)
 	defer util.Close(file)
 	if err != nil {
@@ -29,7 +28,7 @@ func SaltpackVerifyDetachedFileAtPath(path string, signature string, validKIDs m
 	return nil
 }
 
-func checkSender(key saltpack.BasePublicKey, validKIDs map[string]bool, log logging.Logger) error {
+func checkSender(key saltpack.BasePublicKey, validKIDs map[string]bool, log Log) error {
 	if key == nil {
 		return fmt.Errorf("No key")
 	}
@@ -47,7 +46,7 @@ func checkSender(key saltpack.BasePublicKey, validKIDs map[string]bool, log logg
 }
 
 // SaltpackVerifyDetached verifies a message signature
-func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[string]bool, log logging.Logger) error {
+func SaltpackVerifyDetached(reader io.Reader, signature string, validKIDs map[string]bool, log Log) error {
 	if reader == nil {
 		return fmt.Errorf("No reader")
 	}

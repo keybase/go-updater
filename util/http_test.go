@@ -189,7 +189,7 @@ func TestDownloadURLTimeout(t *testing.T) {
 }
 
 func TestDownloadURLParseError(t *testing.T) {
-	err := DownloadURL("invalid", "", DownloadURLOptions{})
+	err := DownloadURL("invalid", "", DownloadURLOptions{Log: testLog})
 	assert.Error(t, err)
 }
 
@@ -197,7 +197,7 @@ func TestDownloadURLError(t *testing.T) {
 	server := testServerForError(fmt.Errorf("Test error"))
 	defer server.Close()
 
-	err := DownloadURL(server.URL, "", DownloadURLOptions{})
+	err := DownloadURL(server.URL, "", DownloadURLOptions{Log: testLog})
 	assert.EqualError(t, err, "Responded with 500 Internal Server Error")
 }
 
@@ -205,7 +205,7 @@ func TestDownloadURLLocal(t *testing.T) {
 	var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
 	destinationPath := TempPath("", "TestDownloadURLLocal.")
 	defer RemoveFileAtPath(destinationPath)
-	err := DownloadURL(URLStringForPath(testZipPath), destinationPath, DownloadURLOptions{})
+	err := DownloadURL(URLStringForPath(testZipPath), destinationPath, DownloadURLOptions{Log: testLog})
 	assert.NoError(t, err)
 
 	exists, err := FileExists(destinationPath)

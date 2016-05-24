@@ -6,8 +6,6 @@ package updater
 import (
 	"os"
 	"time"
-
-	"github.com/keybase/go-logging"
 )
 
 // UpdateChecker runs updates checks every check duration
@@ -15,13 +13,13 @@ type UpdateChecker struct {
 	updater      *Updater
 	ctx          Context
 	ticker       *time.Ticker
-	log          logging.Logger
+	log          Log
 	tickDuration time.Duration // tickDuration is the ticker delay
 	count        int           // count is number of times we've checked
 }
 
 // NewUpdateChecker creates an update checker
-func NewUpdateChecker(updater *Updater, ctx Context, tickDuration time.Duration, log logging.Logger) UpdateChecker {
+func NewUpdateChecker(updater *Updater, ctx Context, tickDuration time.Duration, log Log) UpdateChecker {
 	return UpdateChecker{
 		updater:      updater,
 		ctx:          ctx,
@@ -39,7 +37,7 @@ func (u *UpdateChecker) check() error {
 		// there was an error, and even if the update was or wasn't applied.
 		// There is no difference between doing another update check in a loop after
 		// delay and restarting the service.
-		u.log.Info("Exiting for restart")
+		u.log.Infof("%s", "Exiting for restart")
 		os.Exit(0)
 	}
 	return err
@@ -61,7 +59,7 @@ func (u *UpdateChecker) Start() bool {
 	go func() {
 		u.log.Debugf("Starting (ticker %s)", u.tickDuration)
 		for range u.ticker.C {
-			u.log.Debug("Checking for update (ticker)")
+			u.log.Debugf("%s", "Checking for update (ticker)")
 			u.Check()
 		}
 	}()

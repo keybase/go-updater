@@ -7,16 +7,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/command"
 )
 
 // OpenAppDarwin starts an app
-func OpenAppDarwin(appPath string, log logging.Logger) error {
+func OpenAppDarwin(appPath string, log Log) error {
 	return openAppDarwin("/usr/bin/open", appPath, time.Second, log)
 }
 
-func openAppDarwin(bin string, appPath string, retryDelay time.Duration, log logging.Logger) error {
+func openAppDarwin(bin string, appPath string, retryDelay time.Duration, log Log) error {
 	tryOpen := func() error {
 		result, err := command.Exec(bin, []string{appPath}, time.Minute, log)
 		if err != nil {

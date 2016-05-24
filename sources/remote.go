@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/util"
 )
@@ -18,12 +17,12 @@ import (
 // RemoteUpdateSource finds releases/updates from custom url feed (used primarily for testing)
 type RemoteUpdateSource struct {
 	defaultURI string
-	log        logging.Logger
+	log        Log
 }
 
 // NewRemoteUpdateSource builds remote update source without defaults. The url used is passed
 // via options instead.
-func NewRemoteUpdateSource(defaultURI string, log logging.Logger) RemoteUpdateSource {
+func NewRemoteUpdateSource(defaultURI string, log Log) RemoteUpdateSource {
 	return RemoteUpdateSource{
 		defaultURI: defaultURI,
 		log:        log,

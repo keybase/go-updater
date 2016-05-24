@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testLog = logging.Logger{Module: "test"}
+var testLog = &logging.Logger{Module: "test"}
 
 var matchAll = func(p ps.Process) bool { return true }
 

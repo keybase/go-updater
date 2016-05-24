@@ -13,8 +13,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/keybase/go-logging"
 )
 
 // File uses a safer file API
@@ -36,7 +34,7 @@ func NewFile(name string, data []byte, perm os.FileMode) File {
 }
 
 // Save file
-func (f File) Save(log logging.Logger) error {
+func (f File) Save(log Log) error {
 	return safeWriteToFile(f, f.perm, log)
 }
 
@@ -52,7 +50,7 @@ func (f File) WriteTo(w io.Writer) (int64, error) {
 }
 
 // safeWriteToFile to safely write to a file
-func safeWriteToFile(t SafeWriter, mode os.FileMode, log logging.Logger) error {
+func safeWriteToFile(t SafeWriter, mode os.FileMode, log Log) error {
 	filename := t.GetFilename()
 	if filename == "" {
 		return fmt.Errorf("No filename")
@@ -145,7 +143,7 @@ func FileExists(path string) (bool, error) {
 }
 
 // MakeParentDirs ensures parent directory exist for path
-func MakeParentDirs(path string, mode os.FileMode, log logging.Logger) error {
+func MakeParentDirs(path string, mode os.FileMode, log Log) error {
 	// 2nd return value here is filename (not an error), which is not needed
 	dir, _ := filepath.Split(path)
 	if dir == "" {
@@ -155,7 +153,7 @@ func MakeParentDirs(path string, mode os.FileMode, log logging.Logger) error {
 }
 
 // MakeDirs ensures directory exists for path
-func MakeDirs(dir string, mode os.FileMode, log logging.Logger) error {
+func MakeDirs(dir string, mode os.FileMode, log Log) error {
 	exists, err := FileExists(dir)
 	if err != nil {
 		return err
@@ -233,7 +231,7 @@ func IsDirReal(path string) (bool, error) {
 // It will create parent directories for destinationPath if they don't exist.
 // If the destination already exists and you specify a tmpDir, it will move
 // it there, otherwise it will be removed.
-func MoveFile(sourcePath string, destinationPath string, tmpDir string, log logging.Logger) error {
+func MoveFile(sourcePath string, destinationPath string, tmpDir string, log Log) error {
 	if _, statErr := os.Stat(destinationPath); statErr == nil {
 		if tmpDir == "" {
 			log.Infof("Removing existing destination path: %s", destinationPath)
@@ -261,7 +259,7 @@ func MoveFile(sourcePath string, destinationPath string, tmpDir string, log logg
 // CopyFile copies a file safely.
 // It will create parent directories for destinationPath if they don't exist.
 // It will overwrite an existing destinationPath.
-func CopyFile(sourcePath string, destinationPath string, log logging.Logger) error {
+func CopyFile(sourcePath string, destinationPath string, log Log) error {
 	log.Infof("Copying %s to %s", sourcePath, destinationPath)
 	in, err := os.Open(sourcePath)
 	if err != nil {

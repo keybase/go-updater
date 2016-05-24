@@ -11,9 +11,15 @@ import (
 	"os/exec"
 	"syscall"
 	"time"
-
-	"github.com/keybase/go-logging"
 )
+
+// Log is the logging interface for the command package
+type Log interface {
+	Debugf(s string, args ...interface{})
+	Infof(s string, args ...interface{})
+	Warningf(s string, args ...interface{})
+	Errorf(s string, args ...interface{})
+}
 
 // Program is a program at path with arguments
 type Program struct {
@@ -47,14 +53,14 @@ func (r Result) CombinedOutput() string {
 type execCmd func(name string, arg ...string) *exec.Cmd
 
 // Exec runs a command and returns the stdout/err output and error if any
-func Exec(name string, args []string, timeout time.Duration, log logging.Logger) (Result, error) {
+func Exec(name string, args []string, timeout time.Duration, log Log) (Result, error) {
 	return execWithFunc(name, args, exec.Command, timeout, log)
 }
 
 // exec runs a command and returns a Result and error if any.
 // We will send TERM signal and wait 1 second or timeout, whichever is less,
 // before calling KILL.
-func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Duration, log logging.Logger) (Result, error) {
+func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Duration, log Log) (Result, error) {
 	var result Result
 	log.Debugf("Execute: %s %s", name, args)
 	if name == "" {
@@ -118,7 +124,7 @@ func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Dura
 }
 
 // ExecForJSON runs a command (with timeout) expecting JSON output with obj interface
-func ExecForJSON(command string, args []string, obj interface{}, timeout time.Duration, log logging.Logger) error {
+func ExecForJSON(command string, args []string, obj interface{}, timeout time.Duration, log Log) error {
 	result, err := execWithFunc(command, args, exec.Command, timeout, log)
 	if err != nil {
 		return err

@@ -10,8 +10,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/keybase/go-logging"
 )
 
 // UnzipOver safely unzips a file and copies it contents to a destination path.
@@ -26,7 +24,7 @@ import (
 //
 //   UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, "", log)
 //
-func UnzipOver(sourcePath string, path string, destinationPath string, check func(sourcePath, destinationPath string) error, tmpDir string, log logging.Logger) error {
+func UnzipOver(sourcePath string, path string, destinationPath string, check func(sourcePath, destinationPath string) error, tmpDir string, log Log) error {
 	unzipPath := fmt.Sprintf("%s.unzipped", sourcePath)
 	defer RemoveFileAtPath(unzipPath)
 	err := unzipOver(sourcePath, unzipPath, log)
@@ -44,7 +42,7 @@ func UnzipOver(sourcePath string, path string, destinationPath string, check fun
 	return MoveFile(contentPath, destinationPath, tmpDir, log)
 }
 
-func unzipOver(sourcePath string, destinationPath string, log logging.Logger) error {
+func unzipOver(sourcePath string, destinationPath string, log Log) error {
 	if destinationPath == "" {
 		return fmt.Errorf("Invalid destination %q", destinationPath)
 	}
@@ -64,7 +62,7 @@ func unzipOver(sourcePath string, destinationPath string, log logging.Logger) er
 // Unzip unpacks a zip file to a destination.
 // This unpacks files using the current user and time (it doesn't preserve).
 // This code was modified from https://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang/20357902
-func Unzip(sourcePath, destinationPath string, log logging.Logger) error {
+func Unzip(sourcePath, destinationPath string, log Log) error {
 	r, err := zip.OpenReader(sourcePath)
 	if err != nil {
 		return err

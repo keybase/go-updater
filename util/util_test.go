@@ -5,4 +5,4 @@ package util
 
 import "github.com/keybase/go-logging"
 
-var testLog = logging.Logger{Module: "test"}
+var testLog = &logging.Logger{Module: "test"}
