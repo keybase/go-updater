@@ -101,11 +101,6 @@ func TerminateAll(matcher Matcher, killDelay time.Duration, log Log) {
 	terminateAll(ps.Processes, matcher.Fn(), killDelay, log)
 }
 
-// TerminateAllWithFn stops all processes with matching function
-func TerminateAllWithFn(matchFn MatchFn, killDelay time.Duration, log Log) {
-	terminateAll(ps.Processes, matchFn, killDelay, log)
-}
-
 func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log Log) {
 	pids, err := findPIDsWithFn(fn, matchFn, log)
 	if err != nil {
