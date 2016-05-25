@@ -129,7 +129,7 @@ func (c context) restart(wait time.Duration, delay time.Duration) error {
 	process.TerminateAll(process.NewMatcher(serviceProcPath, process.PathContains, c.log), time.Second, c.log)
 	process.TerminateAll(process.NewMatcher(kbfsProcPath, process.PathContains, c.log), time.Second, c.log)
 
-	if err := process.OpenAppDarwin(appPath, c.log); err != nil {
+	if err := OpenAppDarwin(appPath, c.log); err != nil {
 		c.log.Warningf("Error opening app: %s", err)
 	}
 
@@ -151,4 +151,31 @@ func (c context) checkProcess(match string, wait time.Duration, delay time.Durat
 		return fmt.Errorf("No process found for %s", match)
 	}
 	return nil
+}
+
+// OpenAppDarwin starts an app
+func OpenAppDarwin(appPath string, log process.Log) error {
+	return openAppDarwin("/usr/bin/open", appPath, time.Second, log)
+}
+
+func openAppDarwin(bin string, appPath string, retryDelay time.Duration, log process.Log) error {
+	tryOpen := func() error {
+		result, err := command.Exec(bin, []string{appPath}, time.Minute, log)
+		if err != nil {
+			return fmt.Errorf("Open error: %s; %s", err, result.CombinedOutput())
+		}
+		return nil
+	}
+	// We need to try 10 times because Gatekeeper has some issues, for example,
+	// http://www.openradar.me/23614087
+	var err error
+	for i := 0; i < 10; i++ {
+		err = tryOpen()
+		if err == nil {
+			break
+		}
+		log.Errorf("Open error (trying again in %s): %s", retryDelay, err)
+		time.Sleep(retryDelay)
+	}
+	return err
 }
