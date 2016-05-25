@@ -67,6 +67,7 @@ func terminateWatchdogs(execPath string, killDelay time.Duration, log Log) error
 func terminateExisting(programs []Program, log Log) {
 	// Terminate any monitored processes
 	ospid := os.Getpid()
+	log.Infof("Terminating any existing programs we will be monitoring")
 	for _, program := range programs {
 		matcher := process.NewMatcher(program.Path, process.PathEqual, log)
 		matcher.ExceptPID(ospid)
