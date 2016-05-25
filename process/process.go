@@ -95,20 +95,20 @@ func findPIDsWithFn(fn processesFn, matchFn MatchFn, log Log) ([]int, error) {
 	return pids, nil
 }
 
-// TerminateAll stops all processes with executable names that contains the matching string
-func TerminateAll(matcher Matcher, killDelay time.Duration, log Log) {
+// TerminateAll stops all processes with executable names that contains the matching string.
+// It returns the pids that were terminated.
+func TerminateAll(matcher Matcher, killDelay time.Duration, log Log) []int {
 	log.Infof("Terminating %s", matcher.match)
-	terminateAll(ps.Processes, matcher.Fn(), killDelay, log)
+	return terminateAll(ps.Processes, matcher.Fn(), killDelay, log)
 }
 
-func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log Log) {
+func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log Log) (pids []int) {
 	pids, err := findPIDsWithFn(fn, matchFn, log)
 	if err != nil {
 		log.Warningf("Error finding process: %s", err)
 		return
 	}
 	if len(pids) == 0 {
-		log.Warningf("No processes found")
 		return
 	}
 	for _, pid := range pids {
@@ -116,6 +116,7 @@ func terminateAll(fn processesFn, matchFn MatchFn, killDelay time.Duration, log 
 			log.Warningf("Error terminating %d: %s", pid, err)
 		}
 	}
+	return
 }
 
 // TerminatePID is an overly simple way to terminate a PID.
