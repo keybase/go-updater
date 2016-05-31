@@ -68,7 +68,7 @@ func watchPrograms(programs []Program, delay time.Duration, log Log) {
 func watchProgram(program Program, restartDelay time.Duration, log Log) {
 	for {
 		start := time.Now()
-		log.Infof("Starting %q", program)
+		log.Infof("Starting %#v", program)
 		cmd := exec.Command(program.Path, program.Args...)
 		err := cmd.Run()
 		if err != nil {

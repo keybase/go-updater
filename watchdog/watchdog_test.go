@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -23,6 +24,8 @@ var testLog = &logging.Logger{Module: "test"}
 func TestWatchMultiple(t *testing.T) {
 	procProgram1 := procProgram(t, "testWatch1", 60)
 	procProgram2 := procProgram(t, "testWatch2", 60)
+	defer util.RemoveFileAtPath(procProgram1.Path)
+	defer util.RemoveFileAtPath(procProgram2.Path)
 
 	delay := 10 * time.Millisecond
 
@@ -55,6 +58,7 @@ func TestWatchMultiple(t *testing.T) {
 // terminated before a process is monitored.
 func TestTerminateBeforeWatch(t *testing.T) {
 	procProgram := procProgram(t, "testTerminateBeforeWatch", 60)
+	defer util.RemoveFileAtPath(procProgram.Path)
 
 	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
 
@@ -92,6 +96,7 @@ func cleanupProc(cmd *exec.Cmd, procPath string) {
 func TestExitOnSuccess(t *testing.T) {
 	procProgram := procProgram(t, "testExitOnSuccess", 0) // Don't sleep any
 	procProgram.ExitOn = ExitOnSuccess
+	defer util.RemoveFileAtPath(procProgram.Path)
 
 	delay := 10 * time.Millisecond
 	err := Watch([]Program{procProgram}, delay, testLog)
@@ -106,6 +111,13 @@ func TestExitOnSuccess(t *testing.T) {
 // procProgram returns a testable unique program at a temporary location that
 // will run for the specified number of seconds.
 func procProgram(t *testing.T, name string, sleepSeconds int) Program {
+	if runtime.GOOS == "windows" {
+		return procProgramWindows(t, name, sleepSeconds)
+	}
+	return procProgramNix(t, name, sleepSeconds)
+}
+
+func procProgramNix(t *testing.T, name string, sleepSeconds int) Program {
 	// Copy sleep executable to tmp
 	procPath := filepath.Join(os.TempDir(), name)
 	err := util.CopyFile("/bin/sleep", procPath, testLog)
@@ -118,5 +130,19 @@ func procProgram(t *testing.T, name string, sleepSeconds int) Program {
 	return Program{
 		Path: procPath,
 		Args: []string{fmt.Sprintf("%d", sleepSeconds)},
+	}
+}
+
+func procProgramWindows(t *testing.T, name string, sleepSeconds int) Program {
+	// Copy executable to tmp
+	procPath := filepath.Join(os.TempDir(), name+".exe")
+
+	// Instead of sleep use ping with timeout, http://ss64.com/nt/sleep.html
+	err := util.CopyFile(`c:\windows\system32\ping.exe`, procPath, testLog)
+	require.NoError(t, err)
+
+	return Program{
+		Path: procPath,
+		Args: []string{"-n", fmt.Sprintf("%d", sleepSeconds), "127.0.0.1"},
 	}
 }
