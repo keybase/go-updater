@@ -20,7 +20,7 @@ import (
 
 var testLog = &logging.Logger{Module: "test"}
 
-func TestWatch(t *testing.T) {
+func TestWatchMultiple(t *testing.T) {
 	procProgram1 := procProgram(t, "testWatch1", 60)
 	procProgram2 := procProgram(t, "testWatch2", 60)
 
@@ -51,6 +51,36 @@ func TestWatch(t *testing.T) {
 	assert.Equal(t, 1, len(procs2After))
 }
 
+// TestTerminateBeforeWatch checks to make sure any existing processes are
+// terminated before a process is monitored.
+func TestTerminateBeforeWatch(t *testing.T) {
+	procProgram := procProgram(t, "testTerminateBeforeWatch", 60)
+
+	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
+
+	err := exec.Command(procProgram.Path, procProgram.Args...).Start()
+	require.NoError(t, err)
+
+	procsBefore, err := process.FindProcesses(matcher, time.Second, time.Millisecond, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(procsBefore))
+	pidBefore := procsBefore[0].Pid()
+	t.Logf("Pid before: %d", pidBefore)
+
+	// Start watching
+	err = Watch([]Program{procProgram}, 10*time.Millisecond, testLog)
+	require.NoError(t, err)
+
+	// Check again, and make sure it's a new process
+	procsAfter, err := process.FindProcesses(matcher, time.Second, time.Millisecond, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(procsAfter))
+	pidAfter := procsAfter[0].Pid()
+	t.Logf("Pid after: %d", pidAfter)
+
+	assert.NotEqual(t, pidBefore, pidAfter)
+}
+
 func cleanupProc(cmd *exec.Cmd, procPath string) {
 	if cmd != nil && cmd.Process != nil {
 		_ = cmd.Process.Kill()
@@ -58,8 +88,9 @@ func cleanupProc(cmd *exec.Cmd, procPath string) {
 	_ = os.Remove(procPath)
 }
 
-// procProgram returns a testable unique program at a temporary location
-func procProgram(t *testing.T, name string, delaySeconds int) Program {
+// procProgram returns a testable unique program at a temporary location that
+// will run for the specified number of seconds.
+func procProgram(t *testing.T, name string, sleepSeconds int) Program {
 	// Copy sleep executable to tmp
 	procPath := filepath.Join(os.TempDir(), name)
 	err := util.CopyFile("/bin/sleep", procPath, testLog)
@@ -71,6 +102,6 @@ func procProgram(t *testing.T, name string, delaySeconds int) Program {
 	require.NoError(t, err)
 	return Program{
 		Path: procPath,
-		Args: []string{fmt.Sprintf("%d", delaySeconds)},
+		Args: []string{fmt.Sprintf("%d", sleepSeconds)},
 	}
 }
