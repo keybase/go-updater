@@ -58,6 +58,7 @@ func TestTerminateBeforeWatch(t *testing.T) {
 
 	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
 
+	// Launch program (so we can test it gets terminated on watch)
 	err := exec.Command(procProgram.Path, procProgram.Args...).Start()
 	require.NoError(t, err)
 
@@ -86,6 +87,20 @@ func cleanupProc(cmd *exec.Cmd, procPath string) {
 		_ = cmd.Process.Kill()
 	}
 	_ = os.Remove(procPath)
+}
+
+func TestExitOnSuccess(t *testing.T) {
+	procProgram := procProgram(t, "testExitOnSuccess", 0) // Don't sleep any
+	procProgram.ExitOn = ExitOnSuccess
+
+	delay := 10 * time.Millisecond
+	err := Watch([]Program{procProgram}, delay, testLog)
+	require.NoError(t, err)
+
+	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
+	procsAfter, err := process.FindProcesses(matcher, 300*time.Millisecond, 300*time.Millisecond, testLog)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(procsAfter))
 }
 
 // procProgram returns a testable unique program at a temporary location that
