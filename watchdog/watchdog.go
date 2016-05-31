@@ -17,7 +17,7 @@ type ExitOn string
 const (
 	// ExitOnNone means the program should always be restarted
 	ExitOnNone ExitOn = ""
-	// ExitOnSuccess means the program should only be restart if errored
+	// ExitOnSuccess means the program should only restart if errored
 	ExitOnSuccess ExitOn = "success"
 )
 
