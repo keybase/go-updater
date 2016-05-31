@@ -28,7 +28,8 @@ type UpdateSource interface {
 	FindUpdate(options UpdateOptions) (*Update, error)
 }
 
-// Context defines state during an update session
+// Context defines options, UI and hooks for the updater.
+// This is where you can define custom behavior specific to your apps.
 type Context interface {
 	GetUpdateUI() UpdateUI
 	UpdateOptions() UpdateOptions
@@ -49,7 +50,7 @@ type Config interface {
 	SetInstallID(installID string) error
 }
 
-// Log is the logging interface for the this package
+// Log is the logging interface for this package
 type Log interface {
 	Debug(...interface{})
 	Info(...interface{})
@@ -111,7 +112,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
-	// we check for nil asset
+	// we check for nil asset.
 	if update.Asset == nil || update.Asset.URL == "" {
 		u.log.Info("No update asset to apply")
 		return update, nil
@@ -252,7 +253,7 @@ func report(ctx Context, err error, update *Update, options UpdateOptions) {
 }
 
 // tempDir, if specified, will contain files that were replaced during an update
-// and will be removed after an update. The temp dir should exist.
+// and will be removed after an update. The temp dir should already exist.
 func (u *Updater) tempDir() string {
 	tmpDir := util.TempPath("", "Updater")
 	if err := util.MakeDirs(tmpDir, 0700, u.log); err != nil {
