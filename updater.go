@@ -49,7 +49,7 @@ type Config interface {
 	SetInstallID(installID string) error
 }
 
-// Log is the logging interface for the util package
+// Log is the logging interface for the this package
 type Log interface {
 	Debug(...interface{})
 	Info(...interface{})
