@@ -83,6 +83,11 @@ func findProcessesWithFn(fn processesFn, matchFn MatchFn, max int) ([]ps.Process
 	return procs, nil
 }
 
+// FindPIDsWithMatchFn returns pids for processes matching function
+func FindPIDsWithMatchFn(matchFn MatchFn, log Log) ([]int, error) {
+	return findPIDsWithFn(ps.Processes, matchFn, log)
+}
+
 func findPIDsWithFn(fn processesFn, matchFn MatchFn, log Log) ([]int, error) {
 	procs, err := findProcessesWithFn(fn, matchFn, 0)
 	if err != nil {

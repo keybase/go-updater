@@ -65,6 +65,12 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	// Temporarily adding for testing
 	urlValues.Add("channel", "test")
 
+	force := util.EnvBool("KEYBASE_UPDATER_FORCE", false)
+	if force {
+		k.log.Info("KEYBASE_UPDATER_FORCE is true, will force update")
+		urlValues.Add("force", util.URLValueForBool(force))
+	}
+
 	autoUpdate, _ := k.cfg.GetUpdateAuto()
 	urlValues.Add("auto_update", util.URLValueForBool(autoUpdate))
 
@@ -97,11 +103,6 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	}
 
 	k.log.Debugf("Received update response: %#v", update)
-
-	if util.EnvBool("KEYBASE_UPDATER_FORCE", false) {
-		k.log.Info("KEYBASE_UPDATER_FORCE is true, enabling NeedUpdate")
-		update.NeedUpdate = true
-	}
 
 	return &update, nil
 }

@@ -1,6 +1,6 @@
 ## Keybase
 
-This package has behavior for updating specific to Keybase.
+Keybase specific behavior for updates.
 
 ### Environment
 

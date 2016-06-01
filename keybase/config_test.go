@@ -128,9 +128,10 @@ func TestConfigExtra(t *testing.T) {
 	assert.True(t, autoSet)
 }
 
-// TestConfigPartial tests that if any parsing error occurs, we have the
-// default config
-func TestConfigPartial(t *testing.T) {
+// TestConfigBadType tests that if a parsing error occurs, we have the default
+// config
+func TestConfigBadType(t *testing.T) {
+	// installId has wrong type
 	data := `{
 	"auto": true,
 	"installId": 1
