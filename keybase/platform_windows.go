@@ -52,7 +52,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
-	_, err := command.Exec(update.Asset.LocalPath, []string{""}, time.Hour, c.log)
+	_, err := command.Exec(update.Asset.LocalPath, nil, time.Hour, c.log)
 	return err
 }
 
