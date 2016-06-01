@@ -16,6 +16,5 @@ func TestUpdatePrompt(t *testing.T) {
 	ctx := newContext(&testConfigPlatform{}, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
-	// No response for Windows
-	assert.Nil(t, resp)
+	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, resp)
 }
