@@ -7,15 +7,17 @@ package process
 
 import (
 	"os/exec"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/keybase/go-updater/util"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFindProcessWait(t *testing.T) {
-	procPath := procPath(t)
+	procPath := procPath(t, "testFindProcessWait")
 	cmd := exec.Command(procPath, "10")
 	defer cleanupProc(cmd, procPath)
 
@@ -37,7 +39,7 @@ func TestFindProcessWait(t *testing.T) {
 }
 
 func TestTerminateAll(t *testing.T) {
-	procPath := procPath(t)
+	procPath := procPath(t, "testTerminateAll")
 	defer util.RemoveFileAtPath(procPath)
 	start := func() int {
 		cmd := exec.Command(procPath, "10")
@@ -54,4 +56,15 @@ func TestTerminateAll(t *testing.T) {
 	TerminateAll(matcher, time.Millisecond, testLog)
 	assertTerminated(t, pids[0], "signal: terminated")
 	assertTerminated(t, pids[1], "signal: terminated")
+}
+
+func TestFindProcessTest(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		t.Skip("Unsupported until we have process path on linux")
+	}
+	pid, path := process(t)
+	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), 0, 0, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(procs))
+	assert.Equal(t, pid, procs[0].Pid())
 }

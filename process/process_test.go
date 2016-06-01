@@ -27,20 +27,30 @@ func cleanupProc(cmd *exec.Cmd, procPath string) {
 	if cmd != nil && cmd.Process != nil {
 		_ = cmd.Process.Kill()
 	}
-	_ = os.Remove(procPath)
+	if procPath != "" {
+		_ = os.Remove(procPath)
+	}
 }
 
-func procPath(t *testing.T) string {
-	// Copy sleep executable to tmp
-	procPath := filepath.Join(os.TempDir(), "sleeptest")
-	err := util.CopyFile("/bin/sleep", procPath, testLog)
+func procTestPath(name string) (string, string) {
+	// Copy test executable to tmp
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe"), filepath.Join(os.TempDir(), name+".exe")
+	}
+	return filepath.Join(os.Getenv("GOPATH"), "bin", "test"), filepath.Join(os.TempDir(), name)
+}
+
+func procPath(t *testing.T, name string) string {
+	// Copy test executable to tmp
+	srcPath, destPath := procTestPath(name)
+	err := util.CopyFile(srcPath, destPath, testLog)
 	require.NoError(t, err)
-	err = os.Chmod(procPath, 0777)
+	err = os.Chmod(destPath, 0777)
 	require.NoError(t, err)
 	// Temp dir might have symlinks in which case we need the eval'ed path
-	procPath, err = filepath.EvalSymlinks(procPath)
+	destPath, err = filepath.EvalSymlinks(destPath)
 	require.NoError(t, err)
-	return procPath
+	return destPath
 }
 
 func TestFindPIDsWithFn(t *testing.T) {
@@ -64,8 +74,8 @@ func TestFindPIDsWithFn(t *testing.T) {
 }
 
 func TestTerminatePID(t *testing.T) {
-	procPath := procPath(t)
-	cmd := exec.Command(procPath, "10")
+	procPath := procPath(t, "testTerminatePID")
+	cmd := exec.Command(procPath, "sleep")
 	err := cmd.Start()
 	defer cleanupProc(cmd, procPath)
 	require.NoError(t, err)
@@ -108,15 +118,4 @@ func process(t *testing.T) (int, string) {
 	path, err := proc.Path()
 	require.NoError(t, err)
 	return pid, path
-}
-
-func TestFindProcessTest(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		t.Skip("Unsupported until we have process path on linux")
-	}
-	pid, path := process(t)
-	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), 0, 0, testLog)
-	require.NoError(t, err)
-	require.True(t, len(procs) == 1)
-	assert.Equal(t, pid, procs[0].Pid())
 }

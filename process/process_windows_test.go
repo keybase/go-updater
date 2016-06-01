@@ -12,23 +12,36 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestTerminateAll(t *testing.T) {
-	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
-	start := func() int {
-		cmd := exec.Command(path, "sleep")
-		err := cmd.Start()
-		require.NoError(t, err)
-		require.NotNil(t, cmd.Process)
-		return cmd.Process.Pid
-	}
+func startProcess(t *testing.T, testCommand string) (string, int, *exec.Cmd) {
+	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+	cmd := exec.Command(path, testCommand)
+	err := cmd.Start()
+	require.NoError(t, err)
+	require.NotNil(t, cmd.Process)
+	return path, cmd.Process.Pid, cmd
+}
 
+func TestTerminateAll(t *testing.T) {
 	pids := []int{}
-	pids = append(pids, start())
-	pids = append(pids, start())
-	TerminateAll("test", time.Millisecond, testLog)
+	path, pid1, cmd1 := startProcess(t, "sleep")
+	defer cleanupProc(cmd1, "")
+	_, pid2, cmd2 := startProcess(t, "sleep")
+	defer cleanupProc(cmd2, "")
+	pids = append(pids, pid1, pid2)
+	TerminateAll(NewMatcher(path, PathEqual, testLog), time.Millisecond, testLog)
 	assertTerminated(t, pids[0], "exit status 1")
 	assertTerminated(t, pids[1], "exit status 1")
+}
+
+func TestFindProcessTest(t *testing.T) {
+	path, pid, cmd := startProcess(t, "sleep")
+	defer cleanupProc(cmd, "")
+	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), 0, 0, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(procs))
+	assert.Equal(t, pid, procs[0].Pid())
 }
