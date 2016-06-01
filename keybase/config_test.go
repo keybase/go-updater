@@ -84,7 +84,13 @@ func TestConfig(t *testing.T) {
 func TestConfigBadPath(t *testing.T) {
 	cfg := newDefaultConfig("", "", testLog)
 
-	badPath := filepath.Join("/testdir", "updater.json") // Shouldn't be writable
+	var badPath string
+	if runtime.GOOS == "windows" {
+		badPath = `x:\updater.json` // Shouldn't be writable
+	} else {
+		badPath = filepath.Join("/testdir", "updater.json") // Shouldn't be writable
+	}
+
 	err := cfg.loadFromPath(badPath)
 	t.Logf("Error: %#v", err)
 	assert.NotNil(t, err, "Expected error")
