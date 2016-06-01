@@ -60,7 +60,7 @@ func TestRestart(t *testing.T) {
 
 func TestOpenDarwin(t *testing.T) {
 	appPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
-	matcher := process.NewMatcher(appPath, process.PathEqual, testLog)
+	matcher := process.NewMatcher(appPath, process.PathPrefix, testLog)
 	defer process.TerminateAll(matcher, 200*time.Millisecond, testLog)
 	err := OpenAppDarwin(appPath, testLog)
 	assert.NoError(t, err)
