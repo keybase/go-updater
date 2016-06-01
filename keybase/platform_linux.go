@@ -46,8 +46,8 @@ func (c config) promptProgram() (command.Program, error) {
 }
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	// TODO
-	return nil, fmt.Errorf("Unsupported")
+	// No update prompt for Linux
+	return nil, nil
 }
 
 func (c context) PausedPrompt() bool {

@@ -21,6 +21,10 @@ import (
 
 var log = &logging.Logger{Module: "test"}
 
+func testExit(c int) {
+	// Exited
+}
+
 func newTestUpdater(t *testing.T) (*Updater, error) {
 	return newTestUpdaterWithServer(t, nil, nil, &testConfig{})
 }
@@ -29,14 +33,14 @@ func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server, update 
 	return NewUpdater(testUpdateSource{testServer: testServer, update: update}, config, log), nil
 }
 
-func newTestContext(options UpdateOptions, cfg Config, action UpdateAction) *testUpdateUI {
-	return &testUpdateUI{options: options, cfg: cfg, action: action}
+func newTestContext(options UpdateOptions, cfg Config, response *UpdatePromptResponse) *testUpdateUI {
+	return &testUpdateUI{options: options, cfg: cfg, response: response}
 }
 
 type testUpdateUI struct {
 	options            UpdateOptions
 	cfg                Config
-	action             UpdateAction
+	response           *UpdatePromptResponse
 	promptErr          error
 	verifyErr          error
 	beforeApplyErr     error
@@ -53,11 +57,15 @@ func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOpti
 	if u.promptErr != nil {
 		return nil, u.promptErr
 	}
-	return &UpdatePromptResponse{Action: u.action, AutoUpdate: true}, nil
+	return u.response, nil
 }
 
 func (u testUpdateUI) BeforeApply(update Update) error {
 	return u.beforeApplyErr
+}
+
+func (u testUpdateUI) Apply(update Update, options UpdateOptions, tmpDir string) error {
+	return nil
 }
 
 func (u testUpdateUI) AfterApply(update Update) error {
@@ -95,6 +103,8 @@ func (u *testUpdateUI) ReportSuccess(update *Update, options UpdateOptions) {
 	u.updateReported = update
 }
 
+func (u *testUpdateUI) AfterUpdateCheck(update *Update) {}
+
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
 	return u.options
 }
@@ -126,7 +136,7 @@ func newTestUpdate(uri string, needUpdate bool) *Update {
 		update.Asset = &Asset{
 			Name:      "test.zip",
 			URL:       uri,
-			Digest:    "3a147f31b25a6027bda15367def6f4499e29a9b531855c0ac881a8f3a83a12b9",
+			Digest:    "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84", // shasum -a 256 test/test.zip
 			Signature: testZipSignature,
 		}
 	}
@@ -199,7 +209,7 @@ func TestUpdaterApply(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionApply)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 	update, err := upr.Update(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, update)
@@ -230,7 +240,7 @@ func TestUpdaterDownloadError(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionApply)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (download): Responded with 500 Internal Server Error")
 
@@ -247,7 +257,7 @@ func TestUpdaterCancel(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionCancel)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionCancel, AutoUpdate: true})
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (cancel): Canceled")
 
@@ -261,12 +271,39 @@ func TestUpdaterSnooze(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionSnooze)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionSnooze, AutoUpdate: true})
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (cancel): Snoozed update")
 
 	// Don't report error on user snooze
 	assert.NoError(t, ctx.errReported)
+}
+
+func TestUpdaterNoResponseContinue(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, nil)
+	update, err := upr.Update(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, update)
+	require.NotNil(t, update.Asset)
+
+	auto, autoSet := upr.config.GetUpdateAuto()
+	assert.False(t, auto)
+	assert.False(t, autoSet)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	assert.Nil(t, ctx.errReported)
+	assert.Empty(t, string(ctx.actionReported))
+	assert.False(t, ctx.autoUpdateReported)
+
+	require.NotNil(t, ctx.updateReported)
+	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
+	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
+	assert.True(t, ctx.successReported)
 }
 
 func TestUpdateNoAsset(t *testing.T) {
@@ -275,7 +312,7 @@ func TestUpdateNoAsset(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(""), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionApply)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 	update, err := upr.Update(ctx)
 	assert.NoError(t, err)
 	assert.Nil(t, update.Asset)
@@ -286,7 +323,7 @@ func testUpdaterError(t *testing.T, errorType ErrorType) {
 	defer testServer.Close()
 
 	upr, _ := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionApply)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 	testErr := fmt.Errorf("Test error")
 	switch errorType {
 	case PromptError:
@@ -315,7 +352,7 @@ func TestUpdaterConfigError(t *testing.T) {
 	defer testServer.Close()
 
 	upr, _ := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{err: fmt.Errorf("Test config error")})
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionApply)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 
 	_, err := upr.Update(ctx)
 	assert.NoError(t, err)
@@ -329,7 +366,7 @@ func TestUpdaterAuto(t *testing.T) {
 	defer testServer.Close()
 
 	upr, _ := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{auto: true, autoSet: true})
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionApply)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 
 	_, err := upr.Update(ctx)
 	assert.NoError(t, err)
@@ -348,7 +385,7 @@ func TestUpdaterApplyError(t *testing.T) {
 	defer testServer.Close()
 
 	upr, _ := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{auto: true, autoSet: true})
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionApply)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 
 	ctx.beforeApplyErr = fmt.Errorf("Test before error")
 	_, err := upr.Update(ctx)
@@ -366,7 +403,7 @@ func TestUpdaterNotNeeded(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer, newTestUpdate(testServer.URL, false), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, UpdateActionSnooze)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionSnooze, AutoUpdate: true})
 	update, err := upr.Update(ctx)
 	assert.NoError(t, err)
 	assert.Nil(t, update)

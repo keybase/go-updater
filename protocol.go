@@ -76,6 +76,8 @@ const (
 	UpdateActionCancel UpdateAction = "cancel"
 	// UpdateActionError means an error occurred
 	UpdateActionError UpdateAction = "error"
+	// UpdateActionContinue means no update action was available and the update should continue
+	UpdateActionContinue UpdateAction = "continue"
 )
 
 // String is a unique string label for the action

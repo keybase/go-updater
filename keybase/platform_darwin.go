@@ -179,3 +179,35 @@ func openAppDarwin(bin string, appPath string, retryDelay time.Duration, log pro
 	}
 	return err
 }
+
+func (c context) check(sourcePath string, destinationPath string) error {
+	// Check to make sure the update source path is a real directory
+	ok, err := util.IsDirReal(sourcePath)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("Source path isn't a directory")
+	}
+	return nil
+}
+
+func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	localPath := update.Asset.LocalPath
+	destinationPath := options.DestinationPath
+
+	// The file name we unzip over should match the (base) file in the destination path
+	filename := filepath.Base(destinationPath)
+	if err := util.UnzipOver(localPath, filename, destinationPath, c.check, tmpDir, c.log); err != nil {
+		return err
+	}
+
+	// Update spotlight
+	c.log.Debugf("Updating spotlight: %s", destinationPath)
+	spotlightResult, spotLightErr := command.Exec("/usr/bin/mdimport", []string{destinationPath}, 20*time.Second, c.log)
+	if spotLightErr != nil {
+		c.log.Warningf("Error trying to update spotlight: %s, (%s)", spotLightErr, spotlightResult.CombinedOutput())
+	}
+
+	return nil
+}

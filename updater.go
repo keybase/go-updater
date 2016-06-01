@@ -6,6 +6,7 @@ package updater
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/keybase/go-updater/util"
 )
@@ -35,11 +36,13 @@ type Context interface {
 	UpdateOptions() UpdateOptions
 	Verify(update Update) error
 	BeforeApply(update Update) error
+	Apply(update Update, options UpdateOptions, tmpDir string) error
 	AfterApply(update Update) error
 	Restart() error
 	ReportError(err error, update *Update, options UpdateOptions)
 	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
 	ReportSuccess(update *Update, options UpdateOptions)
+	AfterUpdateCheck(update *Update)
 }
 
 // Config defines configuration for the Updater
@@ -109,6 +112,8 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, cancelErr(fmt.Errorf("Canceled"))
 	case UpdateActionError:
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
+	case UpdateActionContinue:
+		// Continue
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
@@ -148,7 +153,7 @@ func (u *Updater) apply(ctx Context, update Update, options UpdateOptions, tmpDi
 	}
 
 	u.log.Info("Applying update")
-	if err := u.platformApplyUpdate(update, options, tmpDir); err != nil {
+	if err := ctx.Apply(update, options, tmpDir); err != nil {
 		return applyErr(err)
 	}
 
@@ -213,8 +218,8 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	u.log.Debug("Prompt for update")
 
 	auto, autoSet := u.config.GetUpdateAuto()
+	u.log.Debugf("Auto update: %s (set=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet))
 	if auto {
-		u.log.Debug("Auto updates enabled")
 		return UpdateActionAuto, nil
 	}
 
@@ -226,6 +231,10 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	updatePromptResponse, err := updateUI.UpdatePrompt(update, options, promptOptions)
 	if err != nil {
 		return UpdateActionError, err
+	}
+	if updatePromptResponse == nil {
+		u.log.Debugf("No response, continuing")
+		return UpdateActionContinue, nil
 	}
 
 	u.log.Debugf("Update prompt response: %#v", updatePromptResponse)
