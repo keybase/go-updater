@@ -109,18 +109,17 @@ func TestExitOnSuccess(t *testing.T) {
 	assert.Equal(t, 0, len(procsAfter))
 }
 
-func procTestPath() string {
+func procTestPath(name string) (string, string) {
+	// Copy test executable to tmp
 	if runtime.GOOS == "windows" {
-		return filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+		return filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe"), filepath.Join(os.TempDir(), name+".exe")
 	}
-	return filepath.Join(os.Getenv("GOPATH"), "bin", "test")
+	return filepath.Join(os.Getenv("GOPATH"), "bin", "test"), filepath.Join(os.TempDir(), name)
 }
 
 // procProgram returns a testable unique program at a temporary location
 func procProgram(t *testing.T, name string, testCommand string) Program {
-	path := procTestPath()
-	// Copy test executable to tmp
-	procPath := filepath.Join(os.TempDir(), name)
+	path, procPath := procTestPath(name)
 	err := util.CopyFile(path, procPath, testLog)
 	require.NoError(t, err)
 	err = os.Chmod(procPath, 0777)
