@@ -18,7 +18,7 @@ import (
 
 func TestFindProcessWait(t *testing.T) {
 	procPath := procPath(t, "testFindProcessWait")
-	cmd := exec.Command(procPath, "10")
+	cmd := exec.Command(procPath, "sleep")
 	defer cleanupProc(cmd, procPath)
 
 	// Ensure it's not already running
@@ -42,7 +42,7 @@ func TestTerminateAll(t *testing.T) {
 	procPath := procPath(t, "testTerminateAll")
 	defer util.RemoveFileAtPath(procPath)
 	start := func() int {
-		cmd := exec.Command(procPath, "10")
+		cmd := exec.Command(procPath, "sleep")
 		err := cmd.Start()
 		require.NoError(t, err)
 		require.NotNil(t, cmd.Process)
