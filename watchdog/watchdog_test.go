@@ -4,7 +4,6 @@
 package watchdog
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,8 +21,8 @@ import (
 var testLog = &logging.Logger{Module: "test"}
 
 func TestWatchMultiple(t *testing.T) {
-	procProgram1 := procProgram(t, "testWatch1", 60)
-	procProgram2 := procProgram(t, "testWatch2", 60)
+	procProgram1 := procProgram(t, "testWatch1", "sleep")
+	procProgram2 := procProgram(t, "testWatch2", "sleep")
 	defer util.RemoveFileAtPath(procProgram1.Path)
 	defer util.RemoveFileAtPath(procProgram2.Path)
 
@@ -40,7 +39,7 @@ func TestWatchMultiple(t *testing.T) {
 	matcher2 := process.NewMatcher(procProgram2.Path, process.PathEqual, testLog)
 	procs2, err := process.FindProcesses(matcher2, time.Second, 200*time.Millisecond, testLog)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(procs2))
+	require.Equal(t, 1, len(procs2))
 	proc2 := procs2[0]
 
 	err = process.TerminatePID(proc2.Pid(), time.Millisecond, testLog)
@@ -51,13 +50,13 @@ func TestWatchMultiple(t *testing.T) {
 	// Check for restart
 	procs2After, err := process.FindProcesses(matcher2, time.Second, time.Millisecond, testLog)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(procs2After))
+	require.Equal(t, 1, len(procs2After))
 }
 
 // TestTerminateBeforeWatch checks to make sure any existing processes are
 // terminated before a process is monitored.
 func TestTerminateBeforeWatch(t *testing.T) {
-	procProgram := procProgram(t, "testTerminateBeforeWatch", 60)
+	procProgram := procProgram(t, "testTerminateBeforeWatch", "sleep")
 	defer util.RemoveFileAtPath(procProgram.Path)
 
 	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
@@ -94,7 +93,7 @@ func cleanupProc(cmd *exec.Cmd, procPath string) {
 }
 
 func TestExitOnSuccess(t *testing.T) {
-	procProgram := procProgram(t, "testExitOnSuccess", 0) // Don't sleep any
+	procProgram := procProgram(t, "testExitOnSuccess", "echo")
 	procProgram.ExitOn = ExitOnSuccess
 	defer util.RemoveFileAtPath(procProgram.Path)
 
@@ -102,25 +101,27 @@ func TestExitOnSuccess(t *testing.T) {
 	err := Watch([]Program{procProgram}, delay, testLog)
 	require.NoError(t, err)
 
+	time.Sleep(2 * delay)
+
 	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
 	procsAfter, err := process.FindProcesses(matcher, 300*time.Millisecond, 300*time.Millisecond, testLog)
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(procsAfter))
 }
 
-// procProgram returns a testable unique program at a temporary location that
-// will run for the specified number of seconds.
-func procProgram(t *testing.T, name string, sleepSeconds int) Program {
+func procTestPath() string {
 	if runtime.GOOS == "windows" {
-		return procProgramWindows(t, name, sleepSeconds)
+		return filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
 	}
-	return procProgramNix(t, name, sleepSeconds)
+	return filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 }
 
-func procProgramNix(t *testing.T, name string, sleepSeconds int) Program {
-	// Copy sleep executable to tmp
+// procProgram returns a testable unique program at a temporary location
+func procProgram(t *testing.T, name string, testCommand string) Program {
+	path := procTestPath()
+	// Copy test executable to tmp
 	procPath := filepath.Join(os.TempDir(), name)
-	err := util.CopyFile("/bin/sleep", procPath, testLog)
+	err := util.CopyFile(path, procPath, testLog)
 	require.NoError(t, err)
 	err = os.Chmod(procPath, 0777)
 	require.NoError(t, err)
@@ -129,20 +130,6 @@ func procProgramNix(t *testing.T, name string, sleepSeconds int) Program {
 	require.NoError(t, err)
 	return Program{
 		Path: procPath,
-		Args: []string{fmt.Sprintf("%d", sleepSeconds)},
-	}
-}
-
-func procProgramWindows(t *testing.T, name string, sleepSeconds int) Program {
-	// Copy executable to tmp
-	procPath := filepath.Join(os.TempDir(), name+".exe")
-
-	// Instead of sleep use ping with timeout, http://ss64.com/nt/sleep.html
-	err := util.CopyFile(`c:\windows\system32\ping.exe`, procPath, testLog)
-	require.NoError(t, err)
-
-	return Program{
-		Path: procPath,
-		Args: []string{"-n", fmt.Sprintf("%d", sleepSeconds), "127.0.0.1"},
+		Args: []string{testCommand},
 	}
 }
