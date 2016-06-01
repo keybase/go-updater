@@ -41,7 +41,7 @@ func (c config) promptProgram() (command.Program, error) {
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	// No update prompt for Windows, since the installer may handle it
-	return nil, nil
+	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil
 }
 
 func (c context) PausedPrompt() bool {
@@ -52,7 +52,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
-	_, err := command.Exec(update.Asset.LocalPath, []string{"/SILENT"}, time.Hour, c.log)
+	_, err := command.Exec(update.Asset.LocalPath, []string{""}, time.Hour, c.log)
 	return err
 }
 

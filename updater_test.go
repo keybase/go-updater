@@ -279,13 +279,13 @@ func TestUpdaterSnooze(t *testing.T) {
 	assert.NoError(t, ctx.errReported)
 }
 
-func TestUpdaterNoResponseContinue(t *testing.T) {
+func TestUpdaterContinue(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, nil)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionContinue, AutoUpdate: false})
 	update, err := upr.Update(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, update)
@@ -304,6 +304,21 @@ func TestUpdaterNoResponseContinue(t *testing.T) {
 	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
 	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
 	assert.True(t, ctx.successReported)
+}
+
+func TestUpdateNoResponse(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, nil)
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (prompt): No response")
+
+	require.NotNil(t, ctx.errReported)
+	assert.Equal(t, ctx.errReported.(Error).errorType, PromptError)
+	assert.False(t, ctx.successReported)
 }
 
 func TestUpdateNoAsset(t *testing.T) {

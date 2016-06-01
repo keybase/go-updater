@@ -233,8 +233,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 		return UpdateActionError, err
 	}
 	if updatePromptResponse == nil {
-		u.log.Debugf("No response, continuing")
-		return UpdateActionContinue, nil
+		return UpdateActionError, fmt.Errorf("No response")
 	}
 
 	u.log.Debugf("Update prompt response: %#v", updatePromptResponse)
