@@ -201,7 +201,7 @@ func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error)
 // WriteTempDir creates a unique temp directory.
 //
 // For example:
-//   WriteTempDir("Test.", 0600)
+//   WriteTempDir("Test.", 0700)
 func WriteTempDir(prefix string, mode os.FileMode) (string, error) {
 	path := TempPath("", prefix)
 	if err := os.MkdirAll(path, mode); err != nil {

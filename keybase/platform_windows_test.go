@@ -6,10 +6,14 @@
 package keybase
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdatePrompt(t *testing.T) {
@@ -17,4 +21,24 @@ func TestUpdatePrompt(t *testing.T) {
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, resp)
+}
+
+func TestApplyAsset(t *testing.T) {
+	ctx := newContext(&testConfigPlatform{}, testLog)
+	tmpDir, err := util.WriteTempDir("TestApplyAsset.", 0700)
+	require.NoError(t, err)
+
+	exePath := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+	localPath := filepath.Join(tmpDir, "test.exe")
+	err = util.CopyFile(exePath, localPath, testLog)
+	require.NoError(t, err)
+
+	update := updater.Update{
+		Asset: &updater.Asset{
+			LocalPath: exePath,
+		},
+	}
+
+	err = ctx.Apply(update, updater.UpdateOptions{}, tmpDir)
+	require.NoError(t, err)
 }

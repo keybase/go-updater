@@ -13,6 +13,7 @@ import (
 
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/process"
+	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -80,4 +81,26 @@ func TestFindPIDsLaunchd(t *testing.T) {
 	assert.NoError(t, err)
 	t.Logf("Pids: %#v", pids)
 	require.True(t, len(pids) >= 1)
+}
+
+func TestApplyAsset(t *testing.T) {
+	ctx := newContext(&testConfigPlatform{}, testLog)
+	tmpDir, err := util.WriteTempDir("TestApplyAsset.", 0700)
+	require.NoError(t, err)
+
+	zipPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+	localPath := filepath.Join(tmpDir, "test.zip")
+	err = util.CopyFile(zipPath, localPath, testLog)
+	require.NoError(t, err)
+
+	update := updater.Update{
+		Asset: &updater.Asset{
+			LocalPath: zipPath,
+		},
+	}
+
+	options := updater.UpdateOptions{DestinationPath: filepath.Join(os.TempDir(), "test")}
+
+	err = ctx.Apply(update, options, tmpDir)
+	require.NoError(t, err)
 }

@@ -193,6 +193,9 @@ func (c context) check(sourcePath string, destinationPath string) error {
 }
 
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	if update.Asset == nil {
+		return fmt.Errorf("No asset")
+	}
 	localPath := update.Asset.LocalPath
 	destinationPath := options.DestinationPath
 
