@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -84,7 +85,12 @@ func TestSaveHTTPResponseInvalidPath(t *testing.T) {
 	savePath := TempPath("", "TestSaveHTTPResponse.")
 	defer RemoveFileAtPath(savePath)
 
-	err = SaveHTTPResponse(resp, "/badpath", 0600, testLog)
+	badPath := "/badpath"
+	if runtime.GOOS == "windows" {
+		badPath = `x:\` // Shouldn't be writable
+	}
+
+	err = SaveHTTPResponse(resp, badPath, 0600, testLog)
 	assert.Error(t, err)
 	err = SaveHTTPResponse(nil, savePath, 0600, testLog)
 	assert.Error(t, err)

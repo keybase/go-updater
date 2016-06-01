@@ -16,6 +16,7 @@ type MatchFn func(ps.Process) bool
 type Matcher struct {
 	match     string
 	matchType MatchType
+	exceptPID int
 	log       Log
 }
 
@@ -36,11 +37,19 @@ func NewMatcher(match string, matchType MatchType, log Log) Matcher {
 	return Matcher{match: match, matchType: matchType, log: log}
 }
 
+// ExceptPID will not match specified pid
+func (m *Matcher) ExceptPID(p int) {
+	m.exceptPID = p
+}
+
 func (m Matcher) matchPathFn(pathFn func(path, str string) bool) MatchFn {
 	return func(p ps.Process) bool {
+		if m.exceptPID != 0 && p.Pid() == m.exceptPID {
+			return false
+		}
 		path, err := p.Path()
 		if err != nil {
-			m.log.Warningf("Unable to get path for process: %s", err)
+			//m.log.Warningf("Unable to get path for process %q: %s", p.Executable(), err)
 			return false
 		}
 		return pathFn(path, m.match)
