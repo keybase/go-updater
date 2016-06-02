@@ -20,7 +20,8 @@ func (c config) destinationPath() string {
 	return ""
 }
 
-func (c config) dir() (string, error) {
+// Dir returns where to store config and log files
+func Dir(appName string) (string, error) {
 	dir := os.Getenv("XDG_CONFIG_HOME")
 	if dir != "" {
 		return dir, nil
@@ -29,7 +30,10 @@ func (c config) dir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(usr.HomeDir, ".config"), nil
+	if appName == "" {
+		return "", fmt.Errorf("No app name for dir")
+	}
+	return filepath.Join(usr.HomeDir, ".config", appName), nil
 }
 
 func (c config) osVersion() string {

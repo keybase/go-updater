@@ -19,12 +19,16 @@ func (c config) destinationPath() string {
 	return ""
 }
 
-func (c config) dir() (string, error) {
+// Dir returns where to store config and log files
+func Dir(appName string) (string, error) {
 	dir := os.Getenv("APPDATA")
 	if dir == "" {
 		return "", fmt.Errorf("No APPDATA env set")
 	}
-	return filepath.Join(dir, "Keybase"), nil
+	if appName == "" {
+		return "", fmt.Errorf("No app name for dir")
+	}
+	return filepath.Join(dir, appName), nil
 }
 
 func (c config) osVersion() string {
