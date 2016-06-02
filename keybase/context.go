@@ -5,6 +5,7 @@ package keybase
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/keybase/go-updater"
@@ -129,4 +130,16 @@ func (c context) AfterApply(update updater.Update) error {
 		c.log.Warningf("Error in after apply: %s (%s)", err, result.CombinedOutput())
 	}
 	return nil
+}
+
+func (c context) AfterUpdateCheck(update *updater.Update) {
+	if update != nil {
+		// If we received an update from the check let's exit, so the watchdog
+		// process (e.g. launchd on darwin) can restart us, no matter what, even if
+		// there was an error, and even if the update was or wasn't applied.
+		// There is no difference between doing another update check in a loop after
+		// delay and restarting the service.
+		c.log.Infof("%s", "Exiting for restart")
+		os.Exit(0)
+	}
 }

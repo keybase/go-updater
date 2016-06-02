@@ -3,10 +3,7 @@
 
 package updater
 
-import (
-	"os"
-	"time"
-)
+import "time"
 
 // UpdateChecker runs updates checks every check duration
 type UpdateChecker struct {
@@ -31,15 +28,7 @@ func NewUpdateChecker(updater *Updater, ctx Context, tickDuration time.Duration,
 func (u *UpdateChecker) check() error {
 	u.count++
 	update, err := u.updater.Update(u.ctx)
-	if update != nil {
-		// If we received an update from the check let's exit, so the watchdog
-		// process (e.g. launchd on darwin) can restart us, no matter what, even if
-		// there was an error, and even if the update was or wasn't applied.
-		// There is no difference between doing another update check in a loop after
-		// delay and restarting the service.
-		u.log.Infof("%s", "Exiting for restart")
-		os.Exit(0)
-	}
+	u.ctx.AfterUpdateCheck(update)
 	return err
 }
 

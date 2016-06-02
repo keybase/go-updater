@@ -40,15 +40,23 @@ func (c config) promptProgram() (command.Program, error) {
 }
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	// TODO
-	return nil, fmt.Errorf("Unsupported")
+	// No update prompt for Windows, since the installer may handle it
+	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil
 }
 
 func (c context) PausedPrompt() bool {
 	return false
 }
 
+func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	if update.Asset == nil || update.Asset.LocalPath == "" {
+		return fmt.Errorf("No asset")
+	}
+	_, err := command.Exec(update.Asset.LocalPath, nil, time.Hour, c.log)
+	return err
+}
+
 func (c context) Restart() error {
-	// TODO
-	return fmt.Errorf("Unsupported")
+	// Restart is handled by the installer
+	return nil
 }

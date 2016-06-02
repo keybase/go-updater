@@ -33,7 +33,7 @@ func main() {
 	case "sleep":
 		time.Sleep(10 * time.Second)
 	default:
-		log.Fatalf("Invalid arg: %q", arg)
+		log.Printf("test")
 	}
 }
 

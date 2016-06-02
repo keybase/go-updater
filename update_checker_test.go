@@ -43,6 +43,10 @@ func (u testUpdateCheckUI) BeforeApply(update Update) error {
 	return nil
 }
 
+func (u testUpdateCheckUI) Apply(update Update, options UpdateOptions, tmpDir string) error {
+	return nil
+}
+
 func (u testUpdateCheckUI) AfterApply(update Update) error {
 	return nil
 }
@@ -58,6 +62,8 @@ func (u testUpdateCheckUI) Verify(update Update) error {
 func (u testUpdateCheckUI) Restart() error {
 	return nil
 }
+
+func (u testUpdateCheckUI) AfterUpdateCheck(update *Update) {}
 
 func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()

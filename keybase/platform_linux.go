@@ -46,15 +46,19 @@ func (c config) promptProgram() (command.Program, error) {
 }
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	// TODO
-	return nil, fmt.Errorf("Unsupported")
+	// No update prompt for Linux
+	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil
 }
 
 func (c context) PausedPrompt() bool {
 	return false
 }
 
+func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	return nil
+}
+
 func (c context) Restart() error {
-	// TODO
+	// Restart is handled by the installer
 	return fmt.Errorf("Unsupported")
 }
