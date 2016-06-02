@@ -32,5 +32,5 @@ func TestApplyNoAsset(t *testing.T) {
 	tmpDir, err := util.WriteTempDir("TestApplyNoAsset.", 0700)
 	require.NoError(t, err)
 	err = ctx.Apply(testUpdate, testOptions, tmpDir)
-	require.NoError(t, err)
+	require.EqualError(t, err, "No asset")
 }

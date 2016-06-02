@@ -236,10 +236,12 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 		return UpdateActionError, fmt.Errorf("No response")
 	}
 
-	u.log.Debugf("Update prompt response: %#v", updatePromptResponse)
-	if err := u.config.SetUpdateAuto(updatePromptResponse.AutoUpdate); err != nil {
-		u.log.Warningf("Error setting auto preference: %s", err)
-		ctx.ReportError(configErr(fmt.Errorf("Error setting auto preference: %s", err)), &update, options)
+	if updatePromptResponse.Action != UpdateActionContinue {
+		u.log.Debugf("Update prompt response: %#v", updatePromptResponse)
+		if err := u.config.SetUpdateAuto(updatePromptResponse.AutoUpdate); err != nil {
+			u.log.Warningf("Error setting auto preference: %s", err)
+			ctx.ReportError(configErr(fmt.Errorf("Error setting auto preference: %s", err)), &update, options)
+		}
 	}
 
 	return updatePromptResponse.Action, nil

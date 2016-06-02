@@ -285,7 +285,7 @@ func TestUpdaterContinue(t *testing.T) {
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
-	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionContinue, AutoUpdate: false})
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionContinue})
 	update, err := upr.Update(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, update)
