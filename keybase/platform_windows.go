@@ -6,6 +6,7 @@ package keybase
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ func (c config) dir() (string, error) {
 	if dir == "" {
 		return "", fmt.Errorf("No APPDATA env set")
 	}
-	return dir, nil
+	return filepath.Join(dir, "Keybase"), nil
 }
 
 func (c config) osVersion() string {
