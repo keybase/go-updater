@@ -23,6 +23,14 @@ func TestUpdatePrompt(t *testing.T) {
 	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, resp)
 }
 
+func TestApplyNoAsset(t *testing.T) {
+	ctx := newContext(&testConfigPlatform{}, testLog)
+	tmpDir, err := util.WriteTempDir("TestApplyNoAsset.", 0700)
+	require.NoError(t, err)
+	err = ctx.Apply(testUpdate, testOptions, tmpDir)
+	require.EqualError(t, err, "No asset")
+}
+
 func TestApplyAsset(t *testing.T) {
 	ctx := newContext(&testConfigPlatform{}, testLog)
 	tmpDir, err := util.WriteTempDir("TestApplyAsset.", 0700)
