@@ -6,6 +6,7 @@ package updater
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/keybase/go-updater/util"
@@ -123,7 +124,9 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, nil
 	}
 
-	if err := u.downloadAsset(update.Asset, options); err != nil {
+	tmpDir := u.tempDir()
+	defer u.Cleanup(tmpDir)
+	if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
 		return update, downloadErr(err)
 	}
 
@@ -132,8 +135,6 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, verifyErr(err)
 	}
 
-	tmpDir := u.tempDir()
-	defer u.Cleanup(tmpDir)
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
 		return update, err
 	}
@@ -167,7 +168,7 @@ func (u *Updater) apply(ctx Context, update Update, options UpdateOptions, tmpDi
 
 // downloadAsset will download the update to a temporary path (if not cached),
 // check the digest, and set the LocalPath property on the asset.
-func (u *Updater) downloadAsset(asset *Asset, options UpdateOptions) error {
+func (u *Updater) downloadAsset(asset *Asset, tmpDir string, options UpdateOptions) error {
 	if asset == nil {
 		return fmt.Errorf("No asset to download")
 	}
@@ -178,7 +179,8 @@ func (u *Updater) downloadAsset(asset *Asset, options UpdateOptions) error {
 		Log:           u.log,
 	}
 
-	downloadPath := util.TempPath("", asset.Name+".")
+	downloadPath := filepath.Join(tmpDir, asset.Name)
+	// If asset had a file extension, lets add it back on
 	if err := util.DownloadURL(asset.URL, downloadPath, downloadOptions); err != nil {
 		return err
 	}
@@ -265,7 +267,7 @@ func report(ctx Context, err error, update *Update, options UpdateOptions) {
 // tempDir, if specified, will contain files that were replaced during an update
 // and will be removed after an update. The temp dir should already exist.
 func (u *Updater) tempDir() string {
-	tmpDir := util.TempPath("", "Updater")
+	tmpDir := util.TempPath("", "KeybaseUpdater.")
 	if err := util.MakeDirs(tmpDir, 0700, u.log); err != nil {
 		u.log.Warningf("Error trying to create temp dir: %s", err)
 		return ""

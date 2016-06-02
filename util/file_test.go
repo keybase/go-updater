@@ -174,7 +174,8 @@ func TestMoveFileDirValid(t *testing.T) {
 	assert.True(t, exists)
 
 	// Move again with different source data, and overwrite
-	sourcePath2, err := WriteTempDir("TestMoveDir", 0700)
+	sourcePath2, err := WriteTempDir("TestMoveDir2", 0700)
+	defer RemoveFileAtPath(sourcePath2)
 	err = MoveFile(sourcePath2, destinationPath, "", testLog)
 	assert.NoError(t, err)
 	exists, err = FileExists(destinationPath)
