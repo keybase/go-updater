@@ -42,6 +42,6 @@ func TestFindProcessTest(t *testing.T) {
 	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), 0, 0, testLog)
 	require.NoError(t, err)
 	// TODO: Fix flakiness where we might have more than 1 process here
-	require.Equal(t, len(procs) >= 1)
+	require.True(t, len(procs) >= 1)
 	//assert.Equal(t, pid, procs[0].Pid())
 }
