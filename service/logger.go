@@ -55,14 +55,16 @@ func (l logger) Errorf(s string, args ...interface{}) {
 }
 
 func (l logger) setLogToFile(appName string, fileName string) (*os.File, error) {
-	path, err := keybase.Dir(appName)
+	path, err := keybase.LogDir(appName)
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(filepath.Join(path, fileName), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	logPath := filepath.Join(path, fileName)
+	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
-	log.SetOutput(f)
-	return f, nil
+	log.Printf("Logging to %s", logPath)
+	log.SetOutput(logFile)
+	return logFile, nil
 }

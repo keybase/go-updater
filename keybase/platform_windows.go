@@ -31,6 +31,11 @@ func Dir(appName string) (string, error) {
 	return filepath.Join(dir, appName), nil
 }
 
+// LogDir is where to log
+func LogDir(appName string) (string, error) {
+	return Dir(appName)
+}
+
 func (c config) osVersion() string {
 	result, err := command.Exec("cmd", []string{"/c", "ver"}, 5*time.Second, c.log)
 	if err != nil {

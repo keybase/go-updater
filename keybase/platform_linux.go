@@ -36,6 +36,22 @@ func Dir(appName string) (string, error) {
 	return filepath.Join(usr.HomeDir, ".config", appName), nil
 }
 
+// LogDir is where to log
+func LogDir(appName string) (string, error) {
+	dir := os.Getenv("XDG_CACHE_HOME")
+	if dir != "" {
+		return dir, nil
+	}
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	if appName == "" {
+		return "", fmt.Errorf("No app name for dir")
+	}
+	return filepath.Join(usr.HomeDir, ".cache", appName), nil
+}
+
 func (c config) osVersion() string {
 	result, err := command.Exec("uname", []string{"-mrs"}, 5*time.Second, c.log)
 	if err != nil {

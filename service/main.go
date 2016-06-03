@@ -15,6 +15,7 @@ import (
 type flags struct {
 	version       bool
 	logToFile     bool
+	appName       string
 	pathToKeybase string
 	command       string
 }
@@ -24,6 +25,7 @@ func main() {
 	flag.BoolVar(&f.version, "version", false, "Show version")
 	flag.BoolVar(&f.logToFile, "log-to-file", false, "Log to file")
 	flag.StringVar(&f.pathToKeybase, "path-to-keybase", "", "Path to keybase executable")
+	flag.StringVar(&f.appName, "app-name", "Keybase", "App name")
 	flag.Parse()
 
 	args := flag.Args()
@@ -36,17 +38,18 @@ func main() {
 
 func run(f flags) {
 	ulog := logger{}
-	if f.logToFile {
-		logFile, err := ulog.setLogToFile("Keybase", "keybase.updater.log")
-		if err != nil {
-			ulog.Errorf("Error setting logging to file: %s", err)
-		}
-		defer util.Close(logFile)
-	}
 
 	if f.version {
 		ulog.Infof("%s\n", updater.Version)
 		return
+	}
+
+	if f.logToFile {
+		logFile, err := ulog.setLogToFile(f.appName, "keybase.updater.log")
+		if err != nil {
+			ulog.Errorf("Error setting logging to file: %s", err)
+		}
+		defer util.Close(logFile)
 	}
 
 	switch f.command {

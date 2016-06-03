@@ -44,16 +44,33 @@ func appBundleForPath(path string) string {
 	return paths[0] + ".app"
 }
 
-// Dir returns where to store config and log files
-func Dir(appName string) (string, error) {
+func libraryDir() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return "", err
 	}
+	return filepath.Join(usr.HomeDir, "Library"), nil
+}
+
+// Dir returns where to store config
+func Dir(appName string) (string, error) {
 	if appName == "" {
 		return "", fmt.Errorf("No app name for dir")
 	}
-	return filepath.Join(usr.HomeDir, "Library", "Application Support", appName), nil
+	libDir, err := libraryDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(libDir, "Application Support", appName), nil
+}
+
+// LogDir is where to log
+func LogDir(appName string) (string, error) {
+	libDir, err := libraryDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(libDir, "Logs"), nil
 }
 
 func (c config) osVersion() string {
