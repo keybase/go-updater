@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -391,7 +392,10 @@ func TestUpdaterAuto(t *testing.T) {
 func TestUpdaterDownloadNil(t *testing.T) {
 	upr, err := newTestUpdater(t)
 	require.NoError(t, err)
-	err = upr.downloadAsset(nil, UpdateOptions{})
+	tmpDir, err := util.WriteTempDir("TestUpdaterDownloadNil", 0700)
+	defer util.RemoveFileAtPath(tmpDir)
+	require.NoError(t, err)
+	err = upr.downloadAsset(nil, tmpDir, UpdateOptions{})
 	assert.EqualError(t, err, "No asset to download")
 }
 
