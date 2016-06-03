@@ -126,7 +126,7 @@ func (c config) saveToPath(path string) error {
 }
 
 // GetUpdateAuto is the whether to update automatically and whether the user has
-// set this value. Both shouble be true for an update to be automatically
+// set this value. Both should be true for an update to be automatically
 // applied.
 func (c config) GetUpdateAuto() (bool, bool) {
 	return c.store.Auto, c.store.AutoSet
