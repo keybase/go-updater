@@ -26,6 +26,8 @@ for Keybase apps and services.
 
 ### Packages
 
+The main package is the updater core, there are other support packages:
+
 - command: Executes a command with a timeout
 - keybase: Keybase specific behavior for updates
 - osx: Presents UI for OS X
