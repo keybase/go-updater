@@ -12,6 +12,7 @@ The goals of this library are to provide an updater that:
 - Is simple
 - Works on all our platforms (at least OS X, Windows, Linux)
 - Recovers from non-fatal errors
+- Every request or command execution should timeout (nothing blocks)
 - Can recover from failures in its environment
 - Can run as an unpriviledged background service
 - Has minimal, vendored dependencies
