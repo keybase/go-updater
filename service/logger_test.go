@@ -6,6 +6,7 @@ package main
 import (
 	"testing"
 
+	"github.com/keybase/go-updater/keybase"
 	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/require"
 )
@@ -24,6 +25,15 @@ func TestLoggerNil(t *testing.T) {
 
 func TestLoggerFile(t *testing.T) {
 	log := logger{}
+
+	dir, err := keybase.LogDir("KeybaseTest")
+	require.NoError(t, err)
+	if exists, _ := util.FileExists(dir); !exists {
+		dirErr := util.MakeParentDirs(dir, 0700, testLog)
+		require.NoError(t, dirErr)
+		defer util.RemoveFileAtPath(dir)
+	}
+
 	_, path, err := log.setLogToFile("KeybaseTest", "TestLoggerFile.log")
 	defer util.RemoveFileAtPath(path)
 	require.NoError(t, err)
