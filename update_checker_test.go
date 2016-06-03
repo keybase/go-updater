@@ -29,6 +29,8 @@ func TestUpdateCheckerStart(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	assert.True(t, checker.Count() >= 1)
+	// Redundant with defer but will be flakey if we don't stop before defer testServer.Close()
+	checker.Stop()
 }
 
 type testUpdateCheckUI struct {
