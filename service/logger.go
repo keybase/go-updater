@@ -54,17 +54,17 @@ func (l logger) Errorf(s string, args ...interface{}) {
 	log.Printf("ERR  %s\n", fmt.Sprintf(s, args...))
 }
 
-func (l logger) setLogToFile(appName string, fileName string) (*os.File, error) {
-	path, err := keybase.LogDir(appName)
+func (l logger) setLogToFile(appName string, fileName string) (*os.File, string, error) {
+	dir, err := keybase.LogDir(appName)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	logPath := filepath.Join(path, fileName)
+	logPath := filepath.Join(dir, fileName)
 	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	log.Printf("Logging to %s", logPath)
 	log.SetOutput(logFile)
-	return logFile, nil
+	return logFile, logPath, nil
 }

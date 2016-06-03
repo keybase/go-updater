@@ -45,7 +45,7 @@ func run(f flags) {
 	}
 
 	if f.logToFile {
-		logFile, err := ulog.setLogToFile(f.appName, "keybase.updater.log")
+		logFile, _, err := ulog.setLogToFile(f.appName, "keybase.updater.log")
 		if err != nil {
 			ulog.Errorf("Error setting logging to file: %s", err)
 		}
