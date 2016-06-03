@@ -19,7 +19,7 @@ var validCodeSigningKIDs = map[string]bool{
 	"65ae849d1949a8b0021b165b0edaf722e2a7a9036e07817e056e2d721bddcc0e": true, // max (paper key, cry glass)
 	"3a5a45c545ef4f661b8b7573711aaecee3fd5717053484a3a3e725cd68abaa5a": true, // chris (device, ccpro)
 	"03d86864fb20e310590042ad3d5492c3f5d06728620175b03c717c211bfaccc2": true, // chris (paper key, clay harbor)
-	"3fab8bd234c902f431b1c1bd0c8e7d1b2290c784d359fd555ec360b1a8102506": true, // winbot (device, Build)
+	"deaa8ae7d06ea9aa49cc678ec49f2b1e1dddb63683e384db539a8649c47925f9": true, // winbot (device, Build)
 }
 
 // Log is the logging interface for the keybase package
