@@ -170,7 +170,7 @@ func MakeDirs(dir string, mode os.FileMode, log Log) error {
 }
 
 // TempPath returns a temporary unique file path.
-// If for some reason we can't obtain random bytes, we still return a valid
+// If for some reason we can't obtain random data, we still return a valid
 // path, which may not be as unique.
 // If tempDir is "", then os.TempDir() is used.
 func TempPath(tempDir string, prefix string) string {
@@ -198,11 +198,11 @@ func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error)
 	return path, nil
 }
 
-// WriteTempDir creates a unique temp directory.
+// MakeTempDir creates a unique temp directory.
 //
 // For example:
-//   WriteTempDir("Test.", 0700)
-func WriteTempDir(prefix string, mode os.FileMode) (string, error) {
+//   MakeTempDir("Test.", 0700)
+func MakeTempDir(prefix string, mode os.FileMode) (string, error) {
 	path := TempPath("", prefix)
 	if err := os.MkdirAll(path, mode); err != nil {
 		return "", err

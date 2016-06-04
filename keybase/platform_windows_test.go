@@ -25,7 +25,7 @@ func TestUpdatePrompt(t *testing.T) {
 
 func TestApplyNoAsset(t *testing.T) {
 	ctx := newContext(&testConfigPlatform{}, testLog)
-	tmpDir, err := util.WriteTempDir("TestApplyNoAsset.", 0700)
+	tmpDir, err := util.MakeTempDir("TestApplyNoAsset.", 0700)
 	defer util.RemoveFileAtPath(tmpDir)
 	require.NoError(t, err)
 	err = ctx.Apply(testUpdate, testOptions, tmpDir)
@@ -34,7 +34,7 @@ func TestApplyNoAsset(t *testing.T) {
 
 func TestApplyAsset(t *testing.T) {
 	ctx := newContext(&testConfigPlatform{}, testLog)
-	tmpDir, err := util.WriteTempDir("TestApplyAsset.", 0700)
+	tmpDir, err := util.MakeTempDir("TestApplyAsset.", 0700)
 	defer util.RemoveFileAtPath(tmpDir)
 	require.NoError(t, err)
 

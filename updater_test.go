@@ -15,23 +15,22 @@ import (
 	"testing"
 
 	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater/saltpack"
 	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var log = &logging.Logger{Module: "test"}
+var testLog = &logging.Logger{Module: "test"}
 
-func testExit(c int) {
-	// Exited
-}
+var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
 
 func newTestUpdater(t *testing.T) (*Updater, error) {
 	return newTestUpdaterWithServer(t, nil, nil, &testConfig{})
 }
 
 func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server, update *Update, config Config) (*Updater, error) {
-	return NewUpdater(testUpdateSource{testServer: testServer, update: update}, config, log), nil
+	return NewUpdater(testUpdateSource{testServer: testServer, update: update}, config, testLog), nil
 }
 
 func newTestContext(options UpdateOptions, cfg Config, response *UpdatePromptResponse) *testUpdateUI {
@@ -81,7 +80,10 @@ func (u testUpdateUI) Verify(update Update) error {
 	if u.verifyErr != nil {
 		return u.verifyErr
 	}
-	return SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, log)
+	var validCodeSigningKIDs = map[string]bool{
+		"9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1": true,
+	}
+	return saltpack.VerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, testLog)
 }
 
 func (u testUpdateUI) Restart() error {
@@ -137,8 +139,8 @@ func newTestUpdate(uri string, needUpdate bool) *Update {
 		update.Asset = &Asset{
 			Name:      "test.zip",
 			URL:       uri,
-			Digest:    "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84", // shasum -a 256 test/test.zip
-			Signature: testZipSignature,
+			Digest:    "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84",                                                                                                                                                                                                                       // shasum -a 256 test/test.zip
+			Signature: `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`, // keybase sign -d -i test.zip
 		}
 	}
 	return update
@@ -392,7 +394,7 @@ func TestUpdaterAuto(t *testing.T) {
 func TestUpdaterDownloadNil(t *testing.T) {
 	upr, err := newTestUpdater(t)
 	require.NoError(t, err)
-	tmpDir, err := util.WriteTempDir("TestUpdaterDownloadNil", 0700)
+	tmpDir, err := util.MakeTempDir("TestUpdaterDownloadNil", 0700)
 	defer util.RemoveFileAtPath(tmpDir)
 	require.NoError(t, err)
 	err = upr.downloadAsset(nil, tmpDir, UpdateOptions{})
