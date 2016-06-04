@@ -14,11 +14,15 @@ import (
 
 func TestUpdateCheckerStart(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
-	defer testServer.Close()
+	defer func() {
+		// Give time for checker to stop before closing
+		time.Sleep(20 * time.Millisecond)
+		testServer.Close()
+	}()
 	updater, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
 
-	checker := NewUpdateChecker(updater, testUpdateCheckUI{}, time.Millisecond, log)
+	checker := NewUpdateChecker(updater, testUpdateCheckUI{}, 5*time.Millisecond, log)
 	defer checker.Stop()
 	started := checker.Start()
 	require.True(t, started)
@@ -29,7 +33,7 @@ func TestUpdateCheckerStart(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	assert.True(t, checker.Count() >= 1)
-	// Redundant with defer but will be flakey if we don't stop before defer testServer.Close()
+
 	checker.Stop()
 }
 
