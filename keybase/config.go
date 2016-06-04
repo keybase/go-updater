@@ -93,7 +93,7 @@ func (c *config) loadFromPath(path string) error {
 }
 
 func (c config) path() (string, error) {
-	configDir, err := c.dir()
+	configDir, err := Dir(c.appName)
 	if err != nil {
 		return "", err
 	}

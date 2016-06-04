@@ -5,16 +5,17 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
+	"os"
 
-	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/keybase"
+	"github.com/keybase/go-updater/util"
 )
 
 type flags struct {
 	version       bool
+	logToFile     bool
+	appName       string
 	pathToKeybase string
 	command       string
 }
@@ -22,7 +23,9 @@ type flags struct {
 func main() {
 	f := flags{}
 	flag.BoolVar(&f.version, "version", false, "Show version")
+	flag.BoolVar(&f.logToFile, "log-to-file", false, "Log to file")
 	flag.StringVar(&f.pathToKeybase, "path-to-keybase", "", "Path to keybase executable")
+	flag.StringVar(&f.appName, "app-name", "Keybase", "App name")
 	flag.Parse()
 
 	args := flag.Args()
@@ -34,41 +37,48 @@ func main() {
 }
 
 func run(f flags) {
+	ulog := logger{}
+
 	if f.version {
-		fmt.Printf("%s\n", updater.Version)
+		ulog.Infof("%s\n", updater.Version)
 		return
+	}
+
+	if f.logToFile {
+		logFile, _, err := ulog.setLogToFile(f.appName, "keybase.updater.log")
+		if err != nil {
+			ulog.Errorf("Error setting logging to file: %s", err)
+		}
+		defer util.Close(logFile)
 	}
 
 	switch f.command {
 	case "check":
-		if err := updateCheckFromFlags(f); err != nil {
-			log.Fatal(err)
+		if err := updateCheckFromFlags(f, ulog); err != nil {
+			ulog.Error(err)
+			os.Exit(1)
 		}
 	case "service", "":
-		svc := serviceFromFlags(f)
+		svc := serviceFromFlags(f, ulog)
 		svc.Run()
 	default:
-		log.Fatalf("Unknown command: %s", f.command)
+		ulog.Errorf("Unknown command: %s", f.command)
 	}
 }
 
-func serviceFromFlags(f flags) *service {
-	log := &logging.Logger{Module: "service"}
-
-	log.Infof("Updater %s", updater.Version)
+func serviceFromFlags(f flags, ulog logger) *service {
+	ulog.Infof("Updater %s", updater.Version)
 
 	if f.pathToKeybase == "" {
-		log.Warning("Missing -path-to-keybase")
+		ulog.Warning("Missing -path-to-keybase")
 	}
 
-	ctx, upd := keybase.NewUpdaterContext(f.pathToKeybase, log)
-	return newService(upd, ctx, log)
+	ctx, upd := keybase.NewUpdaterContext(f.pathToKeybase, ulog)
+	return newService(upd, ctx, ulog)
 }
 
-func updateCheckFromFlags(f flags) error {
-	log := &logging.Logger{Module: "client"}
-
-	ctx, updater := keybase.NewUpdaterContext(f.pathToKeybase, log)
+func updateCheckFromFlags(f flags, ulog logger) error {
+	ctx, updater := keybase.NewUpdaterContext(f.pathToKeybase, ulog)
 	_, err := updater.Update(ctx)
 	return err
 }

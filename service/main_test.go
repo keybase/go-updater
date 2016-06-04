@@ -13,11 +13,11 @@ func TestServiceFlags(t *testing.T) {
 	f := flags{
 		pathToKeybase: "keybase",
 	}
-	svc := serviceFromFlags(f)
+	svc := serviceFromFlags(f, logger{})
 	require.NotNil(t, svc)
 }
 
 func TestServiceFlagsEmpty(t *testing.T) {
-	svc := serviceFromFlags(flags{})
+	svc := serviceFromFlags(flags{}, logger{})
 	require.NotNil(t, svc)
 }

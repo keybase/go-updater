@@ -27,7 +27,7 @@ func TestConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, path, "", "No config path")
 
-	configDir, err := cfg.dir()
+	configDir, err := Dir(cfg.appName)
 	defer util.RemoveFileAtPath(configDir)
 	assert.NoError(t, err)
 	assert.NotEqual(t, configDir, "", "Config dir empty")

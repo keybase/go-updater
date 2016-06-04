@@ -57,8 +57,10 @@ func (u *UpdateChecker) Start() bool {
 
 // Stop stops the update checker
 func (u *UpdateChecker) Stop() {
-	u.ticker.Stop()
-	u.ticker = nil
+	if u.ticker != nil {
+		u.ticker.Stop()
+		u.ticker = nil
+	}
 }
 
 // Count is number of times the check has been called

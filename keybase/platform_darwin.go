@@ -44,16 +44,33 @@ func appBundleForPath(path string) string {
 	return paths[0] + ".app"
 }
 
-// dir returns directory for configuration files on darwin
-func (c config) dir() (string, error) {
+func libraryDir() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return "", err
 	}
-	if c.appName == "" {
-		return "", fmt.Errorf("Unable to resolve config directory: No app name")
+	return filepath.Join(usr.HomeDir, "Library"), nil
+}
+
+// Dir returns where to store config
+func Dir(appName string) (string, error) {
+	if appName == "" {
+		return "", fmt.Errorf("No app name for dir")
 	}
-	return filepath.Join(usr.HomeDir, "Library", "Application Support", c.appName), nil
+	libDir, err := libraryDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(libDir, "Application Support", appName), nil
+}
+
+// LogDir is where to log
+func LogDir(appName string) (string, error) {
+	libDir, err := libraryDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(libDir, "Logs"), nil
 }
 
 func (c config) osVersion() string {
