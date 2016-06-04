@@ -11,6 +11,7 @@ before_install:
   - go get github.com/modocache/gover
   - go get github.com/keybase/go-updater/test
 script:
+  - ./.travis.sh
   - go test -v -coverprofile=command.coverprofile ./command
   - go test -v -coverprofile=keybase.coverprofile ./keybase
   - go test -v -coverprofile=process.coverprofile ./process
