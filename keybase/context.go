@@ -10,6 +10,7 @@ import (
 
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"github.com/keybase/go-updater/saltpack"
 )
 
 // validCodeSigningKIDs are the list of valid code signing IDs for saltpack verify
@@ -95,7 +96,7 @@ func (c context) GetLog() Log {
 
 // Verify verifies the signature
 func (c context) Verify(update updater.Update) error {
-	return updater.SaltpackVerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, c.log)
+	return saltpack.VerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, c.log)
 }
 
 type checkInUseResult struct {
