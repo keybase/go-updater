@@ -394,7 +394,7 @@ func TestUpdaterAuto(t *testing.T) {
 func TestUpdaterDownloadNil(t *testing.T) {
 	upr, err := newTestUpdater(t)
 	require.NoError(t, err)
-	tmpDir, err := util.WriteTempDir("TestUpdaterDownloadNil", 0700)
+	tmpDir, err := util.MakeTempDir("TestUpdaterDownloadNil", 0700)
 	defer util.RemoveFileAtPath(tmpDir)
 	require.NoError(t, err)
 	err = upr.downloadAsset(nil, tmpDir, UpdateOptions{})

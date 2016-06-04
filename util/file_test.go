@@ -163,7 +163,7 @@ func TestMoveFileDirValid(t *testing.T) {
 	destinationPath := filepath.Join(TempPath("", "TestMoveFileDestination"), "TestMoveFileDestinationSubdir")
 	defer RemoveFileAtPath(destinationPath)
 
-	sourcePath, err := WriteTempDir("TestMoveDir", 0700)
+	sourcePath, err := MakeTempDir("TestMoveDir", 0700)
 	defer RemoveFileAtPath(sourcePath)
 	assert.NoError(t, err)
 
@@ -174,7 +174,7 @@ func TestMoveFileDirValid(t *testing.T) {
 	assert.True(t, exists)
 
 	// Move again with different source data, and overwrite
-	sourcePath2, err := WriteTempDir("TestMoveDir2", 0700)
+	sourcePath2, err := MakeTempDir("TestMoveDir2", 0700)
 	defer RemoveFileAtPath(sourcePath2)
 	err = MoveFile(sourcePath2, destinationPath, "", testLog)
 	assert.NoError(t, err)
