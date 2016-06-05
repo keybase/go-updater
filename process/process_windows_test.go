@@ -39,7 +39,7 @@ func TestTerminateAll(t *testing.T) {
 func TestFindProcessTest(t *testing.T) {
 	path, _, cmd := startProcess(t, "sleep")
 	defer cleanupProc(cmd, "")
-	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), 0, 0, testLog)
+	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), time.Second, 20*time.Millisecond, testLog)
 	require.NoError(t, err)
 	// TODO: Fix flakiness where we might have more than 1 process here
 	require.True(t, len(procs) >= 1)
