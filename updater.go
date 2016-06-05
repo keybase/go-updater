@@ -46,6 +46,10 @@ type Context interface {
 	AfterUpdateCheck(update *Update)
 }
 
+// Testing lint fail
+type TestLint interface {
+}
+
 // Config defines configuration for the Updater
 type Config interface {
 	GetUpdateAuto() (bool, bool)
