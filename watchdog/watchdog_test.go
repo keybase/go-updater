@@ -97,14 +97,13 @@ func TestExitOnSuccess(t *testing.T) {
 	procProgram.ExitOn = ExitOnSuccess
 	defer util.RemoveFileAtPath(procProgram.Path)
 
-	delay := 10 * time.Millisecond
-	err := Watch([]Program{procProgram}, delay, testLog)
+	err := Watch([]Program{procProgram}, 0, testLog)
 	require.NoError(t, err)
 
-	time.Sleep(2 * delay)
+	time.Sleep(50 * time.Millisecond)
 
 	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
-	procsAfter, err := process.FindProcesses(matcher, 300*time.Millisecond, 300*time.Millisecond, testLog)
+	procsAfter, err := process.WaitForExit(matcher, 500*time.Millisecond, 50*time.Millisecond, testLog)
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(procsAfter))
 }
