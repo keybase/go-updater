@@ -8,6 +8,7 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
   go get -u github.com/alecthomas/gometalinter
   gometalinter --install --update
   echo "Running gometalinter"
-  gometalinter --deadline=300s --vendor --cyclo-over=20 --dupl-threshold=100 $GOPATH/src/github.com/keybase/go-updater/...
+  # $GOPATH/src/github.com/keybase/go-updater
+  gometalinter --deadline=300s --vendor --cyclo-over=20 --dupl-threshold=100 ./...
   echo "Status: $?"
 fi
