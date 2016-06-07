@@ -22,9 +22,25 @@ type Log interface {
 }
 
 type processesFn func() ([]ps.Process, error)
+type breakFn func([]ps.Process) bool
 
 // FindProcesses returns processes containing string matching process path
 func FindProcesses(matcher Matcher, wait time.Duration, delay time.Duration, log Log) ([]ps.Process, error) {
+	breakFn := func(procs []ps.Process) bool {
+		return len(procs) > 0
+	}
+	return findProcesses(matcher, breakFn, wait, delay, log)
+}
+
+// WaitForExit returns processes (if any) that are still running after wait
+func WaitForExit(matcher Matcher, wait time.Duration, delay time.Duration, log Log) ([]ps.Process, error) {
+	breakFn := func(procs []ps.Process) bool {
+		return len(procs) == 0
+	}
+	return findProcesses(matcher, breakFn, wait, delay, log)
+}
+
+func findProcesses(matcher Matcher, breakFn breakFn, wait time.Duration, delay time.Duration, log Log) ([]ps.Process, error) {
 	start := time.Now()
 	for {
 		log.Debugf("Find process %s (%s < %s)", matcher.match, time.Since(start), wait)
@@ -32,7 +48,7 @@ func FindProcesses(matcher Matcher, wait time.Duration, delay time.Duration, log
 		if err != nil {
 			return nil, err
 		}
-		if len(procs) > 0 {
+		if breakFn(procs) {
 			return procs, nil
 		}
 		if time.Since(start) >= wait {

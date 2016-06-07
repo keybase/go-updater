@@ -110,12 +110,50 @@ func TestTerminateAllFn(t *testing.T) {
 	terminateAll(fn, matchAll, time.Millisecond, testLog)
 }
 
-// process returns this test process' path that is running
-func process(t *testing.T) (int, string) {
-	pid := os.Getpid()
-	proc, err := findProcessWithPID(pid)
+func startProcess(t *testing.T, path string, testCommand string) (string, int, *exec.Cmd) {
+	cmd := exec.Command(path, testCommand)
+	err := cmd.Start()
 	require.NoError(t, err)
-	path, err := proc.Path()
+	require.NotNil(t, cmd.Process)
+	return path, cmd.Process.Pid, cmd
+}
+
+func testTerminateAll(t *testing.T, path string, status string) {
+	path, pid1, cmd1 := startProcess(t, path, "sleep")
+	defer cleanupProc(cmd1, "")
+	_, pid2, cmd2 := startProcess(t, path, "sleep")
+	defer cleanupProc(cmd2, "")
+
+	time.Sleep(10 * time.Millisecond)
+
+	terminatePids := TerminateAll(NewMatcher(path, PathEqual, testLog), time.Millisecond, testLog)
+	assert.Contains(t, terminatePids, pid1)
+	assert.Contains(t, terminatePids, pid2)
+	assertTerminated(t, pid1, status)
+	assertTerminated(t, pid2, status)
+}
+
+func TestFindProcessWait(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		t.Skip("Unsupported until we have process path on linux")
+	}
+	procPath := procPath(t, "testFindProcessWait")
+	cmd := exec.Command(procPath, "sleep")
+	defer cleanupProc(cmd, procPath)
+
+	// Ensure it's not already running
+	procs, err := FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Millisecond, 0, testLog)
 	require.NoError(t, err)
-	return pid, path
+	require.Equal(t, 0, len(procs))
+
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		startErr := cmd.Start()
+		require.NoError(t, startErr)
+	}()
+
+	// Wait up to second for process to be running
+	procs, err = FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Second, 10*time.Millisecond, testLog)
+	require.NoError(t, err)
+	require.True(t, len(procs) == 1)
 }
