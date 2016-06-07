@@ -6,65 +6,13 @@
 package process
 
 import (
-	"os/exec"
-	"runtime"
 	"testing"
-	"time"
 
 	"github.com/keybase/go-updater/util"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-func TestFindProcessWait(t *testing.T) {
-	procPath := procPath(t, "testFindProcessWait")
-	cmd := exec.Command(procPath, "sleep")
-	defer cleanupProc(cmd, procPath)
-
-	// Ensure it's not already running
-	procs, err := FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Millisecond, 0, testLog)
-	require.NoError(t, err)
-	require.Equal(t, 0, len(procs))
-
-	go func() {
-		time.Sleep(10 * time.Millisecond)
-		startErr := cmd.Start()
-		require.NoError(t, startErr)
-	}()
-
-	// Wait up to second for process to be running
-	procs, err = FindProcesses(NewMatcher(procPath, PathEqual, testLog), time.Second, 10*time.Millisecond, testLog)
-	require.NoError(t, err)
-	require.True(t, len(procs) == 1)
-}
 
 func TestTerminateAll(t *testing.T) {
 	procPath := procPath(t, "testTerminateAll")
 	defer util.RemoveFileAtPath(procPath)
-	start := func() int {
-		cmd := exec.Command(procPath, "sleep")
-		err := cmd.Start()
-		require.NoError(t, err)
-		require.NotNil(t, cmd.Process)
-		return cmd.Process.Pid
-	}
-
-	pids := []int{}
-	pids = append(pids, start())
-	pids = append(pids, start())
-	matcher := NewMatcher(procPath, PathEqual, testLog)
-	TerminateAll(matcher, time.Millisecond, testLog)
-	assertTerminated(t, pids[0], "signal: terminated")
-	assertTerminated(t, pids[1], "signal: terminated")
-}
-
-func TestFindProcessTest(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		t.Skip("Unsupported until we have process path on linux")
-	}
-	pid, path := process(t)
-	procs, err := FindProcesses(NewMatcher(path, PathEqual, testLog), 0, 0, testLog)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(procs))
-	assert.Equal(t, pid, procs[0].Pid())
+	testTerminateAll(t, procPath, "signal: terminated")
 }
