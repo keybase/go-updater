@@ -8,13 +8,10 @@ package command
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/keybase/go-logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
