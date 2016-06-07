@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -55,5 +56,9 @@ func output() {
 }
 
 func echo(s string) {
-	fmt.Fprintln(os.Stdout, s)
+	if runtime.GOOS == "windows" {
+		writeToRegistry(s)
+	} else {
+		fmt.Fprintln(os.Stdout, s)
+	}
 }

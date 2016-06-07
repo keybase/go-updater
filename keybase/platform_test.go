@@ -12,11 +12,16 @@ import (
 
 type testConfigPlatform struct {
 	config
+	ProgramPath string
 }
 
 func (c testConfigPlatform) promptProgram() (command.Program, error) {
+	var programPath = c.ProgramPath
+	if programPath == "" {
+		programPath = filepath.Join(os.Getenv("GOPATH"), "bin", "test")
+	}
 	return command.Program{
-		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Path: programPath,
 		Args: []string{"echo", `{
 				"action": "apply",
   			"autoUpdate": true

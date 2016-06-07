@@ -67,7 +67,7 @@ try{
     };
 
     var oWSS = new ActiveXObject("WScript.Shell");
-    var regPath = "HKCU\\Software\\Keybase\\UpdateResult";
+    var regPath = "HKCU\\Software\\Keybase\\UpdatePromptResult";
     oWSS.RegWrite(regPath, JSON.stringify(result), "REG_SZ");
     oWSS = null;
     window.close();
@@ -137,7 +137,6 @@ window.onload = function readInput() {
        </div>
    </body>
 </html>
-
 
 
 

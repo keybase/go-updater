@@ -78,13 +78,14 @@ func (c context) updaterPromptResultFromRegistry() (*updaterPromptInputResult, e
 	}
 	defer registryKey.Close()
 
-	registryValue, _, err := registryKey.GetBinaryValue(registryUpdatePromptKeyName)
+	registryValue, _, err := registryKey.GetStringValue(registryUpdatePromptKeyName)
 	if err != nil {
 		return nil, err
 	}
+	registryKey.DeleteValue(registryUpdatePromptKeyName)
 	c.log.Debugf("Registry value: %s", registryValue)
 	var result updaterPromptInputResult
-	if err := json.Unmarshal(registryValue, &result); err != nil {
+	if err := json.Unmarshal([]byte(registryValue), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil

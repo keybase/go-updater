@@ -16,19 +16,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testConfigWindows struct {
-	testConfigPlatform
-}
-
-func (c testConfigWindows) destinationPath() string {
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/windows/prompter/prompter.hta")
+func getWinTestPath() string {
+	return filepath.Join(os.Getenv("GOPATH"), "bin", "windows_386", "test.exe")
 }
 
 func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigWindows{}, testLog)
+	ctx := newContext(&testConfigPlatform{ProgramPath: getWinTestPath()}, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, resp)
+	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionApply, AutoUpdate: true}, resp)
 }
 
 func TestApplyNoAsset(t *testing.T) {
