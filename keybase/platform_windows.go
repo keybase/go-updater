@@ -49,18 +49,53 @@ func (c config) promptProgram() (command.Program, error) {
 	return command.Program{}, fmt.Errorf("Unsupported")
 }
 
+const registryUpdatePromptKeyName = "UpdatePromptResult"
 func (c config) notifyProgram() string {
-	// No notify program for Windows
-	return ""
-}
+	promptProgram, err := c.config.promptProgram()
+	if err != nil {
+		return nil, err
+	}
+
+	// Clear the result value we expect to find in the registry
+	c.clearRegistryKey(registryUpdatePromptKeyName)
+
+	promptJSONInput, err := c.promptInput(update, options, promptOptions)
+	if err != nil {
+		return nil, fmt.Errorf("Error generating input: %s", err)
+	}
 
 func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
-	return nil
+		return nil, err
+	}
+	return c.responseForResult(*result)
 }
 
-func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	// No update prompt for Windows, since the installer may handle it
-	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil
+// promptResultForRegistry gets the result from the registry and decodes it
+func (c context) updaterPromptResultFromRegistry() (*updaterPromptInputResult, error) {
+	registryKey, err := registry.OpenKey(registry.CURRENT_USER, `SOFTWARE\Keybase`, registry.QUERY_VALUE|registry.SET_VALUE)
+	if err != nil {
+		return nil, err
+	}
+	defer registryKey.Close()
+
+	registryValue, _, err := registryKey.GetBinaryValue(registryUpdatePromptKeyName)
+	if err != nil {
+		return nil, err
+	}
+	c.log.Debugf("Registry value: %s", registryValue)
+	var result updaterPromptInputResult
+	if err := json.Unmarshal(registryValue, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c context) clearRegistryKey(s string) {
+	registryKey, err := registry.OpenKey(registry.CURRENT_USER, `SOFTWARE\Keybase`, registry.SET_VALUE)
+	if err == nil {
+		registryKey.DeleteValue(s)
+	}
+	registryKey.Close()
 }
 
 func (c context) PausedPrompt() bool {
