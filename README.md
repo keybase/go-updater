@@ -41,7 +41,7 @@ The main package is the updater core, there are other support packages:
 
 ### Development
 
-This libray should pass the [gometalinter](https://github.com/alecthomas/gometalinter).
+This library should pass the [gometalinter](https://github.com/alecthomas/gometalinter).
 
 There is a pre-commit hook available:
 

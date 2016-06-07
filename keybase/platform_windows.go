@@ -49,6 +49,15 @@ func (c config) promptProgram() (command.Program, error) {
 	return command.Program{}, fmt.Errorf("Unsupported")
 }
 
+func (c config) notifyProgram() string {
+	// No notify program for Windows
+	return ""
+}
+
+func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+	return nil
+}
+
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	// No update prompt for Windows, since the installer may handle it
 	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil

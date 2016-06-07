@@ -65,6 +65,24 @@ func (c config) promptProgram() (command.Program, error) {
 	return command.Program{}, fmt.Errorf("Unsupported")
 }
 
+func (c config) notifyProgram() string {
+	return "notify-send"
+}
+
+func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+	notifyArgs := []string{
+		"-i", "/usr/share/icons/hicolor/128x128/apps/keybase.png",
+		fmt.Sprintf("New Keybase version: %s", update.Version),
+		fmt.Sprintf("Please update Keybase using your system package manager."),
+	}
+	result, err := command.Exec("notify-send", notifyArgs, 5*time.Second, c.log)
+	if err != nil {
+		c.log.Warningf("Error running notify-send: %s (%s)", err, result.CombinedOutput())
+	}
+	c.ReportAction(updater.UpdateActionSnooze, &update, options)
+	return updater.CancelErr(fmt.Errorf("Linux uses system package manager"))
+}
+
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	// No update prompt for Linux
 	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil

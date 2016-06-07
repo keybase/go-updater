@@ -92,6 +92,15 @@ func (c config) promptProgram() (command.Program, error) {
 	}, nil
 }
 
+func (c config) notifyProgram() string {
+	// No notify program for Darwin
+	return ""
+}
+
+func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+	return nil
+}
+
 // UpdatePrompt is called when the user needs to accept an update
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	promptProgram, err := c.config.promptProgram()

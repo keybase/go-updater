@@ -23,3 +23,7 @@ func (c testConfigPlatform) promptProgram() (command.Program, error) {
 			}`},
 	}, nil
 }
+
+func (c testConfigPlatform) notifyProgram() string {
+	return "echo"
+}

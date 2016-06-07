@@ -1,7 +1,7 @@
 // Copyright 2015 Keybase, Inc. All rights reserved. Use of
 // this source code is governed by the included BSD license.
 
-// +build darwin
+// +build linux
 
 package keybase
 
@@ -14,10 +14,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestBeforeUpdatePrompt(t *testing.T) {
+	ctx := newContext(&testConfigPlatform{}, testLog)
+	err := ctx.BeforeUpdatePrompt(testUpdate, testOptions)
+	assert.EqualError(t, err, "Update Error (cancel): Linux uses system package manager")
+}
+
 func TestUpdatePrompt(t *testing.T) {
 	ctx := newContext(&testConfigPlatform{}, testLog)
-	_, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
-	assert.Error(t, err, "Unsupported")
+	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
+	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, resp)
+	require.NoError(t, err)
 }
 
 func TestPausedPrompt(t *testing.T) {
@@ -38,5 +45,5 @@ func TestApplyNoAsset(t *testing.T) {
 	defer util.RemoveFileAtPath(tmpDir)
 	require.NoError(t, err)
 	err = ctx.Apply(testUpdate, testOptions, tmpDir)
-	require.NoError(err)
+	require.NoError(t, err)
 }
