@@ -10,9 +10,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 )
+
+// execPath returns the app bundle path where this executable is located
+func (c config) execPath() string {
+	pathName, err := osext.Executable()
+	if err != nil {
+		c.log.Warningf("Error trying to determine our executable path: %s", err)
+		return ""
+	}
+	dir, _ := filepath.Split(pathName)
+	return dir
+}
 
 func (c config) destinationPath() string {
 	// No destination path for Windows
@@ -46,12 +58,22 @@ func (c config) osVersion() string {
 }
 
 func (c config) promptProgram() (command.Program, error) {
-	return command.Program{}, fmt.Errorf("Unsupported")
+	destinationPath := c.execPath()
+	if destinationPath == "" {
+		return command.Program{}, fmt.Errorf("No destination path")
+	}
+	return command.Program{
+		Path: filepath.Join(destinationPath, "prompter", "prompter.hta"),
+	}, nil
+
 }
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
-	// No update prompt for Windows, since the installer may handle it
-	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil
+	promptProgram, err := c.config.promptProgram()
+	if err != nil {
+		return nil, err
+	}
+	return c.updatePrompt(promptProgram, update, options, promptOptions, time.Hour)
 }
 
 func (c context) PausedPrompt() bool {

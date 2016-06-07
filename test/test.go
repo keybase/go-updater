@@ -25,7 +25,11 @@ func main() {
 	case "output":
 		output()
 	case "echo":
-		echo(flag.Arg(1))
+		echoArgs := flag.Arg(1)
+		for i := 2; i < flag.NArg(); i++ {
+			echoArgs = echoArgs + " " + flag.Arg(i)
+		}
+		echo(echoArgs)
 	case "version":
 		echo("1.2.3-400+cafebeef")
 	case "err":
