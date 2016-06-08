@@ -21,7 +21,7 @@ func getWinTestPath() string {
 }
 
 func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigPlatform{EchoCommand: "echoRegistry"}, testLog)
+	ctx := newContext(&testConfigPlatform{ProgramPath: getWinTestPath(), EchoCommand: "echoRegistry"}, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionApply, AutoUpdate: true}, resp)
