@@ -1,6 +1,10 @@
 // Copyright 2015 Keybase, Inc. All rights reserved. Use of
 // this source code is governed by the included BSD license.
 
+// The prompter has no console on Windows, though the updater and most tests
+// are based on stdout, so we'll skip these tests on Windows
+// +build !windows
+
 package keybase
 
 import (

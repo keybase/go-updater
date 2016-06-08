@@ -17,7 +17,7 @@ import (
 )
 
 func getWinTestPath() string {
-	return filepath.Join(os.Getenv("GOPATH"), "bin", "windows_386", "test.exe")
+	return filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
 }
 
 func TestUpdatePrompt(t *testing.T) {
