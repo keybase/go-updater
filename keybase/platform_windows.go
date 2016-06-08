@@ -81,7 +81,10 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	if err != nil {
 		return nil, err
 	}
+	return c.updatePromptForProgram(promptProgram, update, options, promptOptions)
+}
 
+func (c context) updatePromptForProgram(promptProgram command.Program, update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	// Clear the result value we expect to find in the registry
 	c.clearRegistryKey(registryUpdatePromptKeyName)
 
@@ -106,19 +109,19 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 func (c context) updaterPromptResultFromRegistry() (*updaterPromptInputResult, error) {
 	registryKey, err := registry.OpenKey(registry.CURRENT_USER, `SOFTWARE\Keybase`, registry.QUERY_VALUE|registry.SET_VALUE)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error opening registry key: %s", err)
 	}
 	defer registryKey.Close()
 
 	registryValue, _, err := registryKey.GetStringValue(registryUpdatePromptKeyName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error getting registry value: %s", err)
 	}
 	registryKey.DeleteValue(registryUpdatePromptKeyName)
 	c.log.Debugf("Registry value: %s", registryValue)
 	var result updaterPromptInputResult
 	if err := json.Unmarshal([]byte(registryValue), &result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error unmarshalling registry value: %s", err)
 	}
 	return &result, nil
 }
