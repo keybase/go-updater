@@ -4,19 +4,27 @@
 package keybase
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"golang.org/x/sys/windows/registry"
 )
 
 func (c config) destinationPath() string {
-	// No destination path for Windows
-	return ""
+	pathName, err := osext.Executable()
+	if err != nil {
+		c.log.Warningf("Error trying to determine our executable path: %s", err)
+		return ""
+	}
+	dir, _ := filepath.Split(pathName)
+	return dir
 }
 
 // Dir returns where to store config and log files
@@ -45,12 +53,30 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
+func (c config) notifyProgram() string {
+	// No notify program for Windows
+	return ""
+}
+
+func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+	return nil
+}
+
 func (c config) promptProgram() (command.Program, error) {
-	return command.Program{}, fmt.Errorf("Unsupported")
+	destinationPath := c.destinationPath()
+	if destinationPath == "" {
+		return command.Program{}, fmt.Errorf("No destination path")
+	}
+
+	return command.Program{
+		Path: "mshta.exe",
+		Args: []string{filepath.Join(destinationPath, "prompter", "prompter.hta")},
+	}, nil
 }
 
 const registryUpdatePromptKeyName = "UpdatePromptResult"
-func (c config) notifyProgram() string {
+
+func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	promptProgram, err := c.config.promptProgram()
 	if err != nil {
 		return nil, err
@@ -64,7 +90,13 @@ func (c config) notifyProgram() string {
 		return nil, fmt.Errorf("Error generating input: %s", err)
 	}
 
-func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+	_, err = command.Exec(promptProgram.Path, promptProgram.ArgsWith([]string{promptJSONInput}), time.Hour, c.log)
+	if err != nil {
+		return nil, fmt.Errorf("Error running command: %s", err)
+	}
+
+	result, err := c.updaterPromptResultFromRegistry()
+	if err != nil {
 		return nil, err
 	}
 	return c.responseForResult(*result)
