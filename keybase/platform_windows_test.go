@@ -18,6 +18,7 @@ import (
 )
 
 func TestUpdatePrompt(t *testing.T) {
+	t.Skip("Test is unsupported in CI")
 	ctx := newContext(&testConfigPlatform{}, testLog)
 	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
 	promptProgram := command.Program{Path: path, Args: []string{"echoRegistry"}}
