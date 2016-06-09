@@ -6,7 +6,9 @@ package main
 import (
 	"flag"
 	"os"
+	"path/filepath"
 
+	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/keybase"
 	"github.com/keybase/go-updater/util"
@@ -52,6 +54,23 @@ func run(f flags) {
 		defer util.Close(logFile)
 	}
 
+	// Set default path to keybase if not set
+	if f.pathToKeybase == "" {
+		path, err := osext.Executable()
+		if err != nil {
+			ulog.Warning("Error determining our executable path: %s", err)
+		} else {
+			dir, _ := filepath.Split(path)
+			pathToKeybase := filepath.Join(dir, "keybase")
+			ulog.Debugf("Using default path to keybase: %s", pathToKeybase)
+			f.pathToKeybase = pathToKeybase
+		}
+	}
+
+	if f.pathToKeybase == "" {
+		ulog.Warning("Missing -path-to-keybase")
+	}
+
 	switch f.command {
 	case "check":
 		if err := updateCheckFromFlags(f, ulog); err != nil {
@@ -68,11 +87,6 @@ func run(f flags) {
 
 func serviceFromFlags(f flags, ulog logger) *service {
 	ulog.Infof("Updater %s", updater.Version)
-
-	if f.pathToKeybase == "" {
-		ulog.Warning("Missing -path-to-keybase")
-	}
-
 	ctx, upd := keybase.NewUpdaterContext(f.pathToKeybase, ulog)
 	return newService(upd, ctx, ulog)
 }
