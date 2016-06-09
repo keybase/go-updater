@@ -13,25 +13,25 @@ import (
 type testConfigPlatform struct {
 	config
 	ProgramPath string
-	EchoCommand string
+	Args        []string
 }
 
 func (c testConfigPlatform) promptProgram() (command.Program, error) {
 	var programPath = c.ProgramPath
-	var echoCommand = c.EchoCommand
+	var args = c.Args
 	if programPath == "" {
 		programPath = filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	}
-	if echoCommand == "" {
-		echoCommand = "echo"
+	if len(args) == 0 {
+		args = []string{"echo", `{
+				"action": "apply",
+  			"autoUpdate": true
+			}`}
 	}
 
 	return command.Program{
 		Path: programPath,
-		Args: []string{echoCommand, `{
-				"action": "apply",
-  			"autoUpdate": true
-			}`},
+		Args: args,
 	}, nil
 }
 

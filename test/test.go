@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -26,8 +27,18 @@ func main() {
 		output()
 	case "echo":
 		echo(flag.Arg(1))
-	case "echoRegistry":
-		writeToRegistry(flag.Arg(1))
+	case "echoToFile":
+		// Trying to parse 2 separate json argument objects is too gross -
+		// just pick out the pathname
+		for _, a := range os.Args[2:] {
+			if idx := strings.Index(a, "outPathName"); idx != -1 {
+				tmp := a[idx+11:]
+				tmp = strings.TrimLeft(tmp, ":\", ")
+				echoToFile(flag.Arg(1), tmp[:strings.IndexAny(tmp, ",}")-1])
+				return
+			}
+		}
+		echoToFile(flag.Arg(1), flag.Arg(2))
 	case "version":
 		echo("1.2.3-400+cafebeef")
 	case "err":
@@ -58,4 +69,14 @@ func output() {
 
 func echo(s string) {
 	fmt.Fprintln(os.Stdout, s)
+}
+
+func echoToFile(s string, pathName string) {
+	f, err := os.OpenFile(pathName, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		fmt.Printf("\n --- ERROR opening file: %v ---\n", err)
+		return
+	}
+	defer f.Close()
+	f.WriteString(s)
 }

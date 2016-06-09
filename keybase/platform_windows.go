@@ -6,6 +6,7 @@ package keybase
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
-	"golang.org/x/sys/windows/registry"
+	"math/rand"
 )
 
 func (c config) destinationPath() string {
@@ -74,7 +75,14 @@ func (c config) promptProgram() (command.Program, error) {
 	}, nil
 }
 
-const registryUpdatePromptKeyName = "UpdatePromptResult"
+type updaterWinPromptInput struct {
+	Title       string `json:"title"`
+	Message     string `json:"message"`
+	Description string `json:"description"`
+	AutoUpdate  bool   `json:"autoUpdate"`
+	OutPathName string `json:"outPathName"`
+	TimeoutSecs int    `json:"timeoutSecs"`
+}
 
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	promptProgram, err := c.config.promptProgram()
@@ -82,53 +90,55 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 		return nil, err
 	}
 
-	// Clear the result value we expect to find in the registry
-	c.clearRegistryKey(registryUpdatePromptKeyName)
-
 	promptJSONInput, err := c.promptInput(update, options, promptOptions)
+
 	if err != nil {
 		return nil, fmt.Errorf("Error generating input: %s", err)
 	}
 
-	_, err = command.Exec(promptProgram.Path, promptProgram.ArgsWith([]string{promptJSONInput}), time.Hour, c.log)
+	// Unmarshal so we can add a couple of fields
+	var promptArgs updaterPromptInput
+	err = json.Unmarshal([]byte(promptJSONInput), &promptArgs)
+	if err != nil {
+		return nil, fmt.Errorf("Error generating input while unmarshaling: %s", err)
+	}
+
+	tmpPathname := filepath.Join(os.TempDir(), fmt.Sprintf("updatePrompt%d.txt", rand.Intn(1000)))
+	defer os.Remove(tmpPathname)
+
+	promptJSONWinInput, err := json.Marshal(updaterWinPromptInput{
+		Title:       promptArgs.Title,
+		Message:     promptArgs.Message,
+		Description: promptArgs.Description,
+		AutoUpdate:  promptArgs.AutoUpdate,
+		OutPathName: tmpPathname,
+		TimeoutSecs: 3600, // to match time.Hour, below
+	})
+
+	_, err = command.Exec(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONWinInput)}), time.Hour, c.log)
 	if err != nil {
 		return nil, fmt.Errorf("Error running command: %s", err)
 	}
 
-	result, err := c.updaterPromptResultFromRegistry()
+	result, err := c.updaterPromptResultFromFile(tmpPathname)
 	if err != nil {
 		return nil, err
 	}
 	return c.responseForResult(*result)
 }
 
-// promptResultForRegistry gets the result from the registry and decodes it
-func (c context) updaterPromptResultFromRegistry() (*updaterPromptInputResult, error) {
-	registryKey, err := registry.OpenKey(registry.CURRENT_USER, `SOFTWARE\Keybase`, registry.QUERY_VALUE|registry.SET_VALUE)
+// updaterPromptResultFromFile gets the result from the temp file and decodes it
+func (c context) updaterPromptResultFromFile(Name string) (*updaterPromptInputResult, error) {
+	resultRaw, err := ioutil.ReadFile(Name)
 	if err != nil {
 		return nil, err
 	}
-	defer registryKey.Close()
 
-	registryValue, _, err := registryKey.GetStringValue(registryUpdatePromptKeyName)
-	if err != nil {
-		return nil, err
-	}
-	registryKey.DeleteValue(registryUpdatePromptKeyName)
-	c.log.Debugf("Registry value: %s", registryValue)
 	var result updaterPromptInputResult
-	if err := json.Unmarshal([]byte(registryValue), &result); err != nil {
+	if err := json.Unmarshal(resultRaw, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
-}
-
-func (c context) clearRegistryKey(s string) {
-	registryKey, err := registry.OpenKey(registry.CURRENT_USER, `SOFTWARE\Keybase`, registry.SET_VALUE)
-	if err == nil {
-		registryKey.DeleteValue(s)
-	}
-	registryKey.Close()
 }
 
 func (c context) PausedPrompt() bool {

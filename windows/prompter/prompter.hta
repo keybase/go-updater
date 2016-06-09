@@ -50,6 +50,7 @@ label {
 }
        </style>
        <script>
+var outPathName;
 
 function applyUpdate() {
     writeAndClose('apply')
@@ -65,11 +66,14 @@ try{
        action: result,
        autoUpdate: autoUpdate.checked
     };
+    if (! outPathName) {
+        outPathName = "updaterPromptResult.txt"
+    }
+    var fso = new ActiveXObject("Scripting.FileSystemObject"); 
+    var fileObject = fso.OpenTextFile(outPathName, 2, true,0);        
+    fileObject.Write(JSON.stringify(result));
+    fileObject.close();
 
-    var oWSS = new ActiveXObject("WScript.Shell");
-    var regPath = "HKCU\\Software\\Keybase\\UpdatePromptResult";
-    oWSS.RegWrite(regPath, JSON.stringify(result), "REG_SZ");
-    oWSS = null;
     window.close();
 }catch(ex){
     alert(ex);
@@ -102,6 +106,10 @@ function loadElements (params) {
     document.getElementById('message').innerHTML = params.message;
     document.getElementById('description').innerHTML =  params.description;
     document.getElementById('autoUpdate').checked = !!params.autoUpdate;
+    outPathName = params.outPathName;
+    if (params.timeoutSecs) {
+        window.setTimeout(function(){ writeAndClose("timeout"); }, params.timeoutSecs * 1000);
+    }
 }
 
 function reposition () {
