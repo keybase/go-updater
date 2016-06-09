@@ -6,6 +6,7 @@ package main
 import (
 	"flag"
 	"os"
+	"runtime"
 
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/keybase"
@@ -21,19 +22,30 @@ type flags struct {
 }
 
 func main() {
-	f := flags{}
-	flag.BoolVar(&f.version, "version", false, "Show version")
-	flag.BoolVar(&f.logToFile, "log-to-file", false, "Log to file")
-	flag.StringVar(&f.pathToKeybase, "path-to-keybase", "", "Path to keybase executable")
-	flag.StringVar(&f.appName, "app-name", "Keybase", "App name")
-	flag.Parse()
-
-	args := flag.Args()
+	f, args := loadFlags()
 	if len(args) > 0 {
 		f.command = args[0]
 	}
 
 	run(f)
+}
+
+func loadFlags() (flags, []string) {
+	f := flags{}
+	flag.BoolVar(&f.version, "version", false, "Show version")
+	flag.BoolVar(&f.logToFile, "log-to-file", false, "Log to file")
+	flag.StringVar(&f.pathToKeybase, "path-to-keybase", "", "Path to keybase executable")
+	flag.StringVar(&f.appName, "app-name", defaultAppName(), "App name")
+	flag.Parse()
+	args := flag.Args()
+	return f, args
+}
+
+func defaultAppName() string {
+	if runtime.GOOS == "linux" {
+		return "keybase"
+	}
+	return "Keybase"
 }
 
 func run(f flags) {
