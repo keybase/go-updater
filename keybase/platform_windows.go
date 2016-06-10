@@ -15,7 +15,6 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
-	"math/rand"
 )
 
 func (c config) destinationPath() string {
@@ -81,7 +80,7 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 		return nil, err
 	}
 
-	promptOptions.OutPath = filepath.Join(os.TempDir(), fmt.Sprintf("updatePrompt%d.txt", rand.Intn(1000)))
+	promptOptions.OutPath, err = util.WriteTempFile("updatePrompt", []byte{}, 0777)
 	defer util.RemoveFileAtPath(promptOptions.OutPath)
 
 	promptJSONInput, err := c.promptInput(update, options, promptOptions)
