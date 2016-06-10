@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -35,7 +36,13 @@ func TestExecInvalid(t *testing.T) {
 }
 
 func TestExecEcho(t *testing.T) {
-	result, err := Exec("echo", []string{"arg1", "arg2"}, time.Second, testLog)
+	var result Result
+	var err error
+	if runtime.GOOS == "windows" {
+		result, err = Exec("cmd", []string{"/c", "echo", "arg1", "arg2"}, time.Second, testLog)
+	} else {
+		result, err = Exec("echo", []string{"arg1", "arg2"}, time.Second, testLog)
+	}
 	assert.NoError(t, err)
 	assert.Equal(t, result.Stdout.String(), "arg1 arg2\n")
 }
