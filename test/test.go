@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/keybase/go-updater/util"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -69,12 +69,10 @@ func echo(s string) {
 	fmt.Fprintln(os.Stdout, s)
 }
 
-func echoToFile(s string, pathName string) {
-	f, err := os.OpenFile(pathName, os.O_WRONLY|os.O_CREATE, 0777)
+func echoToFile(s string, path string) {
+	err := ioutil.WriteFile(path, []byte(s), 0777)
 	if err != nil {
-		log.Fatal("Error opening file")
+		log.Fatal("Error writing file")
 		return
 	}
-	defer util.Close(f)
-	f.WriteString(s)
 }

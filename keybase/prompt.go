@@ -35,6 +35,7 @@ func (c context) promptInput(update updater.Update, options updater.UpdateOption
 		Message:     fmt.Sprintf("The version you are currently running (%s) is outdated.", options.Version),
 		Description: description,
 		AutoUpdate:  promptOptions.AutoUpdate,
+		OutPath:     promptOptions.OutPath,
 	})
 	return string(promptJSONInput), err
 }

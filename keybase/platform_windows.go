@@ -81,32 +81,21 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 		return nil, err
 	}
 
+	promptOptions.OutPath = filepath.Join(os.TempDir(), fmt.Sprintf("updatePrompt%d.txt", rand.Intn(1000)))
+	defer util.RemoveFileAtPath(promptOptions.OutPath)
+
 	promptJSONInput, err := c.promptInput(update, options, promptOptions)
 
 	if err != nil {
 		return nil, fmt.Errorf("Error generating input: %s", err)
 	}
 
-	// Unmarshal so we can add a couple of fields
-	var promptArgs updaterPromptInput
-	err = json.Unmarshal([]byte(promptJSONInput), &promptArgs)
-	if err != nil {
-		return nil, fmt.Errorf("Error generating input while unmarshaling: %s", err)
-	}
-
-	tmpPathname := filepath.Join(os.TempDir(), fmt.Sprintf("updatePrompt%d.txt", rand.Intn(1000)))
-	defer os.Remove(tmpPathname)
-
-	promptArgs.OutPath = tmpPathname
-
-	promptJSONWinInput, err := json.Marshal(promptArgs)
-
-	_, err = command.Exec(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONWinInput)}), time.Hour, c.log)
+	_, err = command.Exec(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONInput)}), time.Hour, c.log)
 	if err != nil {
 		return nil, fmt.Errorf("Error running command: %s", err)
 	}
 
-	result, err := c.updaterPromptResultFromFile(tmpPathname)
+	result, err := c.updaterPromptResultFromFile(promptOptions.OutPath)
 	if err != nil {
 		return nil, err
 	}
