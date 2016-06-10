@@ -238,5 +238,12 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		c.log.Warningf("Error trying to update spotlight: %s, (%s)", spotLightErr, spotlightResult.CombinedOutput())
 	}
 
+	// Remove quantantine (if any)
+	c.log.Debugf("Remove quarantine: %s", destinationPath)
+	quarantineResult, quarantineErr := command.Exec("/usr/bin/xattr", []string{"-d", "com.apple.quarantine", destinationPath}, 20*time.Second, c.log)
+	if quarantineErr != nil {
+		c.log.Warningf("Error trying to remove quarantine: %s, (%s)", quarantineErr, quarantineResult.CombinedOutput())
+	}
+
 	return nil
 }
