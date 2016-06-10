@@ -4,12 +4,13 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/keybase/go-updater/util"
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -28,17 +29,14 @@ func main() {
 	case "echo":
 		echo(flag.Arg(1))
 	case "echoToFile":
-		// Trying to parse 2 separate json argument objects is too gross -
-		// just pick out the pathname
-		for _, a := range os.Args[2:] {
-			if idx := strings.Index(a, "outPathName"); idx != -1 {
-				tmp := a[idx+11:]
-				tmp = strings.TrimLeft(tmp, ":\", ")
-				echoToFile(flag.Arg(1), tmp[:strings.IndexAny(tmp, ",}")-1])
-				return
-			}
+		var iface interface{}
+		err := json.Unmarshal([]byte(os.Args[3]), &iface)
+		if err != nil {
+			fmt.Printf("Error unmarshaling: %v", err)
+			return
 		}
-		echoToFile(flag.Arg(1), flag.Arg(2))
+		promptArgs := iface.(map[string]interface{})
+		echoToFile(flag.Arg(1), promptArgs["outPath"].(string))
 	case "version":
 		echo("1.2.3-400+cafebeef")
 	case "err":
@@ -74,9 +72,9 @@ func echo(s string) {
 func echoToFile(s string, pathName string) {
 	f, err := os.OpenFile(pathName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
-		fmt.Printf("\n --- ERROR opening file: %v ---\n", err)
+		log.Fatal("Error opening file")
 		return
 	}
-	defer f.Close()
+	defer util.Close(f)
 	f.WriteString(s)
 }

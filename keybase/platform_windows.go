@@ -6,7 +6,6 @@ package keybase
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"github.com/keybase/go-updater/util"
 	"math/rand"
 )
 
@@ -75,15 +75,6 @@ func (c config) promptProgram() (command.Program, error) {
 	}, nil
 }
 
-type updaterWinPromptInput struct {
-	Title       string `json:"title"`
-	Message     string `json:"message"`
-	Description string `json:"description"`
-	AutoUpdate  bool   `json:"autoUpdate"`
-	OutPathName string `json:"outPathName"`
-	TimeoutSecs int    `json:"timeoutSecs"`
-}
-
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	promptProgram, err := c.config.promptProgram()
 	if err != nil {
@@ -106,14 +97,9 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	tmpPathname := filepath.Join(os.TempDir(), fmt.Sprintf("updatePrompt%d.txt", rand.Intn(1000)))
 	defer os.Remove(tmpPathname)
 
-	promptJSONWinInput, err := json.Marshal(updaterWinPromptInput{
-		Title:       promptArgs.Title,
-		Message:     promptArgs.Message,
-		Description: promptArgs.Description,
-		AutoUpdate:  promptArgs.AutoUpdate,
-		OutPathName: tmpPathname,
-		TimeoutSecs: 3600, // to match time.Hour, below
-	})
+	promptArgs.OutPath = tmpPathname
+
+	promptJSONWinInput, err := json.Marshal(promptArgs)
 
 	_, err = command.Exec(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONWinInput)}), time.Hour, c.log)
 	if err != nil {
@@ -129,7 +115,7 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 
 // updaterPromptResultFromFile gets the result from the temp file and decodes it
 func (c context) updaterPromptResultFromFile(Name string) (*updaterPromptInputResult, error) {
-	resultRaw, err := ioutil.ReadFile(Name)
+	resultRaw, err := util.ReadFile(Name)
 	if err != nil {
 		return nil, err
 	}

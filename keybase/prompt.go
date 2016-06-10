@@ -17,6 +17,7 @@ type updaterPromptInput struct {
 	Message     string `json:"message"`
 	Description string `json:"description"`
 	AutoUpdate  bool   `json:"autoUpdate"`
+	OutPath     string `json:"outPath"` // Used for windows instead of stdout
 }
 
 type updaterPromptInputResult struct {

@@ -1,3 +1,6 @@
+// Copyright 2015 Keybase, Inc. All rights reserved. Use of
+// this source code is governed by the included BSD license.
+
 // +build windows
 
 package main
@@ -12,13 +15,13 @@ import (
 	"time"
 )
 
+// Copied here since it is not exported from go-updater/keybase
 type updaterPromptInput struct {
 	Title       string `json:"title"`
 	Message     string `json:"message"`
 	Description string `json:"description"`
 	AutoUpdate  bool   `json:"autoUpdate"`
-	OutPathName string `json:"outPathName"`
-	TimeoutSecs int    `json:"timeoutSecs"`
+	OutPath     string `json:"outPath"` // Used for windows instead of stdout
 }
 
 func main() {
@@ -33,8 +36,7 @@ func main() {
 		Message:     "The version you are currently running (0.0) is outdated.",
 		Description: "Lots of cool stuff in here you need",
 		AutoUpdate:  true,
-		OutPathName: outPathName,
-		TimeoutSecs: 10,
+		OutPath:     outPathName,
 	})
 	if err != nil {
 		testLog.Errorf("Error generating input: %s", err)

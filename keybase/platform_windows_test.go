@@ -16,13 +16,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getWinTestPath() string {
+func windowsTestPath() string {
 	return filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
 }
 
 func TestUpdatePrompt(t *testing.T) {
 	args := []string{"echoToFile", `{"action":"apply","autoUpdate":true}`}
-	ctx := newContext(&testConfigPlatform{ProgramPath: getWinTestPath(), Args: args}, testLog)
+	ctx := newContext(&testConfigPlatform{ProgramPath: windowsTestPath(), Args: args}, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionApply, AutoUpdate: true}, resp)
