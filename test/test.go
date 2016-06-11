@@ -26,6 +26,8 @@ func main() {
 		output()
 	case "echo":
 		echo(flag.Arg(1))
+	case "echoRegistry":
+		writeToRegistry(flag.Arg(1))
 	case "version":
 		echo("1.2.3-400+cafebeef")
 	case "err":

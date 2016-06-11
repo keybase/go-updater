@@ -11,16 +11,20 @@ import (
 	"testing"
 
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUpdatePrompt(t *testing.T) {
+	t.Skip("Test is unsupported in CI")
 	ctx := newContext(&testConfigPlatform{}, testLog)
-	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
+	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+	promptProgram := command.Program{Path: path, Args: []string{"echoRegistry"}}
+	resp, err := ctx.updatePromptForProgram(promptProgram, testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, resp)
+	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionApply, AutoUpdate: true}, resp)
 }
 
 func TestApplyNoAsset(t *testing.T) {

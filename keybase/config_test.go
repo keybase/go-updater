@@ -65,6 +65,10 @@ func TestConfig(t *testing.T) {
 		UpdaterVersion:  updater.Version,
 	}
 
+	if runtime.GOOS == "windows" {
+		t.Skip("Console specific updater tests on Windows")
+	}
+
 	assert.Equal(t, options, expectedOptions)
 
 	// Load new config and make sure it has the same values

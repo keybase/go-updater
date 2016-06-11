@@ -24,27 +24,35 @@ type updaterPromptInputResult struct {
 	AutoUpdate bool   `json:"autoUpdate"`
 }
 
-func (c context) updatePrompt(promptProgram command.Program, update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
+func (c context) promptInput(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (string, error) {
 	description := update.Description
 	if description == "" {
 		description = "Please visit https://keybase.io for more information."
 	}
-
 	promptJSONInput, err := json.Marshal(updaterPromptInput{
 		Title:       fmt.Sprintf("Keybase Update: Version %s", update.Version),
 		Message:     fmt.Sprintf("The version you are currently running (%s) is outdated.", options.Version),
 		Description: description,
 		AutoUpdate:  promptOptions.AutoUpdate,
 	})
+	return string(promptJSONInput), err
+}
+
+func (c context) updatePrompt(promptProgram command.Program, update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
+
+	promptJSONInput, err := c.promptInput(update, options, promptOptions)
 	if err != nil {
 		return nil, fmt.Errorf("Error generating input: %s", err)
 	}
 
 	var result updaterPromptInputResult
-	if err := command.ExecForJSON(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONInput)}), &result, timeout, c.log); err != nil {
+	if err := command.ExecForJSON(promptProgram.Path, promptProgram.ArgsWith([]string{promptJSONInput}), &result, timeout, c.log); err != nil {
 		return nil, fmt.Errorf("Error running command: %s", err)
 	}
+	return c.responseForResult(result)
+}
 
+func (c context) responseForResult(result updaterPromptInputResult) (*updater.UpdatePromptResponse, error) {
 	autoUpdate := false
 
 	var updateAction updater.UpdateAction

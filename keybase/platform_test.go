@@ -15,9 +15,11 @@ type testConfigPlatform struct {
 }
 
 func (c testConfigPlatform) promptProgram() (command.Program, error) {
+	programPath := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
+	echoCommand := "echo"
 	return command.Program{
-		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
-		Args: []string{"echo", `{
+		Path: programPath,
+		Args: []string{echoCommand, `{
 				"action": "apply",
   			"autoUpdate": true
 			}`},
