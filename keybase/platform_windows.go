@@ -102,8 +102,8 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 }
 
 // updaterPromptResultFromFile gets the result from the temp file and decodes it
-func (c context) updaterPromptResultFromFile(Name string) (*updaterPromptInputResult, error) {
-	resultRaw, err := util.ReadFile(Name)
+func (c context) updaterPromptResultFromFile(name string) (*updaterPromptInputResult, error) {
+	resultRaw, err := util.ReadFile(name)
 	if err != nil {
 		return nil, err
 	}
