@@ -63,7 +63,7 @@ func TestExecTimeout(t *testing.T) {
 	}
 	assert.Equal(t, result.Stdout.String(), "")
 	assert.Equal(t, result.Stderr.String(), "")
-	require.EqualError(t, err, "Error running command: timed out")
+	require.EqualError(t, err, "Timed out")
 }
 
 func TestExecBadTimeout(t *testing.T) {
@@ -142,7 +142,7 @@ func TestExecForJSONTimeout(t *testing.T) {
 	var testValOut testObj
 	err := ExecForJSON("sleep", []string{"10"}, &testValOut, 10*time.Millisecond, testLog)
 	if assert.Error(t, err) {
-		assert.Equal(t, err.Error(), "Error running command: timed out")
+		assert.Equal(t, err.Error(), "Timed out")
 	}
 }
 
@@ -164,7 +164,7 @@ func TestExecTimeoutProcessKilled(t *testing.T) {
 func TestExecNoExit(t *testing.T) {
 	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	_, err := Exec(path, []string{"noexit"}, 10*time.Millisecond, testLog)
-	require.EqualError(t, err, "Error running command: timed out")
+	require.EqualError(t, err, "Timed out")
 }
 
 func TestExecOutput(t *testing.T) {
