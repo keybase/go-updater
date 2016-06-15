@@ -21,7 +21,7 @@ func windowsTestPath() string {
 }
 
 func TestUpdatePrompt(t *testing.T) {
-	args := []string{"echoToFile", `{"action":"apply","autoUpdate":true}`}
+	args := []string{"writeToFile", `{"action":"apply","autoUpdate":true}`}
 	ctx := newContext(&testConfigPlatform{ProgramPath: windowsTestPath(), Args: args}, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)

@@ -80,7 +80,7 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 		return nil, err
 	}
 
-	promptOptions.OutPath, err = util.WriteTempFile("updatePrompt", []byte{}, 0777)
+	promptOptions.OutPath, err = util.WriteTempFile("updatePrompt", []byte{}, 0700)
 	defer util.RemoveFileAtPath(promptOptions.OutPath)
 
 	promptJSONInput, err := c.promptInput(update, options, promptOptions)

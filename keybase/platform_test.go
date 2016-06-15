@@ -17,8 +17,7 @@ type testConfigPlatform struct {
 }
 
 func (c testConfigPlatform) promptProgram() (command.Program, error) {
-	var programPath = c.ProgramPath
-	var args = c.Args
+	programPath, args := c.ProgramPath, c.Args
 	if programPath == "" {
 		programPath = filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	}

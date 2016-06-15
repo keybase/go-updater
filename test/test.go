@@ -28,7 +28,7 @@ func main() {
 		output()
 	case "echo":
 		echo(flag.Arg(1))
-	case "echoToFile":
+	case "writeToFile":
 		var iface interface{}
 		err := json.Unmarshal([]byte(os.Args[3]), &iface)
 		if err != nil {
@@ -36,7 +36,7 @@ func main() {
 			return
 		}
 		promptArgs := iface.(map[string]interface{})
-		echoToFile(flag.Arg(1), promptArgs["outPath"].(string))
+		writeToFile(flag.Arg(1), promptArgs["outPath"].(string))
 	case "version":
 		echo("1.2.3-400+cafebeef")
 	case "err":
@@ -69,10 +69,9 @@ func echo(s string) {
 	fmt.Fprintln(os.Stdout, s)
 }
 
-func echoToFile(s string, path string) {
-	err := ioutil.WriteFile(path, []byte(s), 0777)
+func writeToFile(s string, path string) {
+	err := ioutil.WriteFile(path, []byte(s), 0700)
 	if err != nil {
-		log.Fatal("Error writing file")
-		return
+		log.Fatalf("Error writing to file: %s", err)
 	}
 }
