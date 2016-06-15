@@ -4,7 +4,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -15,9 +14,17 @@ import (
 	"time"
 )
 
+type flags struct {
+	out     string
+	outPath string
+}
+
 // This is a test executable built and installed prior to test run, which is
 // useful for testing some command.go functions.
 func main() {
+	f := flags{}
+	flag.StringVar(&f.out, "out", "", "Output")
+	flag.StringVar(&f.outPath, "outPath", "", "Output path")
 	flag.Parse()
 	var arg = flag.Arg(0)
 
@@ -29,14 +36,7 @@ func main() {
 	case "echo":
 		echo(flag.Arg(1))
 	case "writeToFile":
-		var iface interface{}
-		err := json.Unmarshal([]byte(os.Args[3]), &iface)
-		if err != nil {
-			fmt.Printf("Error unmarshaling: %v", err)
-			return
-		}
-		promptArgs := iface.(map[string]interface{})
-		writeToFile(flag.Arg(1), promptArgs["outPath"].(string))
+		writeToFile(f.out, f.outPath)
 	case "version":
 		echo("1.2.3-400+cafebeef")
 	case "err":

@@ -6,6 +6,7 @@
 package keybase
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,15 +17,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func windowsTestPath() string {
-	return filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
-}
-
 func TestUpdatePrompt(t *testing.T) {
-	args := []string{"writeToFile", `{"action":"apply","autoUpdate":true}`}
-	ctx := newContext(&testConfigPlatform{ProgramPath: windowsTestPath(), Args: args}, testLog)
-	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
-	assert.NoError(t, err)
+	outPath := util.TempPath("", "TestUpdatePrompt.")
+	defer util.RemoveFileAtPath(outPath)
+	promptOptions := updater.UpdatePromptOptions{OutPath: outPath}
+	out := `{"action":"apply","autoUpdate":true}` + "\n"
+
+	programPath := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+	args := []string{
+		fmt.Sprintf("-out=%s", out),
+		fmt.Sprintf("-outPath=%s", outPath),
+		"writeToFile"}
+	ctx := newContext(&testConfigPlatform{ProgramPath: programPath, Args: args}, testLog)
+	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, promptOptions)
+	require.NoError(t, err)
 	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionApply, AutoUpdate: true}, resp)
 }
 

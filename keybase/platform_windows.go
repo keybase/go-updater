@@ -80,11 +80,15 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 		return nil, err
 	}
 
-	promptOptions.OutPath, err = util.WriteTempFile("updatePrompt", []byte{}, 0700)
-	defer util.RemoveFileAtPath(promptOptions.OutPath)
+	if promptOptions.OutPath == "" {
+		promptOptions.OutPath, err = util.WriteTempFile("updatePrompt", []byte{}, 0700)
+		if err != nil {
+			return nil, err
+		}
+		defer util.RemoveFileAtPath(promptOptions.OutPath)
+	}
 
 	promptJSONInput, err := c.promptInput(update, options, promptOptions)
-
 	if err != nil {
 		return nil, fmt.Errorf("Error generating input: %s", err)
 	}
@@ -96,14 +100,14 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 
 	result, err := c.updaterPromptResultFromFile(promptOptions.OutPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error reading result: %s", err)
 	}
 	return c.responseForResult(*result)
 }
 
-// updaterPromptResultFromFile gets the result from the temp file and decodes it
-func (c context) updaterPromptResultFromFile(name string) (*updaterPromptInputResult, error) {
-	resultRaw, err := util.ReadFile(name)
+// updaterPromptResultFromFile gets the result from path decodes it
+func (c context) updaterPromptResultFromFile(path string) (*updaterPromptInputResult, error) {
+	resultRaw, err := util.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
