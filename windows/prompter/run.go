@@ -7,12 +7,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/kardianos/osext"
-	"github.com/keybase/go-logging"
-	"github.com/keybase/go-updater/command"
 	"io/ioutil"
 	"path/filepath"
 	"time"
+
+	"github.com/kardianos/osext"
+	"github.com/keybase/go-logging"
+	"github.com/keybase/go-updater/command"
 )
 
 // Copied here since it is not exported from go-updater/keybase
@@ -26,10 +27,10 @@ type updaterPromptInput struct {
 
 func main() {
 	var testLog = &logging.Logger{Module: "test"}
-	//	testPrompt := []string{strings.Replace(`{"title":"Keybase Update: Version 1.0.16-20160603160930+43d4118","message":"The version you are currently running () is outdated.","description":"Please visit https://keybase.io for more information.","autoUpdate":true}`, "\\", "", -1)}
+
 	exePathName, _ := osext.Executable()
 	pathName, _ := filepath.Split(exePathName)
-	outPathName := filepath.Join(pathName, "wintest_out.txt")
+	outPathName := filepath.Join(pathName, "out.txt")
 
 	promptJSONInput, err := json.Marshal(updaterPromptInput{
 		Title:       "Keybase Update: Version Foobar",
@@ -43,7 +44,7 @@ func main() {
 		return
 	}
 
-	path := filepath.Join(pathName, "prompter", "prompter.hta")
+	path := filepath.Join(pathName, "prompter.hta")
 
 	testLog.Debugf("Executing: %s", string(string(promptJSONInput)))
 
@@ -60,5 +61,4 @@ func main() {
 	}
 
 	testLog.Debugf("Result: %s", string(result))
-
 }

@@ -56,17 +56,13 @@ func TestConfig(t *testing.T) {
 	expectedOptions := updater.UpdateOptions{
 		Version:         "1.2.3-400+cafebeef",
 		Platform:        runtime.GOOS,
-		DestinationPath: "",
+		DestinationPath: options.DestinationPath,
 		Channel:         "test",
 		Env:             "prod",
 		Arch:            runtime.GOARCH,
 		Force:           false,
 		OSVersion:       cfg.osVersion(),
 		UpdaterVersion:  updater.Version,
-	}
-
-	if runtime.GOOS == "windows" {
-		t.Skip("Console specific updater tests on Windows")
 	}
 
 	assert.Equal(t, options, expectedOptions)
