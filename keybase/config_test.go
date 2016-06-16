@@ -56,7 +56,7 @@ func TestConfig(t *testing.T) {
 	expectedOptions := updater.UpdateOptions{
 		Version:         "1.2.3-400+cafebeef",
 		Platform:        runtime.GOOS,
-		DestinationPath: "",
+		DestinationPath: options.DestinationPath,
 		Channel:         "test",
 		Env:             "prod",
 		Arch:            runtime.GOARCH,
