@@ -4,14 +4,43 @@
 package keybase
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/keybase/go-updater"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type testAPIServer struct {
+	server      *httptest.Server
+	lastRequest *http.Request
+}
+
+func (t testAPIServer) shutdown() {
+	t.server.Close()
+}
+
+func newTestAPIServer(t *testing.T, jsonString string) *testAPIServer {
+	apiServer := &testAPIServer{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		apiServer.lastRequest = req
+
+		buf := bytes.NewBuffer([]byte(jsonString))
+		w.Header().Set("Content-Type", "application/json")
+		_, err := io.Copy(w, buf)
+		require.NoError(t, err)
+	}))
+
+	apiServer.server = server
+	return apiServer
+}
 
 const updateJSONResponse = `{
 		"version": "1.0.15-20160414190014+fdfce90",
@@ -68,4 +97,42 @@ func TestUpdateSourceTimeout(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "net/http: request canceled"))
 	assert.Nil(t, update)
+}
+
+func TestUpdateSourceRequest(t *testing.T) {
+	testAPIServer := newTestAPIServer(t, updateJSONResponse)
+	defer testAPIServer.shutdown()
+
+	cfg, _ := testConfig(t)
+	updateSource := newUpdateSource(cfg, testAPIServer.server.URL, testLog)
+
+	var options = updater.UpdateOptions{
+		Version:        "1.2.3-400+abcdef",
+		Platform:       "platform",
+		Channel:        "channel",
+		Env:            "env",
+		Arch:           "arch",
+		Force:          true,
+		OSVersion:      "100.1",
+		UpdaterVersion: "200.2",
+	}
+
+	// Request update
+	update, err := updateSource.FindUpdate(options)
+	require.NoError(t, err)
+	require.NotNil(t, testAPIServer.lastRequest)
+	require.Equal(t, "/?auto_update=0&install_id=&os_version=100.1&platform=platform&run_mode=env&upd_version=200.2&version=1.2.3-400%2Babcdef", testAPIServer.lastRequest.RequestURI)
+
+	// Change install ID and auto update
+	require.Equal(t, "deadbeef", update.InstallID)
+	err = cfg.SetInstallID(update.InstallID)
+	require.NoError(t, err)
+	err = cfg.SetUpdateAuto(true)
+	require.NoError(t, err)
+
+	// Request again and double check install ID and auto update param changed
+	update, err = updateSource.FindUpdate(options)
+	require.NoError(t, err)
+	require.NotNil(t, testAPIServer.lastRequest)
+	assert.Equal(t, "/?auto_update=1&install_id=deadbeef&os_version=100.1&platform=platform&run_mode=env&upd_version=200.2&version=1.2.3-400%2Babcdef", testAPIServer.lastRequest.RequestURI)
 }

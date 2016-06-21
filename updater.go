@@ -13,7 +13,7 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.2.4"
+const Version = "0.2.5"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -212,6 +212,7 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 
 	// Save InstallID if we received one
 	if update.InstallID != "" && u.config.GetInstallID() != update.InstallID {
+		u.log.Debugf("Saving install ID: %s", update.InstallID)
 		if err := u.config.SetInstallID(update.InstallID); err != nil {
 			u.log.Warningf("Error saving install ID: %s", err)
 			ctx.ReportError(configErr(fmt.Errorf("Error saving install ID: %s", err)), update, options)

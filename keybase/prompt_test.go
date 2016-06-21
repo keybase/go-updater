@@ -16,7 +16,7 @@ import (
 
 func testPromptWithProgram(t *testing.T, promptProgram command.Program, timeout time.Duration) (*updater.UpdatePromptResponse, error) {
 	cfg, _ := testConfig(t)
-	ctx := newContext(&cfg, testLog)
+	ctx := newContext(cfg, testLog)
 	assert.NotNil(t, ctx)
 
 	update := updater.Update{
@@ -124,7 +124,7 @@ func TestPromptError(t *testing.T) {
 
 func testPausedPromptWithProgram(t *testing.T, promptProgram command.Program, timeout time.Duration) (bool, error) {
 	cfg, _ := testConfig(t)
-	ctx := newContext(&cfg, testLog)
+	ctx := newContext(cfg, testLog)
 	assert.NotNil(t, ctx)
 	return ctx.pausedPrompt(promptProgram, timeout)
 }
