@@ -60,7 +60,7 @@ func TestConfig(t *testing.T) {
 		Version:         "1.2.3-400+cafebeef",
 		Platform:        runtime.GOOS,
 		DestinationPath: options.DestinationPath,
-		Channel:         "test",
+		Channel:         "",
 		Env:             "prod",
 		Arch:            runtime.GOARCH,
 		Force:           false,
