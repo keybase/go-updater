@@ -51,10 +51,10 @@ type store struct {
 }
 
 // newConfig loads a config, which is valid even if it has an error
-func newConfig(appName string, pathToKeybase string, log Log) (config, error) {
+func newConfig(appName string, pathToKeybase string, log Log) (*config, error) {
 	cfg := newDefaultConfig(appName, pathToKeybase, log)
 	err := cfg.load()
-	return cfg, err
+	return &cfg, err
 }
 
 func newDefaultConfig(appName string, pathToKeybase string, log Log) config {
@@ -158,7 +158,6 @@ func (c config) updaterOptions() updater.UpdateOptions {
 		Version:         version,
 		Platform:        runtime.GOOS,
 		Arch:            runtime.GOARCH,
-		Channel:         "test",
 		DestinationPath: c.destinationPath(),
 		Env:             "prod",
 		OSVersion:       osVersion,

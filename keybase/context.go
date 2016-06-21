@@ -75,8 +75,8 @@ func NewUpdaterContext(appName string, pathToKeybase string, log Log) (updater.C
 	// For testing
 	// (cd /Applications; ditto -c -k --sequesterRsrc --keepParent Keybase.app /tmp/Keybase.zip)
 	//src := updater.NewLocalUpdateSource("/tmp/Keybase.zip", log)
-	upd := updater.NewUpdater(src, &cfg, log)
-	return newContext(&cfg, log), upd
+	upd := updater.NewUpdater(src, cfg, log)
+	return newContext(cfg, log), upd
 }
 
 // UpdateOptions returns update options
