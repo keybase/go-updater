@@ -91,6 +91,11 @@
 			"path": "golang.org/x/crypto/salsa20/salsa",
 			"revision": "7b428712abe956d0e9e1e9a01e163fb6c7171438",
 			"revisionTime": "2016-04-19T13:20:54-07:00"
+		},
+		{
+			"path": "golang.org/x/sys/windows/registry",
+			"revision": "eb2c74142fd19a79b3f237334c7384d5167b1b46",
+			"revisionTime": "2016-01-26T17:36:05-08:00"
 		}
 	]
 }
