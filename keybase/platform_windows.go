@@ -66,10 +66,12 @@ func (c context) BeforeUpdatePrompt(update updater.Update, options updater.Updat
 	return nil
 }
 
+type regUninstallGetter func(string, Log) bool
+
 // It turns out a Wix bundle .exe supports "/layout", which among other things
 // generates a log of what it would do. We can parse this for Dokan product code variables,
 // which will be in the registry if the same version is already present.
-func CheckCanBeSilent(path string, log Log) bool {
+func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) bool {
 	tempName, err := util.WriteTempFile("keybaseInstallLayout", []byte{}, 0700)
 	if err != nil {
 		log.Errorf("CheckCanBeSilent: Unable to write temp file")
@@ -102,7 +104,7 @@ func CheckCanBeSilent(path string, log Log) bool {
 		} else if !codeFound {
 			matches := re.FindStringSubmatch(scanner.Text())
 			if len(matches) > 2 {
-				codeFound = checkRegistryUninstallCode(matches[2], log)
+				codeFound = regFunc(matches[2], log)
 			}
 		}
 	}
@@ -110,7 +112,7 @@ func CheckCanBeSilent(path string, log Log) bool {
 	return codeFound
 }
 
-func checkRegistryUninstallCode(productID string, log Log) bool {
+func CheckRegistryUninstallCode(productID string, log Log) bool {
 	log.Infof("CheckCanBeSilent: Searching registry for %s", productID)
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\`+productID, registry.QUERY_VALUE|registry.WOW64_64KEY)
 	if err == nil {
@@ -188,7 +190,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	}
 	var args []string
 	auto, _ := c.config.GetUpdateAuto()
-	if auto && CheckCanBeSilent(update.Asset.LocalPath, c.log) {
+	if auto && CheckCanBeSilent(update.Asset.LocalPath, c.log, CheckRegistryUninstallCode) {
 		args = append(args, "/quiet")
 	}
 	_, err := command.Exec(update.Asset.LocalPath, args, time.Hour, c.log)

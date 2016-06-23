@@ -19,7 +19,7 @@ func main() {
 
 	exePath := os.Args[1]
 
-	isSilent := keybase.CheckCanBeSilent(exePath, testLog)
+	isSilent := keybase.CheckCanBeSilent(exePath, testLog, keybase.CheckRegistryUninstallCode)
 
 	testLog.Debugf("Result: %v", isSilent)
 }

@@ -63,3 +63,31 @@ func TestApplyAsset(t *testing.T) {
 	err = ctx.Apply(update, updater.UpdateOptions{}, tmpDir)
 	require.NoError(t, err)
 }
+
+func checkLegit64Code(productID string, log Log) bool {
+	if productID == "{65A3A964-3DC3-0100-0000-160621082245}" {
+		return true
+	}
+	return false
+}
+
+func checkLegit86Code(productID string, log Log) bool {
+	if productID == "{65A3A986-3DC3-0100-0000-160621082245}" {
+		return true
+	}
+	return false
+}
+
+func checkMismatchedCode(productID string, log Log) bool {
+	if productID == "{65A3A986-3DC3-0100-0000-160621082244}" {
+		return true
+	}
+	return false
+}
+
+func TestSearchInstallerLayout(t *testing.T) {
+	programPath := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+	assert.Equal(t, CheckCanBeSilent(programPath, testLog, checkLegit64Code), true)
+	assert.Equal(t, CheckCanBeSilent(programPath, testLog, checkLegit86Code), true)
+	assert.Equal(t, CheckCanBeSilent(programPath, testLog, checkMismatchedCode), false)
+}
