@@ -30,6 +30,8 @@ const (
 	PathContains MatchType = "path-contains"
 	// PathPrefix matches path has string prefix
 	PathPrefix MatchType = "path-prefix"
+	// ExecutableEqual matches executable name equals string
+	ExecutableEqual MatchType = "executable-equal"
 )
 
 // NewMatcher returns a new matcher
@@ -56,6 +58,15 @@ func (m Matcher) matchPathFn(pathFn func(path, str string) bool) MatchFn {
 	}
 }
 
+func (m Matcher) matchExecutableFn(execFn func(executable, str string) bool) MatchFn {
+	return func(p ps.Process) bool {
+		if m.exceptPID != 0 && p.Pid() == m.exceptPID {
+			return false
+		}
+		return execFn(p.Executable(), m.match)
+	}
+}
+
 // Fn is the matching function
 func (m Matcher) Fn() MatchFn {
 	switch m.matchType {
@@ -65,6 +76,8 @@ func (m Matcher) Fn() MatchFn {
 		return m.ContainsPathFn()
 	case PathPrefix:
 		return m.PrefixPathFn()
+	case ExecutableEqual:
+		return m.EqualExecutableFn()
 	default:
 		return nil
 	}
@@ -88,5 +101,12 @@ func (m Matcher) ContainsPathFn() MatchFn {
 func (m Matcher) PrefixPathFn() MatchFn {
 	return m.matchPathFn(func(path, str string) bool {
 		return strings.HasPrefix(path, str)
+	})
+}
+
+// EqualExecutableFn matches on path equals string
+func (m Matcher) EqualExecutableFn() MatchFn {
+	return m.matchExecutableFn(func(s, t string) bool {
+		return s == t
 	})
 }

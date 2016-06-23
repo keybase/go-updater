@@ -118,7 +118,25 @@ func startProcess(t *testing.T, path string, testCommand string) (string, int, *
 	return path, cmd.Process.Pid, cmd
 }
 
-func testTerminateAll(t *testing.T, path string, status string) {
+func TestTerminateAll(t *testing.T) {
+	procPath := procPath(t, "testTerminateAll")
+	defer util.RemoveFileAtPath(procPath)
+
+	matcher1 := NewMatcher(procPath, PathEqual, testLog)
+	testTerminateAll(t, procPath, matcher1)
+
+	matcher2 := NewMatcher(filepath.Base(procPath), ExecutableEqual, testLog)
+	testTerminateAll(t, procPath, matcher2)
+}
+
+func testTerminateAll(t *testing.T, path string, matcher Matcher) {
+	var exitStatus string
+	if runtime.GOOS == "windows" {
+		exitStatus = "exit status 1"
+	} else {
+		exitStatus = "signal: terminated"
+	}
+
 	path, pid1, cmd1 := startProcess(t, path, "sleep")
 	defer cleanupProc(cmd1, "")
 	_, pid2, cmd2 := startProcess(t, path, "sleep")
@@ -126,11 +144,11 @@ func testTerminateAll(t *testing.T, path string, status string) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	terminatePids := TerminateAll(NewMatcher(path, PathEqual, testLog), time.Millisecond, testLog)
+	terminatePids := TerminateAll(matcher, time.Millisecond, testLog)
 	assert.Contains(t, terminatePids, pid1)
 	assert.Contains(t, terminatePids, pid2)
-	assertTerminated(t, pid1, status)
-	assertTerminated(t, pid2, status)
+	assertTerminated(t, pid1, exitStatus)
+	assertTerminated(t, pid2, exitStatus)
 }
 
 func TestFindProcessWait(t *testing.T) {
