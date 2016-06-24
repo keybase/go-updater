@@ -71,42 +71,14 @@ func (m Matcher) matchExecutableFn(execFn func(executable, str string) bool) Mat
 func (m Matcher) Fn() MatchFn {
 	switch m.matchType {
 	case PathEqual:
-		return m.EqualPathFn()
+		return m.matchPathFn(func(s, t string) bool { return s == t })
 	case PathContains:
-		return m.ContainsPathFn()
+		return m.matchPathFn(strings.Contains)
 	case PathPrefix:
-		return m.PrefixPathFn()
+		return m.matchPathFn(strings.HasPrefix)
 	case ExecutableEqual:
-		return m.EqualExecutableFn()
+		return m.matchExecutableFn(func(s, t string) bool { return s == t })
 	default:
 		return nil
 	}
-}
-
-// EqualPathFn matches on path equals string
-func (m Matcher) EqualPathFn() MatchFn {
-	return m.matchPathFn(func(s, t string) bool {
-		return s == t
-	})
-}
-
-// ContainsPathFn matches on path contains string
-func (m Matcher) ContainsPathFn() MatchFn {
-	return m.matchPathFn(func(path, str string) bool {
-		return strings.Contains(path, str)
-	})
-}
-
-// PrefixPathFn matches on path starts with string
-func (m Matcher) PrefixPathFn() MatchFn {
-	return m.matchPathFn(func(path, str string) bool {
-		return strings.HasPrefix(path, str)
-	})
-}
-
-// EqualExecutableFn matches on path equals string
-func (m Matcher) EqualExecutableFn() MatchFn {
-	return m.matchExecutableFn(func(s, t string) bool {
-		return s == t
-	})
 }
