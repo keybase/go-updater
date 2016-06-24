@@ -119,14 +119,16 @@ func startProcess(t *testing.T, path string, testCommand string) (string, int, *
 }
 
 func TestTerminateAll(t *testing.T) {
-	procPath := procPath(t, "testTerminateAll")
-	defer util.RemoveFileAtPath(procPath)
+	procPath1 := procPath(t, "testTerminateAll1")
+	defer util.RemoveFileAtPath(procPath1)
 
-	matcher1 := NewMatcher(procPath, PathEqual, testLog)
-	testTerminateAll(t, procPath, matcher1)
+	matcher1 := NewMatcher(procPath1, PathEqual, testLog)
+	testTerminateAll(t, procPath1, matcher1)
 
-	matcher2 := NewMatcher(filepath.Base(procPath), ExecutableEqual, testLog)
-	testTerminateAll(t, procPath, matcher2)
+	procPath2 := procPath(t, "testTerminateAll2")
+	defer util.RemoveFileAtPath(procPath2)
+	matcher2 := NewMatcher(filepath.Base(procPath2), ExecutableEqual, testLog)
+	testTerminateAll(t, procPath2, matcher2)
 }
 
 func testTerminateAll(t *testing.T, path string, matcher Matcher) {
@@ -152,9 +154,6 @@ func testTerminateAll(t *testing.T, path string, matcher Matcher) {
 }
 
 func TestFindProcessWait(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		t.Skip("Unsupported until we have process path on linux")
-	}
 	procPath := procPath(t, "testFindProcessWait")
 	cmd := exec.Command(procPath, "sleep")
 	defer cleanupProc(cmd, procPath)
