@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env s
 
 set -e -u -o pipefail
 
