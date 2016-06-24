@@ -34,8 +34,8 @@
 		},
 		{
 			"path": "github.com/keybase/go-ps",
-			"revision": "f5e5fd36a1028a67d0aa92f2700b284f881a656c",
-			"revisionTime": "2016-05-24T14:14:49-07:00"
+			"revision": "8d828c13ff62238458de201228d5df3e77d8c0dc",
+			"revisionTime": "2016-06-23T18:10:31-07:00"
 		},
 		{
 			"path": "github.com/keybase/saltpack",
