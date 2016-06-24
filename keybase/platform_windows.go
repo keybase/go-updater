@@ -75,7 +75,7 @@ type regUninstallGetter func(string, Log) bool
 func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, error) {
 	tempName := util.TempPath("", "keybaseInstallLayout-")
 
-	_, err := command.Exec(path, []string{"/layout", "/quiet", "/log", tempName}, 10*time.Second, log)
+	_, err := command.Exec(path, []string{"/layout", "/quiet", "/log", tempName}, 2*time.Minute, log)
 	if err != nil {
 		log.Errorf("CheckCanBeSilent: Unable to execute %s", path)
 		return false, err
