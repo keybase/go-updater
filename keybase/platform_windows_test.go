@@ -64,30 +64,19 @@ func TestApplyAsset(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func checkLegit64Code(productID string, log Log) bool {
-	if productID == "{65A3A964-3DC3-0100-0000-160621082245}" {
-		return true
-	}
-	return false
-}
+const legit64Code = "{65A3A964-3DC3-0100-0000-160621082245}"
+const legit86Code = "{65A3A986-3DC3-0100-0000-160621082245}"
+const mismatchedCode = "{65A3A986-3DC3-0100-0000-160621082244}"
 
-func checkLegit86Code(productID string, log Log) bool {
-	if productID == "{65A3A986-3DC3-0100-0000-160621082245}" {
-		return true
-	}
-	return false
-}
-
-func checkMismatchedCode(productID string, log Log) bool {
-	if productID == "{65A3A986-3DC3-0100-0000-160621082244}" {
-		return true
-	}
-	return false
+func callCheckCanBeSilent(t *testing.T, path string, code string) bool {
+	result, err := CheckCanBeSilent(path, testLog, func(s string, l Log) bool { return s == code })
+	require.NoError(t, err)
+	return result
 }
 
 func TestSearchInstallerLayout(t *testing.T) {
 	programPath := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
-	assert.Equal(t, CheckCanBeSilent(programPath, testLog, checkLegit64Code), true)
-	assert.Equal(t, CheckCanBeSilent(programPath, testLog, checkLegit86Code), true)
-	assert.Equal(t, CheckCanBeSilent(programPath, testLog, checkMismatchedCode), false)
+	assert.Equal(t, callCheckCanBeSilent(t, programPath, legit64Code), true)
+	assert.Equal(t, callCheckCanBeSilent(t, programPath, legit86Code), true)
+	assert.Equal(t, callCheckCanBeSilent(t, programPath, mismatchedCode), false)
 }
