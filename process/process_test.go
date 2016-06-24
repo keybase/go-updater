@@ -118,17 +118,38 @@ func startProcess(t *testing.T, path string, testCommand string) (string, int, *
 	return path, cmd.Process.Pid, cmd
 }
 
-func TestTerminateAll(t *testing.T) {
-	procPath1 := procPath(t, "testTerminateAll1")
-	defer util.RemoveFileAtPath(procPath1)
+func TestTerminateAllPathEqual(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllPathEqual(")
+	defer util.RemoveFileAtPath(procPath)
+	matcher := NewMatcher(procPath, PathEqual, testLog)
+	testTerminateAll(t, procPath, matcher)
+}
 
-	matcher1 := NewMatcher(procPath1, PathEqual, testLog)
-	testTerminateAll(t, procPath1, matcher1)
+func TestTerminateAllExecutableEqual(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllExecutableEqual")
+	defer util.RemoveFileAtPath(procPath)
+	matcher := NewMatcher(filepath.Base(procPath), ExecutableEqual, testLog)
+	testTerminateAll(t, procPath, matcher)
+}
 
-	procPath2 := procPath(t, "testTerminateAll2")
-	defer util.RemoveFileAtPath(procPath2)
-	matcher2 := NewMatcher(filepath.Base(procPath2), ExecutableEqual, testLog)
-	testTerminateAll(t, procPath2, matcher2)
+func TestTerminateAllPathContains(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllPathContains")
+	defer util.RemoveFileAtPath(procPath)
+	procDir, procFile := filepath.Split(procPath)
+	match := procDir[1:] + procFile[:20]
+	t.Logf("Match: %q", match)
+	matcher := NewMatcher(match, PathContains, testLog)
+	testTerminateAll(t, procPath, matcher)
+}
+
+func TestTerminateAllPathPrefix(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllPathPrefix")
+	defer util.RemoveFileAtPath(procPath)
+	procDir, procFile := filepath.Split(procPath)
+	match := procDir + procFile[:20]
+	t.Logf("Match: %q", match)
+	matcher := NewMatcher(match, PathPrefix, testLog)
+	testTerminateAll(t, procPath, matcher)
 }
 
 func testTerminateAll(t *testing.T, path string, matcher Matcher) {
