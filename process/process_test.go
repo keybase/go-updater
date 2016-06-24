@@ -167,7 +167,7 @@ func testTerminateAll(t *testing.T, path string, matcher Matcher) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	terminatePids := TerminateAll(matcher, time.Millisecond, testLog)
+	terminatePids := TerminateAll(matcher, 5*time.Second, testLog)
 	assert.Contains(t, terminatePids, pid1)
 	assert.Contains(t, terminatePids, pid2)
 	assertTerminated(t, pid1, exitStatus)
