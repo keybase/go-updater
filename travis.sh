@@ -11,10 +11,9 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
   go get -u github.com/alecthomas/gometalinter
   gometalinter --install --update
   echo "Running gometalinter"
-  gometalinter --deadline=300s --vendor --cyclo-over=20 --dupl-threshold=100 ./...
-  if [ ! "$?" = "0" ]; then
-    exit 1
-  fi
+  gometalinter --deadline=300s --vendor --cyclo-over=20 --dupl-threshold=100 ./... || exit 1
+  result"$?"
+  echo "Result: $result"
 fi
 
 repo="github.com/keybase/go-updater"
