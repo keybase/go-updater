@@ -87,7 +87,8 @@ func (u UpdateAction) String() string {
 
 // UpdatePromptOptions are the options for UpdatePrompt
 type UpdatePromptOptions struct {
-	AutoUpdate bool `json:"autoUpdate"`
+	AutoUpdate bool   `json:"autoUpdate"`
+	OutPath    string `json:"outPath"` // Used for windows instead of stdout
 }
 
 // UpdatePromptResponse is the result for UpdatePrompt

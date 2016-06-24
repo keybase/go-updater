@@ -30,7 +30,7 @@ func newTestUpdater(t *testing.T) (*Updater, error) {
 }
 
 func newTestUpdaterWithServer(t *testing.T, testServer *httptest.Server, update *Update, config Config) (*Updater, error) {
-	return NewUpdater(testUpdateSource{testServer: testServer, update: update}, config, testLog), nil
+	return NewUpdater(testUpdateSource{testServer: testServer, config: config, update: update}, config, testLog), nil
 }
 
 func newTestContext(options UpdateOptions, cfg Config, response *UpdatePromptResponse) *testUpdateUI {
@@ -51,6 +51,10 @@ type testUpdateUI struct {
 	autoUpdateReported bool
 	updateReported     *Update
 	successReported    bool
+}
+
+func (u testUpdateUI) BeforeUpdatePrompt(_ Update, _ UpdateOptions) error {
+	return nil
 }
 
 func (u testUpdateUI) UpdatePrompt(_ Update, _ UpdateOptions, _ UpdatePromptOptions) (*UpdatePromptResponse, error) {
@@ -114,6 +118,7 @@ func (u testUpdateUI) UpdateOptions() UpdateOptions {
 
 type testUpdateSource struct {
 	testServer *httptest.Server
+	config     Config
 	update     *Update
 	findErr    error
 }
@@ -430,4 +435,5 @@ func TestUpdaterNotNeeded(t *testing.T) {
 	assert.Nil(t, update)
 
 	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
 }

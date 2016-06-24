@@ -98,18 +98,14 @@ func TestApplyAsset(t *testing.T) {
 	defer util.RemoveFileAtPath(tmpDir)
 	require.NoError(t, err)
 
-	zipPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
-	localPath := filepath.Join(tmpDir, "test.zip")
-	err = util.CopyFile(zipPath, localPath, testLog)
-	require.NoError(t, err)
-
+	zipPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app.zip")
 	update := updater.Update{
 		Asset: &updater.Asset{
 			LocalPath: zipPath,
 		},
 	}
 
-	options := updater.UpdateOptions{DestinationPath: filepath.Join(os.TempDir(), "test")}
+	options := updater.UpdateOptions{DestinationPath: filepath.Join(os.TempDir(), "Test.app")}
 
 	err = ctx.Apply(update, options, tmpDir)
 	require.NoError(t, err)

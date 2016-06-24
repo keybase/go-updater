@@ -12,14 +12,28 @@ import (
 
 type testConfigPlatform struct {
 	config
+	ProgramPath string
+	Args        []string
 }
 
 func (c testConfigPlatform) promptProgram() (command.Program, error) {
-	return command.Program{
-		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
-		Args: []string{"echo", `{
+	programPath, args := c.ProgramPath, c.Args
+	if programPath == "" {
+		programPath = filepath.Join(os.Getenv("GOPATH"), "bin", "test")
+	}
+	if len(args) == 0 {
+		args = []string{"echo", `{
 				"action": "apply",
   			"autoUpdate": true
-			}`},
+			}`}
+	}
+
+	return command.Program{
+		Path: programPath,
+		Args: args,
 	}, nil
+}
+
+func (c testConfigPlatform) notifyProgram() string {
+	return "echo"
 }

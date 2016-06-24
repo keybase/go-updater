@@ -13,7 +13,7 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.2.4"
+const Version = "0.2.5"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -36,6 +36,7 @@ type Context interface {
 	GetUpdateUI() UpdateUI
 	UpdateOptions() UpdateOptions
 	Verify(update Update) error
+	BeforeUpdatePrompt(update Update, options UpdateOptions) error
 	BeforeApply(update Update) error
 	Apply(update Update, options UpdateOptions, tmpDir string) error
 	AfterApply(update Update) error
@@ -99,6 +100,11 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 	u.log.Infof("Got update with version: %s", update.Version)
 
+	err = ctx.BeforeUpdatePrompt(*update, options)
+	if err != nil {
+		return update, err
+	}
+
 	// Prompt for update
 	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
 	if err != nil {
@@ -111,10 +117,10 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		ctx.ReportAction(UpdateActionAuto, update, options)
 	case UpdateActionSnooze:
 		ctx.ReportAction(UpdateActionSnooze, update, options)
-		return update, cancelErr(fmt.Errorf("Snoozed update"))
+		return update, CancelErr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
 		ctx.ReportAction(UpdateActionCancel, update, options)
-		return update, cancelErr(fmt.Errorf("Canceled"))
+		return update, CancelErr(fmt.Errorf("Canceled"))
 	case UpdateActionError:
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
 	case UpdateActionContinue:
@@ -210,6 +216,7 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 
 	// Save InstallID if we received one
 	if update.InstallID != "" && u.config.GetInstallID() != update.InstallID {
+		u.log.Debugf("Saving install ID: %s", update.InstallID)
 		if err := u.config.SetInstallID(update.InstallID); err != nil {
 			u.log.Warningf("Error saving install ID: %s", err)
 			ctx.ReportError(configErr(fmt.Errorf("Error saving install ID: %s", err)), update, options)

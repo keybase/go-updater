@@ -173,6 +173,7 @@
 				TargetAttributes = {
 					00C19B701CB6CE0500BDFDAD = {
 						CreatedOnToolsVersion = 7.3;
+						DevelopmentTeam = 99229SGT5K;
 					};
 					00E8F4221CBF184900532C84 = {
 						CreatedOnToolsVersion = 7.3;
@@ -346,9 +347,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Updater/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				PRODUCT_BUNDLE_IDENTIFIER = keybase.Updater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -358,9 +361,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Updater/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				PRODUCT_BUNDLE_IDENTIFIER = keybase.Updater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

@@ -94,7 +94,7 @@ func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Dura
 	}
 	// If no process, nothing to kill
 	if cmd.Process == nil {
-		return result, fmt.Errorf("Error running command: no process")
+		return result, fmt.Errorf("No process")
 	}
 
 	// Signal the process to terminate gracefully
@@ -120,7 +120,7 @@ func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Dura
 			log.Warningf("Killed process")
 		}
 	}
-	return result, fmt.Errorf("Error running command: timed out")
+	return result, fmt.Errorf("Timed out")
 }
 
 // ExecForJSON runs a command (with timeout) expecting JSON output with obj interface

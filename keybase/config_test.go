@@ -13,11 +13,14 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func testConfig(t *testing.T) (config, error) {
+func testConfig(t *testing.T) (*config, error) {
 	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
-	return newConfig("KeybaseTest", testPathToKeybase, testLog)
+	appName, err := util.RandomID("KeybaseTest.")
+	require.NoError(t, err)
+	return newConfig(appName, testPathToKeybase, testLog)
 }
 
 func TestConfig(t *testing.T) {
@@ -56,8 +59,8 @@ func TestConfig(t *testing.T) {
 	expectedOptions := updater.UpdateOptions{
 		Version:         "1.2.3-400+cafebeef",
 		Platform:        runtime.GOOS,
-		DestinationPath: "",
-		Channel:         "test",
+		DestinationPath: options.DestinationPath,
+		Channel:         "",
 		Env:             "prod",
 		Arch:            runtime.GOARCH,
 		Force:           false,

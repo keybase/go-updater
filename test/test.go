@@ -6,6 +6,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -13,9 +14,17 @@ import (
 	"time"
 )
 
+type flags struct {
+	out     string
+	outPath string
+}
+
 // This is a test executable built and installed prior to test run, which is
 // useful for testing some command.go functions.
 func main() {
+	f := flags{}
+	flag.StringVar(&f.out, "out", "", "Output")
+	flag.StringVar(&f.outPath, "outPath", "", "Output path")
 	flag.Parse()
 	var arg = flag.Arg(0)
 
@@ -26,6 +35,8 @@ func main() {
 		output()
 	case "echo":
 		echo(flag.Arg(1))
+	case "writeToFile":
+		writeToFile(f.out, f.outPath)
 	case "version":
 		echo("1.2.3-400+cafebeef")
 	case "err":
@@ -56,4 +67,11 @@ func output() {
 
 func echo(s string) {
 	fmt.Fprintln(os.Stdout, s)
+}
+
+func writeToFile(s string, path string) {
+	err := ioutil.WriteFile(path, []byte(s), 0700)
+	if err != nil {
+		log.Fatalf("Error writing to file: %s", err)
+	}
 }

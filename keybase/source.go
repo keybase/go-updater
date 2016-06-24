@@ -17,17 +17,17 @@ import (
 
 // UpdateSource finds releases/updates on keybase.io
 type UpdateSource struct {
-	cfg      config
+	cfg      *config
 	log      Log
 	endpoint string
 }
 
 // NewUpdateSource contructs an update source for keybase.io
-func NewUpdateSource(cfg config, log Log) UpdateSource {
+func NewUpdateSource(cfg *config, log Log) UpdateSource {
 	return newUpdateSource(cfg, defaultEndpoints.update, log)
 }
 
-func newUpdateSource(cfg config, endpoint string, log Log) UpdateSource {
+func newUpdateSource(cfg *config, endpoint string, log Log) UpdateSource {
 	return UpdateSource{
 		cfg:      cfg,
 		endpoint: endpoint,
@@ -62,8 +62,6 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	urlValues.Add("run_mode", options.Env)
 	urlValues.Add("os_version", options.OSVersion)
 	urlValues.Add("upd_version", options.UpdaterVersion)
-	// Temporarily adding for testing
-	urlValues.Add("channel", "test")
 
 	force := util.EnvBool("KEYBASE_UPDATER_FORCE", false)
 	if force {

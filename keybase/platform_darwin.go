@@ -92,6 +92,15 @@ func (c config) promptProgram() (command.Program, error) {
 	}, nil
 }
 
+func (c config) notifyProgram() string {
+	// No notify program for Darwin
+	return ""
+}
+
+func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+	return nil
+}
+
 // UpdatePrompt is called when the user needs to accept an update
 func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (*updater.UpdatePromptResponse, error) {
 	promptProgram, err := c.config.promptProgram()
@@ -227,6 +236,13 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	spotlightResult, spotLightErr := command.Exec("/usr/bin/mdimport", []string{destinationPath}, 20*time.Second, c.log)
 	if spotLightErr != nil {
 		c.log.Warningf("Error trying to update spotlight: %s, (%s)", spotLightErr, spotlightResult.CombinedOutput())
+	}
+
+	// Remove quantantine (if any)
+	c.log.Debugf("Remove quarantine: %s", destinationPath)
+	quarantineResult, quarantineErr := command.Exec("/usr/bin/xattr", []string{"-d", "com.apple.quarantine", destinationPath}, 20*time.Second, c.log)
+	if quarantineErr != nil {
+		c.log.Warningf("Error trying to remove quarantine: %s, (%s)", quarantineErr, quarantineResult.CombinedOutput())
 	}
 
 	return nil

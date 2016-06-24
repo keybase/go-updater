@@ -6,6 +6,7 @@
 package keybase
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,10 +18,20 @@ import (
 )
 
 func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigPlatform{}, testLog)
-	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, resp)
+	outPath := util.TempPath("", "TestUpdatePrompt.")
+	defer util.RemoveFileAtPath(outPath)
+	promptOptions := updater.UpdatePromptOptions{OutPath: outPath}
+	out := `{"action":"apply","autoUpdate":true}` + "\n"
+
+	programPath := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+	args := []string{
+		fmt.Sprintf("-out=%s", out),
+		fmt.Sprintf("-outPath=%s", outPath),
+		"writeToFile"}
+	ctx := newContext(&testConfigPlatform{ProgramPath: programPath, Args: args}, testLog)
+	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, promptOptions)
+	require.NoError(t, err)
+	assert.Equal(t, &updater.UpdatePromptResponse{Action: updater.UpdateActionApply, AutoUpdate: true}, resp)
 }
 
 func TestApplyNoAsset(t *testing.T) {

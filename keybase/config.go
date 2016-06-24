@@ -22,6 +22,7 @@ type Config interface {
 	updater.Config
 	keybasePath() string
 	promptProgram() (command.Program, error)
+	notifyProgram() string
 	destinationPath() string
 	updaterOptions() updater.UpdateOptions
 }
@@ -50,10 +51,10 @@ type store struct {
 }
 
 // newConfig loads a config, which is valid even if it has an error
-func newConfig(appName string, pathToKeybase string, log Log) (config, error) {
+func newConfig(appName string, pathToKeybase string, log Log) (*config, error) {
 	cfg := newDefaultConfig(appName, pathToKeybase, log)
 	err := cfg.load()
-	return cfg, err
+	return &cfg, err
 }
 
 func newDefaultConfig(appName string, pathToKeybase string, log Log) config {
@@ -126,7 +127,7 @@ func (c config) saveToPath(path string) error {
 }
 
 // GetUpdateAuto is the whether to update automatically and whether the user has
-// set this value. Both shouble be true for an update to be automatically
+// set this value. Both should be true for an update to be automatically
 // applied.
 func (c config) GetUpdateAuto() (bool, bool) {
 	return c.store.Auto, c.store.AutoSet
@@ -157,7 +158,6 @@ func (c config) updaterOptions() updater.UpdateOptions {
 		Version:         version,
 		Platform:        runtime.GOOS,
 		Arch:            runtime.GOARCH,
-		Channel:         "test",
 		DestinationPath: c.destinationPath(),
 		Env:             "prod",
 		OSVersion:       osVersion,

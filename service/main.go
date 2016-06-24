@@ -6,7 +6,10 @@ package main
 import (
 	"flag"
 	"os"
+	"path/filepath"
+	"runtime"
 
+	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/keybase"
 	"github.com/keybase/go-updater/util"
@@ -21,19 +24,30 @@ type flags struct {
 }
 
 func main() {
-	f := flags{}
-	flag.BoolVar(&f.version, "version", false, "Show version")
-	flag.BoolVar(&f.logToFile, "log-to-file", false, "Log to file")
-	flag.StringVar(&f.pathToKeybase, "path-to-keybase", "", "Path to keybase executable")
-	flag.StringVar(&f.appName, "app-name", "Keybase", "App name")
-	flag.Parse()
-
-	args := flag.Args()
+	f, args := loadFlags()
 	if len(args) > 0 {
 		f.command = args[0]
 	}
 
 	run(f)
+}
+
+func loadFlags() (flags, []string) {
+	f := flags{}
+	flag.BoolVar(&f.version, "version", false, "Show version")
+	flag.BoolVar(&f.logToFile, "log-to-file", false, "Log to file")
+	flag.StringVar(&f.pathToKeybase, "path-to-keybase", "", "Path to keybase executable")
+	flag.StringVar(&f.appName, "app-name", defaultAppName(), "App name")
+	flag.Parse()
+	args := flag.Args()
+	return f, args
+}
+
+func defaultAppName() string {
+	if runtime.GOOS == "linux" {
+		return "keybase"
+	}
+	return "Keybase"
 }
 
 func run(f flags) {
@@ -52,6 +66,23 @@ func run(f flags) {
 		defer util.Close(logFile)
 	}
 
+	// Set default path to keybase if not set
+	if f.pathToKeybase == "" {
+		path, err := osext.Executable()
+		if err != nil {
+			ulog.Warning("Error determining our executable path: %s", err)
+		} else {
+			dir, _ := filepath.Split(path)
+			pathToKeybase := filepath.Join(dir, "keybase")
+			ulog.Debugf("Using default path to keybase: %s", pathToKeybase)
+			f.pathToKeybase = pathToKeybase
+		}
+	}
+
+	if f.pathToKeybase == "" {
+		ulog.Warning("Missing -path-to-keybase")
+	}
+
 	switch f.command {
 	case "check":
 		if err := updateCheckFromFlags(f, ulog); err != nil {
@@ -68,17 +99,12 @@ func run(f flags) {
 
 func serviceFromFlags(f flags, ulog logger) *service {
 	ulog.Infof("Updater %s", updater.Version)
-
-	if f.pathToKeybase == "" {
-		ulog.Warning("Missing -path-to-keybase")
-	}
-
-	ctx, upd := keybase.NewUpdaterContext(f.pathToKeybase, ulog)
+	ctx, upd := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog)
 	return newService(upd, ctx, ulog)
 }
 
 func updateCheckFromFlags(f flags, ulog logger) error {
-	ctx, updater := keybase.NewUpdaterContext(f.pathToKeybase, ulog)
+	ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog)
 	_, err := updater.Update(ctx)
 	return err
 }
