@@ -12,6 +12,9 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
   gometalinter --install --update
   echo "Running gometalinter"
   gometalinter --deadline=300s --vendor --cyclo-over=20 --dupl-threshold=100 ./...
+  if [ ! "$?" = "0" ]; then
+    exit 1
+  fi
 fi
 
 repo="github.com/keybase/go-updater"
@@ -21,11 +24,11 @@ godirs=`go list ./... | grep -v /vendor/`
 for i in $godirs; do
   if [ "$i" = "$repo" ]; then
     echo "$repo..."
-    #go test -timeout 5m -coverprofile="main.coverprofile"
+    go test -timeout 5m -coverprofile="main.coverprofile"
   else
     package=${i##*/}
     echo "$repo ($package)..."
-    #go test -timeout 5m -coverprofile="$package.coverprofile" ./"$package"
+    go test -timeout 5m -coverprofile="$package.coverprofile" ./"$package"
   fi
 done
 
