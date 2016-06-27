@@ -118,7 +118,48 @@ func startProcess(t *testing.T, path string, testCommand string) (string, int, *
 	return path, cmd.Process.Pid, cmd
 }
 
-func testTerminateAll(t *testing.T, path string, status string) {
+func TestTerminateAllPathEqual(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllPathEqual(")
+	defer util.RemoveFileAtPath(procPath)
+	matcher := NewMatcher(procPath, PathEqual, testLog)
+	testTerminateAll(t, procPath, matcher)
+}
+
+func TestTerminateAllExecutableEqual(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllExecutableEqual")
+	defer util.RemoveFileAtPath(procPath)
+	matcher := NewMatcher(filepath.Base(procPath), ExecutableEqual, testLog)
+	testTerminateAll(t, procPath, matcher)
+}
+
+func TestTerminateAllPathContains(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllPathContains")
+	defer util.RemoveFileAtPath(procPath)
+	procDir, procFile := filepath.Split(procPath)
+	match := procDir[1:] + procFile[:20]
+	t.Logf("Match: %q", match)
+	matcher := NewMatcher(match, PathContains, testLog)
+	testTerminateAll(t, procPath, matcher)
+}
+
+func TestTerminateAllPathPrefix(t *testing.T) {
+	procPath := procPath(t, "testTerminateAllPathPrefix")
+	defer util.RemoveFileAtPath(procPath)
+	procDir, procFile := filepath.Split(procPath)
+	match := procDir + procFile[:20]
+	t.Logf("Match: %q", match)
+	matcher := NewMatcher(match, PathPrefix, testLog)
+	testTerminateAll(t, procPath, matcher)
+}
+
+func testTerminateAll(t *testing.T, path string, matcher Matcher) {
+	var exitStatus string
+	if runtime.GOOS == "windows" {
+		exitStatus = "exit status 1"
+	} else {
+		exitStatus = "signal: terminated"
+	}
+
 	path, pid1, cmd1 := startProcess(t, path, "sleep")
 	defer cleanupProc(cmd1, "")
 	_, pid2, cmd2 := startProcess(t, path, "sleep")
@@ -126,17 +167,14 @@ func testTerminateAll(t *testing.T, path string, status string) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	terminatePids := TerminateAll(NewMatcher(path, PathEqual, testLog), time.Millisecond, testLog)
+	terminatePids := TerminateAll(matcher, 5*time.Second, testLog)
 	assert.Contains(t, terminatePids, pid1)
 	assert.Contains(t, terminatePids, pid2)
-	assertTerminated(t, pid1, status)
-	assertTerminated(t, pid2, status)
+	assertTerminated(t, pid1, exitStatus)
+	assertTerminated(t, pid2, exitStatus)
 }
 
 func TestFindProcessWait(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		t.Skip("Unsupported until we have process path on linux")
-	}
 	procPath := procPath(t, "testFindProcessWait")
 	cmd := exec.Command(procPath, "sleep")
 	defer cleanupProc(cmd, procPath)
