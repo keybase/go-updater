@@ -63,3 +63,20 @@ func TestApplyAsset(t *testing.T) {
 	err = ctx.Apply(update, updater.UpdateOptions{}, tmpDir)
 	require.NoError(t, err)
 }
+
+const legit64Code = "{65A3A964-3DC3-0100-0000-160621082245}"
+const legit86Code = "{65A3A986-3DC3-0100-0000-160621082245}"
+const mismatchedCode = "{65A3A986-3DC3-0100-0000-160621082244}"
+
+func testCheckCanBeSlient(t *testing.T, path string, code string) bool {
+	result, err := CheckCanBeSilent(path, testLog, func(s string, l Log) bool { return s == code })
+	require.NoError(t, err)
+	return result
+}
+
+func TestSearchInstallerLayout(t *testing.T) {
+	programPath := filepath.Join(os.Getenv("GOPATH"), "bin", "test.exe")
+	assert.Equal(t, testCheckCanBeSlient(t, programPath, legit64Code), true)
+	assert.Equal(t, testCheckCanBeSlient(t, programPath, legit86Code), true)
+	assert.Equal(t, testCheckCanBeSlient(t, programPath, mismatchedCode), false)
+}

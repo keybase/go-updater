@@ -4,10 +4,12 @@
 package keybase
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
+	"golang.org/x/sys/windows/registry"
 )
 
 func (c config) destinationPath() string {
@@ -60,6 +63,66 @@ func (c config) notifyProgram() string {
 
 func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
 	return nil
+}
+
+type regUninstallGetter func(string, Log) bool
+
+// CheckCanBeSilent - Interrogate the incoming installer for its driver's
+// uninstall codes. It turns out a Wix bundle .exe supports "/layout", which
+// among other things generates a log of what it would do. We can parse this
+// for Dokan product code variables, which will be in the registry if the same
+// version is already present.
+func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, error) {
+	tempName := util.TempPath("", "keybaseInstallLayout-")
+
+	_, err := command.Exec(path, []string{"/layout", "/quiet", "/log", tempName}, 2*time.Minute, log)
+	if err != nil {
+		log.Errorf("CheckCanBeSilent: Unable to execute %s", path)
+		return false, err
+	}
+	defer util.RemoveFileAtPath(tempName)
+
+	file, err := os.Open(tempName)
+	if err != nil {
+		log.Errorf("CheckCanBeSilent: Unable to open %s", tempName)
+		return false, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	codeFound := false
+	// Of the form: "Variable: DokanProduct64 = {65A3A964-3DC3-0100-0000-160621082245}"m
+	re := regexp.MustCompile(`Variable: DokanProduct(64|86) = (\{([[:xdigit:]]|-)+\})`)
+	for scanner.Scan() {
+		// Give ourselves a way to override silent install in the future
+		if strings.Contains(scanner.Text(), "Variable: KeybaseForceUI") {
+			log.Debug("CheckCanBeSilent: Found KeybaseForceUI env")
+			return false, nil
+		} else if !codeFound {
+			// Keep going even if codeFound is true, in case
+			// KeybaseForceUI comes later in the log, but just
+			// don't bother looking for uninstall codes still.
+			matches := re.FindStringSubmatch(scanner.Text())
+			if len(matches) > 2 {
+				codeFound = regFunc(matches[2], log)
+			}
+		}
+	}
+	log.Infof("CheckCanBeSilent: returning %v", codeFound)
+	return codeFound, err
+}
+
+// CheckRegistryUninstallCode is exported so a little standalone
+// test utility can use it
+func CheckRegistryUninstallCode(productID string, log Log) bool {
+	log.Infof("CheckCanBeSilent: Searching registry for %s", productID)
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\`+productID, registry.QUERY_VALUE|registry.WOW64_64KEY)
+	defer util.Close(k)
+	if err == nil {
+		log.Infof("CheckCanBeSilent: Found %s", productID)
+		return true
+	}
+	return false
 }
 
 func (c config) promptProgram() (command.Program, error) {
@@ -127,7 +190,13 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
-	_, err := command.Exec(update.Asset.LocalPath, nil, time.Hour, c.log)
+	var args []string
+	auto, _ := c.config.GetUpdateAuto()
+	canBeSilent, _ := CheckCanBeSilent(update.Asset.LocalPath, c.log, CheckRegistryUninstallCode)
+	if auto && canBeSilent {
+		args = append(args, "/quiet")
+	}
+	_, err := command.Exec(update.Asset.LocalPath, args, time.Hour, c.log)
 	return err
 }
 
