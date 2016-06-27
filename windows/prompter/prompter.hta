@@ -80,6 +80,11 @@ try{
     }
 }
 
+// Some old browsers don't support String.trim()
+function myTrim(x) {
+    return x.replace(/^\s+|\s+$/gm,'');
+}
+
 function parseParams () {
     var parts = app.commandLine;
 
@@ -88,7 +93,7 @@ function parseParams () {
     if (parts.charAt(0) == "\"") {
         firstArgLen += 2;
     }
-    var input = parts.slice(firstArgLen).trim();
+    var input = myTrim(parts.slice(firstArgLen));
 
     // Golang puts extra quotes and backslashes, irritatingly
     if (input.charAt(0) == "\"") {
