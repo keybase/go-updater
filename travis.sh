@@ -11,7 +11,8 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
   go get -u github.com/alecthomas/gometalinter
   gometalinter --install --update
   echo "Running gometalinter"
-  gometalinter -d --deadline=300s --vendor --cyclo-over=20 --dupl-threshold=100 ./... || echo "Linter Failed"
+  #gometalinter -d --deadline=300s --vendor --cyclo-over=20 --dupl-threshold=100 ./... || echo "Linter Failed"
+  gometalinter -d --disable-all --enable=golint ./...
   result="$?"
   echo "Result: $result"
 fi
