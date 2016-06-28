@@ -102,12 +102,12 @@ func TestTerminateAllFn(t *testing.T) {
 	fn := func() ([]ps.Process, error) {
 		return nil, fmt.Errorf("Testing error")
 	}
-	terminateAll(fn, matchAll, time.Millisecond, testLog)
+	TerminateAllWithProcessesFn(fn, matchAll, time.Millisecond, testLog)
 
 	fn = func() ([]ps.Process, error) {
 		return nil, nil
 	}
-	terminateAll(fn, matchAll, time.Millisecond, testLog)
+	TerminateAllWithProcessesFn(fn, matchAll, time.Millisecond, testLog)
 }
 
 func startProcess(t *testing.T, path string, testCommand string) (string, int, *exec.Cmd) {
