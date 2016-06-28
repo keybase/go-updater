@@ -55,3 +55,4 @@ gometalinter --install --update
 pre-commit install
 pre-commit run -a
 ```
+
