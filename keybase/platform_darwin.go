@@ -151,8 +151,11 @@ func (c context) restart(wait time.Duration, delay time.Duration) error {
 	kbfsProcPath := appBundleName + kbfsInBundlePath
 	appProcPath := appBundleName + "/Contents/MacOS/"
 
+	c.log.Infof("Terminating %s", appProcPath)
 	process.TerminateAll(process.NewMatcher(appProcPath, process.PathContains, c.log), time.Second, c.log)
+	c.log.Infof("Terminating %s", serviceProcPath)
 	process.TerminateAll(process.NewMatcher(serviceProcPath, process.PathContains, c.log), time.Second, c.log)
+	c.log.Infof("Terminating %s", kbfsProcPath)
 	process.TerminateAll(process.NewMatcher(kbfsProcPath, process.PathContains, c.log), time.Second, c.log)
 
 	if err := OpenAppDarwin(appPath, c.log); err != nil {

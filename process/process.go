@@ -119,7 +119,6 @@ func findPIDsWithFn(fn processesFn, matchFn MatchFn, log Log) ([]int, error) {
 // TerminateAll stops all processes with executable names that contains the matching string.
 // It returns the pids that were terminated.
 func TerminateAll(matcher Matcher, killDelay time.Duration, log Log) []int {
-	log.Debugf("Terminating %s", matcher.match)
 	return TerminateAllWithProcessesFn(ps.Processes, matcher.Fn(), killDelay, log)
 }
 
