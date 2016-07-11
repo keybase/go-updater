@@ -50,7 +50,7 @@
 
 // Adding this method and passing to super makes responsive scroll work correctly.
 // Without this method scrolling using trackpad is slow and chunky.
-// AppKit is checked for this method being overridden, which works around the issue somehow.
+// AppKit checks if this method is being overridden by a subclass, which works around the issue somehow.
 - (void)scrollWheel:(NSEvent *)event {
   [super scrollWheel:event];
 }
