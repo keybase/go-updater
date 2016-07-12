@@ -121,11 +121,20 @@ function reposition () {
     window.moveTo(screen.availWidth/2 - w/2, screen.availHeight/2 - h/2);
 }
 
+// Make sure the buttons aren't hidden after load on a high rez screen
+function repositionAfterLoad() {
+    var snoozeRect = document.getElementById("snoozeButton").getBoundingClientRect(); 
+    if (snoozeRect.bottom > (window.innerHeight + 8)){
+        window.resizeBy(0, (snoozeRect.bottom - window.innerHeight) + 8);
+    }
+}
+
 reposition();
 
 window.onload = function readInput() {
     var params = parseParams();
     loadElements(params);
+    repositionAfterLoad();
 };
       </script>
    </head>
@@ -140,8 +149,8 @@ window.onload = function readInput() {
                <textarea id="description" readonly></textarea>
                <label><input type="checkbox"  name="checkbox"  class ="checkbox" id="autoUpdate" >Update automatically</label>
                <div class="actions">
-                   <button onclick="applyUpdate();">Apply</button>
-                   <button onclick="snoozeUpdate();">Snooze</button>
+                   <button id="applyButton" onclick="applyUpdate();">Apply</button>
+                   <button id="snoozeButton" onclick="snoozeUpdate();">Snooze</button>
                </div>
            </div>
        </div>

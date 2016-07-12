@@ -35,7 +35,7 @@ func main() {
 	promptJSONInput, err := json.Marshal(updaterPromptInput{
 		Title:       "Keybase Update: Version Foobar",
 		Message:     "The version you are currently running (0.0) is outdated.",
-		Description: "Lots of cool stuff in here you need",
+		Description: "Recent changes:\n\n---------------\n\n- Introducing the main GUI screen - this is where you'll look people up, manage your folders, and perform other actions. A lot of the features are stubbed out, but you can start playing with it.\n\n- Sharing before signup - go ahead and put data in /keybase/private/you,friend@twitter/ . If you have any invite codes, this will pop up a window with a link to DM them. It also works for end-to-end encryption with Reddit, Coinbase, Github, and Hacker News users.\n\nWhat we are currently working on:\n\n---------------------------------\n\n- KBFS performance, including delayed writes\n\n",
 		AutoUpdate:  true,
 		OutPath:     outPathName,
 	})
