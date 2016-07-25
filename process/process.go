@@ -169,7 +169,9 @@ func TerminatePID(pid int, killDelay time.Duration, log Log) error {
 	if err != nil {
 		log.Warningf("Error sending terminate: %s", err)
 	}
+	log.Debugf("Waiting %s", killDelay)
 	time.Sleep(killDelay)
+	log.Debugf("Done waiting")
 	// Ignore SIGKILL error since it will be that the process wasn't running if
 	// the terminate above succeeded. If terminate didn't succeed above, then
 	// this SIGKILL is a measure of last resort, and an error would signify that
