@@ -179,3 +179,34 @@ func TerminatePID(pid int, killDelay time.Duration, log Log) error {
 	_ = process.Kill()
 	return err
 }
+
+// KillAll kills all processes that match
+func KillAll(matcher Matcher, log Log) (pids []int) {
+	pids, err := findPIDsWithFn(ps.Processes, matcher.Fn(), log)
+	if err != nil {
+		log.Errorf("Error finding process: %s", err)
+		return
+	}
+	if len(pids) == 0 {
+		return
+	}
+	for _, pid := range pids {
+		if err := KillPID(pid, log); err != nil {
+			log.Errorf("Error killing %d: %s", pid, err)
+		}
+	}
+	return
+}
+
+// KillPID kills process at pid (sends a SIGKILL on unix)
+func KillPID(pid int, log Log) error {
+	log.Debugf("Searching OS for %d", pid)
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("Error finding OS process: %s", err)
+	}
+	if process == nil {
+		return fmt.Errorf("No process found with pid %d", pid)
+	}
+	return process.Kill()
+}

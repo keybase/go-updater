@@ -17,7 +17,7 @@ import (
 	"github.com/keybase/go-updater/util"
 )
 
-// destinationPath returns the app bundle path where this executable is located
+// execPath returns the app bundle path where this executable is located
 func (c config) execPath() string {
 	path, err := osext.Executable()
 	if err != nil {
@@ -151,8 +151,12 @@ func (c context) restart(wait time.Duration, delay time.Duration) error {
 	kbfsProcPath := appBundleName + kbfsInBundlePath
 	appProcPath := appBundleName + "/Contents/MacOS/"
 
-	c.log.Infof("Terminating %s", appProcPath)
-	process.TerminateAll(process.NewMatcher(appProcPath, process.PathContains, c.log), time.Second, c.log)
+	// Request the app to exit (instead of sending a SIGTERM)
+	command.Exec(serviceProcPath, []string{"ctl", "app-exit"}, 5*time.Second, c.log)
+	// SIGKILL the app if it failed to exit
+	c.log.Infof("Killing %s", appProcPath)
+	process.KillAll(process.NewMatcher(appProcPath, process.PathContains, c.log), c.log)
+
 	c.log.Infof("Terminating %s", serviceProcPath)
 	process.TerminateAll(process.NewMatcher(serviceProcPath, process.PathContains, c.log), time.Second, c.log)
 	c.log.Infof("Terminating %s", kbfsProcPath)
