@@ -72,9 +72,13 @@ func NewUpdaterContext(appName string, pathToKeybase string, log Log) (updater.C
 	}
 
 	src := NewUpdateSource(cfg, log)
-	// For testing
+
+	// For testing, use a local updater source
 	// (cd /Applications; ditto -c -k --sequesterRsrc --keepParent Keybase.app /tmp/Keybase.zip)
-	//src := updater.NewLocalUpdateSource("/tmp/Keybase.zip", log)
+	// keybase sign -d -i "/tmp/Keybase.zip" -o "/tmp/update.sig"
+	// release update-json --version=`keybase version -S` --src=/tmp/Keybase.zip --uri=/tmp --signature=/tmp/update.sig > /tmp/update.json
+	// src := sources.NewLocalUpdateSource("/tmp/Keybase.zip", "/tmp/update.json", log)
+
 	upd := updater.NewUpdater(src, cfg, log)
 	return newContext(cfg, log), upd
 }
