@@ -152,9 +152,13 @@ func (c context) restart(wait time.Duration, delay time.Duration) error {
 	appProcPath := appBundleName + "/Contents/MacOS/"
 
 	// Request the app to exit (instead of sending a SIGTERM)
-	command.Exec(serviceProcPath, []string{"ctl", "app-exit"}, 5*time.Second, c.log)
+	if appExitResult, err := command.Exec(c.config.keybasePath(), []string{"ctl", "app-exit"}, 5*time.Second, c.log); err != nil {
+		c.log.Warningf("Error requesting app exit: %s (%s)", err, appExitResult.CombinedOutput())
+	}
+	// Give the app time to exit
+	time.Sleep(time.Second)
 	// SIGKILL the app if it failed to exit
-	c.log.Infof("Killing %s", appProcPath)
+	c.log.Infof("Killing (if failed to exit) %s", appProcPath)
 	process.KillAll(process.NewMatcher(appProcPath, process.PathContains, c.log), c.log)
 
 	c.log.Infof("Terminating %s", serviceProcPath)
