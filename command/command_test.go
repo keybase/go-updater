@@ -48,7 +48,7 @@ func TestExecNil(t *testing.T) {
 	execCmd := func(name string, arg ...string) *exec.Cmd {
 		return nil
 	}
-	_, err := execWithFunc("echo", []string{"arg1", "arg2"}, execCmd, time.Second, testLog)
+	_, err := execWithFunc("echo", []string{"arg1", "arg2"}, nil, execCmd, time.Second, testLog)
 	require.Error(t, err)
 }
 
@@ -148,7 +148,7 @@ func TestExecForJSONTimeout(t *testing.T) {
 
 // TestExecTimeoutProcessKilled checks to make sure process is killed after timeout
 func TestExecTimeoutProcessKilled(t *testing.T) {
-	result, err := execWithFunc("sleep", []string{"10"}, exec.Command, 10*time.Millisecond, testLog)
+	result, err := execWithFunc("sleep", []string{"10"}, nil, exec.Command, 10*time.Millisecond, testLog)
 	assert.Equal(t, result.Stdout.String(), "")
 	assert.Equal(t, result.Stderr.String(), "")
 	assert.Error(t, err)
@@ -169,7 +169,7 @@ func TestExecNoExit(t *testing.T) {
 
 func TestExecOutput(t *testing.T) {
 	path := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
-	result, err := execWithFunc(path, []string{"output"}, exec.Command, time.Second, testLog)
+	result, err := execWithFunc(path, []string{"output"}, nil, exec.Command, time.Second, testLog)
 	assert.NoError(t, err)
 	assert.Equal(t, "stdout output\n", result.Stdout.String())
 	assert.Equal(t, "stderr output\n", result.Stderr.String())

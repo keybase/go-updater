@@ -5,6 +5,7 @@ package keybase
 
 import (
 	"fmt"
+	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -197,7 +198,8 @@ func OpenAppDarwin(appPath string, log process.Log) error {
 
 func openAppDarwin(bin string, appPath string, retryDelay time.Duration, log process.Log) error {
 	tryOpen := func() error {
-		result, err := command.Exec(bin, []string{appPath}, time.Minute, log)
+		env := append(os.Environ(), "KEYBASE_RESTORE_UI=true")
+		result, err := command.ExecWithEnv(bin, []string{appPath}, env, time.Minute, log)
 		if err != nil {
 			return fmt.Errorf("Open error: %s; %s", err, result.CombinedOutput())
 		}
