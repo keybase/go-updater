@@ -100,16 +100,15 @@ function parseParams () {
         input = input.slice(1, input.length - 1);
     }
     var nobackquote = input.replace(/\\\"/g, "\"");
-    var jsontext = nobackquote.replace(/\\n/g, "<br/>");
 
-    return JSON.parse(jsontext);
+    return JSON.parse(nobackquote);
 }
 
 function loadElements (params) {
     document.getElementById('title').innerHTML = params.title;
     document.title = "Keybase Update";
     document.getElementById('message').innerHTML = params.message;
-    document.getElementById('description').innerHTML =  params.description;
+    document.getElementById('description').value =  params.description;
     document.getElementById('autoUpdate').checked = !!params.autoUpdate;
     outPath = params.outPath;
 }
