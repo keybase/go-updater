@@ -54,13 +54,18 @@ type execCmd func(name string, arg ...string) *exec.Cmd
 
 // Exec runs a command and returns the stdout/err output and error if any
 func Exec(name string, args []string, timeout time.Duration, log Log) (Result, error) {
-	return execWithFunc(name, args, exec.Command, timeout, log)
+	return execWithFunc(name, args, nil, exec.Command, timeout, log)
+}
+
+// ExecWithEnv runs a command with an environment and returns the stdout/err output and error if any
+func ExecWithEnv(name string, args []string, env []string, timeout time.Duration, log Log) (Result, error) {
+	return execWithFunc(name, args, env, exec.Command, timeout, log)
 }
 
 // exec runs a command and returns a Result and error if any.
 // We will send TERM signal and wait 1 second or timeout, whichever is less,
 // before calling KILL.
-func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Duration, log Log) (Result, error) {
+func execWithFunc(name string, args []string, env []string, execCmd execCmd, timeout time.Duration, log Log) (Result, error) {
 	var result Result
 	log.Debugf("Execute: %s %s", name, args)
 	if name == "" {
@@ -75,6 +80,9 @@ func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Dura
 	}
 	cmd.Stdout = &result.Stdout
 	cmd.Stderr = &result.Stderr
+	if env != nil {
+		cmd.Env = env
+	}
 	err := cmd.Start()
 	if err != nil {
 		return result, err
@@ -125,7 +133,7 @@ func execWithFunc(name string, args []string, execCmd execCmd, timeout time.Dura
 
 // ExecForJSON runs a command (with timeout) expecting JSON output with obj interface
 func ExecForJSON(command string, args []string, obj interface{}, timeout time.Duration, log Log) error {
-	result, err := execWithFunc(command, args, exec.Command, timeout, log)
+	result, err := execWithFunc(command, args, nil, exec.Command, timeout, log)
 	if err != nil {
 		return err
 	}
