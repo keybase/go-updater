@@ -80,7 +80,6 @@ type regUninstallGetter func(string, Log) bool
 // among other things generates a log of what it would do. We can parse this
 // for Dokan product code variables, which will be in the registry if the same
 // version is already present.
-//
 func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, error) {
 	tempName := util.TempPath("", "keybaseInstallLayout-")
 
@@ -96,7 +95,7 @@ func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, e
 
 	_, err := command.Exec(path, []string{"/layout", "/quiet", "/log", tempName}, 2*time.Minute, log)
 	if err != nil {
-		log.Errorf("CheckCanBeSilent: Unable to execute %s", path)
+		log.Errorf("CheckCanBeSilent: Unable to execute %s: %s", path, err)
 		return false, err
 	}
 	defer util.RemoveFileAtPath(tempName)
@@ -153,7 +152,7 @@ func checkRebootPending(wow64 bool, log Log) (bool, error) {
 
 	k, err := registry.OpenKey(registry.CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce", access)
 	if err != nil {
-		log.Errorf("Error %s opening RunOnce subkeys", err.Error())
+		log.Errorf("Error opening RunOnce subkeys: %s", err)
 		return false, err
 	}
 	defer util.Close(k)

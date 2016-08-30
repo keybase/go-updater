@@ -36,8 +36,8 @@ type config struct {
 	log Log
 	// store is the config values
 	store store
-	// AutoOverride is whether the current auto setting should be temporarily overridden
-	AutoOverride bool
+	// autoOverride is whether the current auto setting should be temporarily overridden
+	autoOverride bool
 }
 
 // store is the config values
@@ -143,11 +143,11 @@ func (c *config) SetUpdateAuto(auto bool) error {
 
 // For overriding the current Auto setting
 func (c config) GetUpdateAutoOverride() bool {
-	return c.AutoOverride
+	return c.autoOverride
 }
 
 func (c *config) SetUpdateAutoOverride(auto bool) error {
-	c.AutoOverride = auto
+	c.autoOverride = auto
 	return nil
 }
 
