@@ -156,10 +156,11 @@ func (u testUpdateSource) FindUpdate(options UpdateOptions) (*Update, error) {
 }
 
 type testConfig struct {
-	auto      bool
-	autoSet   bool
-	installID string
-	err       error
+	auto         bool
+	autoSet      bool
+	autoOverride bool
+	installID    string
+	err          error
 }
 
 func (c testConfig) GetUpdateAuto() (bool, bool) {
@@ -170,6 +171,16 @@ func (c *testConfig) SetUpdateAuto(b bool) error {
 	c.auto = b
 	c.autoSet = true
 	return c.err
+}
+
+// For overriding the current Auto setting
+func (c testConfig) GetUpdateAutoOverride() bool {
+	return c.autoOverride
+}
+
+func (c *testConfig) SetUpdateAutoOverride(auto bool) error {
+	c.autoOverride = auto
+	return nil
 }
 
 func (c testConfig) GetInstallID() string {

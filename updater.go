@@ -51,6 +51,8 @@ type Context interface {
 type Config interface {
 	GetUpdateAuto() (bool, bool)
 	SetUpdateAuto(b bool) error
+	GetUpdateAutoOverride() bool
+	SetUpdateAutoOverride(bool) error
 	GetInstallID() string
 	SetInstallID(installID string) error
 }
