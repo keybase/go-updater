@@ -36,6 +36,8 @@ type config struct {
 	log Log
 	// store is the config values
 	store store
+	// autoOverride is whether the current auto setting should be temporarily overridden
+	autoOverride bool
 }
 
 // store is the config values
@@ -137,6 +139,16 @@ func (c *config) SetUpdateAuto(auto bool) error {
 	c.store.Auto = auto
 	c.store.AutoSet = true
 	return c.save()
+}
+
+// For overriding the current Auto setting
+func (c config) GetUpdateAutoOverride() bool {
+	return c.autoOverride
+}
+
+func (c *config) SetUpdateAutoOverride(auto bool) error {
+	c.autoOverride = auto
+	return nil
 }
 
 // GetInstallID is an identifier returned by the API on first update that is a

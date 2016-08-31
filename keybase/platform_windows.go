@@ -61,7 +61,15 @@ func (c config) notifyProgram() string {
 	return ""
 }
 
-func (c context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+func (c *context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
+	// This is the check whether to override an auto update. Unnecessary if
+	// auto update is not on in the first place.
+	_, auto := c.config.GetUpdateAuto()
+	if auto && !c.config.GetUpdateAutoOverride() {
+		if canBeSilent, _ := CheckCanBeSilent(update.Asset.LocalPath, c.log, CheckRegistryUninstallCode); !canBeSilent {
+			c.config.SetUpdateAutoOverride(true)
+		}
+	}
 	return nil
 }
 
@@ -75,9 +83,19 @@ type regUninstallGetter func(string, Log) bool
 func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, error) {
 	tempName := util.TempPath("", "keybaseInstallLayout-")
 
+	// Also look in the registry whether a reboot is pending from a previous installer.
+	// Not finding the key is not an error.
+	if rebootPending, err := checkRebootPending(false, log); rebootPending && err == nil {
+		return false, nil
+	}
+
+	if rebootPending, err := checkRebootPending(true, log); rebootPending && err == nil {
+		return false, nil
+	}
+
 	_, err := command.Exec(path, []string{"/layout", "/quiet", "/log", tempName}, 2*time.Minute, log)
 	if err != nil {
-		log.Errorf("CheckCanBeSilent: Unable to execute %s", path)
+		log.Errorf("CheckCanBeSilent: Unable to execute %s: %s", path, err)
 		return false, err
 	}
 	defer util.RemoveFileAtPath(tempName)
@@ -123,6 +141,41 @@ func CheckRegistryUninstallCode(productID string, log Log) bool {
 		return true
 	}
 	return false
+}
+
+// Read all the runonce subkeys and find the one with "Keybase" in the name.
+func checkRebootPending(wow64 bool, log Log) (bool, error) {
+	var access uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
+	if wow64 {
+		access = access | registry.WOW64_32KEY
+	}
+
+	k, err := registry.OpenKey(registry.CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce", access)
+	if err != nil {
+		log.Errorf("Error opening RunOnce subkeys: %s", err)
+		return false, err
+	}
+	defer util.Close(k)
+
+	params, err := k.ReadValueNames(0)
+	if err != nil {
+		log.Errorf("Can't ReadSubKeyNames %#v", err)
+		return false, err
+	}
+
+	for _, param := range params {
+		val, _, err := k.GetStringValue(param)
+
+		if err != nil {
+			log.Warningf("Error getting string value for %s: %s", param, err)
+			continue
+		}
+		if strings.Contains(val, "Keybase") {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (c config) promptProgram() (command.Program, error) {
@@ -192,8 +245,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	}
 	var args []string
 	auto, _ := c.config.GetUpdateAuto()
-	canBeSilent, _ := CheckCanBeSilent(update.Asset.LocalPath, c.log, CheckRegistryUninstallCode)
-	if auto && canBeSilent {
+	if auto && !c.config.GetUpdateAutoOverride() {
 		args = append(args, "/quiet")
 	}
 	_, err := command.Exec(update.Asset.LocalPath, args, time.Hour, c.log)

@@ -51,6 +51,13 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, cfg.GetInstallID(), "deadbeef")
 
 	err = cfg.save()
+
+	override := cfg.GetUpdateAutoOverride()
+	assert.False(t, override, "AutoOverride should be false")
+	cfg.SetUpdateAutoOverride(true)
+	override = cfg.GetUpdateAutoOverride()
+	assert.True(t, override, "AutoOverride should be set")
+
 	assert.NoError(t, err)
 
 	options := cfg.updaterOptions()
