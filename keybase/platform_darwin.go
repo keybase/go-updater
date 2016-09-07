@@ -198,7 +198,7 @@ func OpenAppDarwin(appPath string, log process.Log) error {
 
 func openAppDarwin(bin string, appPath string, retryDelay time.Duration, log process.Log) error {
 	tryOpen := func() error {
-		env := append(os.Environ(), "KEYBASE_RESTORE_UI=true")
+		env := append(os.Environ(), "KEYBASE_RESTORE_UI=true", "KEYBASE_START_UI=hideWindow")
 		result, err := command.ExecWithEnv(bin, []string{appPath}, env, time.Minute, log)
 		if err != nil {
 			return fmt.Errorf("Open error: %s; %s", err, result.CombinedOutput())
