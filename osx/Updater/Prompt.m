@@ -78,7 +78,7 @@
   textView.view.textContainerInset = CGSizeMake(5, 5);
 
   NSFont *font = [NSFont fontWithName:@"Monaco" size:10];
-  [textView setText:description font:font color:[NSColor blackColor] alignment:NSLeftTextAlignment lineBreakMode:NSLineBreakByCharWrapping];
+  [textView setText:description font:font color:[NSColor blackColor] alignment:NSLeftTextAlignment lineBreakMode:NSLineBreakByWordWrapping];
   textView.borderType = NSBezelBorder;
   textView.frame = CGRectMake(0, 0, 500, 160);
   [accessoryView addSubview:textView];
