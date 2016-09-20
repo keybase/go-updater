@@ -51,7 +51,7 @@ func unzipOver(sourcePath string, destinationPath string, log Log) error {
 		log.Infof("Removing existing unzip destination path: %s", destinationPath)
 		err := os.RemoveAll(destinationPath)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 
