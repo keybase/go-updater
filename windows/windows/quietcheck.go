@@ -6,6 +6,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/keybase/go-logging"
@@ -15,11 +16,12 @@ import (
 // Given the name of an installer, this can be run on a
 // target system to see if it is going to upgrade Dokan.
 func main() {
+	dokanCode := flag.String("dokan", "", "DokanProductCode")
 	var testLog = &logging.Logger{Module: "test"}
 
 	exePath := os.Args[1]
 
-	isSilent, _ := keybase.CheckCanBeSilent(exePath, testLog, keybase.CheckRegistryUninstallCode)
+	isSilent, _ := keybase.CheckCanBeSilent(dokanCode, dokanCode, testLog, keybase.CheckRegistryUninstallCode)
 
 	testLog.Debugf("Result: %v", isSilent)
 }

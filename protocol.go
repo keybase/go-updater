@@ -25,6 +25,12 @@ const (
 	UpdateTypeCritical UpdateType = 2
 )
 
+// Property is a generic key value pair for custom properties
+type Property struct {
+	Name  string `codec:"name" json:"name"`
+	Value string `codec:"value" json:"value"`
+}
+
 // Update defines an update to apply
 type Update struct {
 	Version     string     `json:"version"`
@@ -34,6 +40,7 @@ type Update struct {
 	RequestID   string     `json:"requestId"`
 	Type        UpdateType `json:"type"`
 	PublishedAt int64      `json:"publishedAt"`
+	Props       []Property `codec:"props" json:"props,omitempty"`
 	Asset       *Asset     `json:"asset,omitempty"`
 	NeedUpdate  bool       `json:"needUpdate"`
 }
