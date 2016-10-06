@@ -64,16 +64,17 @@ func (c *context) BeforeUpdatePrompt(update updater.Update, options updater.Upda
 	// auto update is not on in the first place.
 	_, auto := c.config.GetUpdateAuto()
 	if auto && !c.config.GetUpdateAutoOverride() {
-		Dokan86 := ""
-		Dokan64 := ""
+		dokan86 := ""
+		dokan64 := ""
 		for _, prop := range update.Props {
-			if prop.Name == "DokanProductCodeX64" {
-				Dokan64 = prop.Value
-			} else if prop.Name == "DokanProductCodeX86" {
-				Dokan86 = prop.Value
+			switch prop.Name {
+			case "DokanProductCodeX64":
+				dokan64 = prop.Value
+			case "DokanProductCodeX86":
+				dokan86 = prop.Value
 			}
 		}
-		if canBeSilent, _ := CheckCanBeSilent(Dokan64, Dokan86, c.log, CheckRegistryUninstallCode); !canBeSilent {
+		if canBeSilent, _ := CheckCanBeSilent(dokan64, dokan86, c.log, CheckRegistryUninstallCode); !canBeSilent {
 			c.config.SetUpdateAutoOverride(true)
 		}
 	}
