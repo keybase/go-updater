@@ -17,7 +17,7 @@
   // Check if test environment
   if ([self isRunningTests]) return;
 
-  // Run app as accessory (no dock or menu).
+  // Run as accessory (no dock or menu).
   // The update prompt window will still be modal but won't take focus away from
   // other apps when it pops up.
   [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
