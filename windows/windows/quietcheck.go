@@ -7,7 +7,6 @@ package main
 
 import (
 	"flag"
-	"os"
 
 	"github.com/keybase/go-logging"
 	"github.com/keybase/go-updater/keybase"
@@ -19,9 +18,7 @@ func main() {
 	dokanCode := flag.String("dokan", "", "DokanProductCode")
 	var testLog = &logging.Logger{Module: "test"}
 
-	exePath := os.Args[1]
-
-	isSilent, _ := keybase.CheckCanBeSilent(dokanCode, dokanCode, testLog, keybase.CheckRegistryUninstallCode)
+	isSilent, _ := keybase.CheckCanBeSilent(*dokanCode, *dokanCode, testLog, keybase.CheckRegistryUninstallCode)
 
 	testLog.Debugf("Result: %v", isSilent)
 }
