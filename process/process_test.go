@@ -119,7 +119,7 @@ func startProcess(t *testing.T, path string, testCommand string) (string, int, *
 }
 
 func TestTerminateAllPathEqual(t *testing.T) {
-	procPath := procPath(t, "testTerminateAllPathEqual(")
+	procPath := procPath(t, "testTerminateAllPathEqual")
 	defer util.RemoveFileAtPath(procPath)
 	matcher := NewMatcher(procPath, PathEqual, testLog)
 	testTerminateAll(t, procPath, matcher)
