@@ -42,7 +42,7 @@ func main() {
 	case "err":
 		log.Fatal("Error")
 	case "sleep":
-		time.Sleep(30 * time.Second)
+		time.Sleep(10 * time.Second)
 	case "/layout":
 		if flag.NArg() < 4 {
 			log.Fatal("Error in /layout command: requires \"/layout /quiet /log filename\"")

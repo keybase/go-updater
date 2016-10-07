@@ -122,14 +122,14 @@ func TestTerminateAllPathEqual(t *testing.T) {
 	procPath := procPath(t, "testTerminateAllPathEqual")
 	defer util.RemoveFileAtPath(procPath)
 	matcher := NewMatcher(procPath, PathEqual, testLog)
-	testTerminateAll(t, procPath, matcher)
+	testTerminateAll(t, procPath, matcher, 2)
 }
 
 func TestTerminateAllExecutableEqual(t *testing.T) {
 	procPath := procPath(t, "testTerminateAllExecutableEqual")
 	defer util.RemoveFileAtPath(procPath)
 	matcher := NewMatcher(filepath.Base(procPath), ExecutableEqual, testLog)
-	testTerminateAll(t, procPath, matcher)
+	testTerminateAll(t, procPath, matcher, 2)
 }
 
 func TestTerminateAllPathContains(t *testing.T) {
@@ -139,7 +139,7 @@ func TestTerminateAllPathContains(t *testing.T) {
 	match := procDir[1:] + procFile[:20]
 	t.Logf("Match: %q", match)
 	matcher := NewMatcher(match, PathContains, testLog)
-	testTerminateAll(t, procPath, matcher)
+	testTerminateAll(t, procPath, matcher, 2)
 }
 
 func TestTerminateAllPathPrefix(t *testing.T) {
@@ -149,10 +149,10 @@ func TestTerminateAllPathPrefix(t *testing.T) {
 	match := procDir + procFile[:20]
 	t.Logf("Match: %q", match)
 	matcher := NewMatcher(match, PathPrefix, testLog)
-	testTerminateAll(t, procPath, matcher)
+	testTerminateAll(t, procPath, matcher, 2)
 }
 
-func testTerminateAll(t *testing.T, path string, matcher Matcher) {
+func testTerminateAll(t *testing.T, path string, matcher Matcher, numProcs int) {
 	var exitStatus string
 	if runtime.GOOS == "windows" {
 		exitStatus = "exit status 1"
@@ -160,18 +160,21 @@ func testTerminateAll(t *testing.T, path string, matcher Matcher) {
 		exitStatus = "signal: terminated"
 	}
 
-	path, pid1, cmd1 := startProcess(t, path, "sleep")
-	defer cleanupProc(cmd1, "")
-	_, pid2, cmd2 := startProcess(t, path, "sleep")
-	defer cleanupProc(cmd2, "")
+	pids := []int{}
+	for i := 0; i < numProcs; i++ {
+		procPath, pid, cmd := startProcess(t, path, "sleep")
+		t.Logf("Started process %q (%i)", procPath, pid)
+		pids = append(pids, pid)
+		defer cleanupProc(cmd, "")
+	}
 
 	time.Sleep(10 * time.Millisecond)
 
 	terminatePids := TerminateAll(matcher, 5*time.Second, testLog)
-	assert.Contains(t, terminatePids, pid1)
-	assert.Contains(t, terminatePids, pid2)
-	assertTerminated(t, pid1, exitStatus)
-	assertTerminated(t, pid2, exitStatus)
+	for _, p := range pids {
+		assert.Contains(t, terminatePids, p)
+		assertTerminated(t, p, exitStatus)
+	}
 }
 
 func TestFindProcessWait(t *testing.T) {
