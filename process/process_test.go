@@ -163,12 +163,12 @@ func testTerminateAll(t *testing.T, path string, matcher Matcher, numProcs int) 
 	pids := []int{}
 	for i := 0; i < numProcs; i++ {
 		procPath, pid, cmd := startProcess(t, path, "sleep")
-		t.Logf("Started process %q (%i)", procPath, pid)
+		t.Logf("Started process %q (%d)", procPath, pid)
 		pids = append(pids, pid)
 		defer cleanupProc(cmd, "")
 	}
 
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	terminatePids := TerminateAll(matcher, 5*time.Second, testLog)
 	for _, p := range pids {
