@@ -4,12 +4,10 @@
 package keybase
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -66,7 +64,17 @@ func (c *context) BeforeUpdatePrompt(update updater.Update, options updater.Upda
 	// auto update is not on in the first place.
 	_, auto := c.config.GetUpdateAuto()
 	if auto && !c.config.GetUpdateAutoOverride() {
-		if canBeSilent, _ := CheckCanBeSilent(update.Asset.LocalPath, c.log, CheckRegistryUninstallCode); !canBeSilent {
+		dokan86 := ""
+		dokan64 := ""
+		for _, prop := range update.Props {
+			switch prop.Name {
+			case "DokanProductCodeX64":
+				dokan64 = prop.Value
+			case "DokanProductCodeX86":
+				dokan86 = prop.Value
+			}
+		}
+		if canBeSilent, _ := CheckCanBeSilent(dokan64, dokan86, c.log, CheckRegistryUninstallCode); !canBeSilent {
 			c.config.SetUpdateAutoOverride(true)
 		}
 	}
@@ -80,8 +88,9 @@ type regUninstallGetter func(string, Log) bool
 // among other things generates a log of what it would do. We can parse this
 // for Dokan product code variables, which will be in the registry if the same
 // version is already present.
-func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, error) {
-	tempName := util.TempPath("", "keybaseInstallLayout-")
+func CheckCanBeSilent(dokanCodeX86 string, dokanCodeX64 string, log Log, regFunc regUninstallGetter) (bool, error) {
+	codeFound := false
+	var err error
 
 	// Also look in the registry whether a reboot is pending from a previous installer.
 	// Not finding the key is not an error.
@@ -93,39 +102,10 @@ func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, e
 		return false, nil
 	}
 
-	_, err := command.Exec(path, []string{"/layout", "/quiet", "/log", tempName}, 2*time.Minute, log)
-	if err != nil {
-		log.Errorf("CheckCanBeSilent: Unable to execute %s: %s", path, err)
-		return false, err
+	if regFunc(dokanCodeX86, log) || regFunc(dokanCodeX64, log) {
+		codeFound = true
 	}
-	defer util.RemoveFileAtPath(tempName)
 
-	file, err := os.Open(tempName)
-	if err != nil {
-		log.Errorf("CheckCanBeSilent: Unable to open %s", tempName)
-		return false, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	codeFound := false
-	// Of the form: "Variable: DokanProduct64 = {65A3A964-3DC3-0100-0000-160621082245}"m
-	re := regexp.MustCompile(`Variable: DokanProduct(64|86) = (\{([[:xdigit:]]|-)+\})`)
-	for scanner.Scan() {
-		// Give ourselves a way to override silent install in the future
-		if strings.Contains(scanner.Text(), "Variable: KeybaseForceUI") {
-			log.Debug("CheckCanBeSilent: Found KeybaseForceUI env")
-			return false, nil
-		} else if !codeFound {
-			// Keep going even if codeFound is true, in case
-			// KeybaseForceUI comes later in the log, but just
-			// don't bother looking for uninstall codes still.
-			matches := re.FindStringSubmatch(scanner.Text())
-			if len(matches) > 2 {
-				codeFound = regFunc(matches[2], log)
-			}
-		}
-	}
 	log.Infof("CheckCanBeSilent: returning %v", codeFound)
 	return codeFound, err
 }
@@ -134,6 +114,10 @@ func CheckCanBeSilent(path string, log Log, regFunc regUninstallGetter) (bool, e
 // test utility can use it
 func CheckRegistryUninstallCode(productID string, log Log) bool {
 	log.Infof("CheckCanBeSilent: Searching registry for %s", productID)
+	if productID == "" {
+		log.Info("CheckCanBeSilent: Empty product ID, returning false")
+		return false
+	}
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\`+productID, registry.QUERY_VALUE|registry.WOW64_64KEY)
 	defer util.Close(k)
 	if err == nil {
@@ -172,6 +156,26 @@ func checkRebootPending(wow64 bool, log Log) (bool, error) {
 		}
 		if strings.Contains(val, "Keybase") {
 			return true, nil
+		}
+	}
+
+	// Check for a Dokan reboot pending
+	k2, err := registry.OpenKey(registry.LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Control\\Session Manager", access)
+	if err != nil {
+		log.Errorf("Error opening Session Manager key: %s", err)
+		return false, err
+	}
+	defer util.Close(k2)
+	vals, _, err := k2.GetStringsValue("PendingFileRenameOperations")
+	if err != nil {
+		// This is normal if no reboot is pending
+		log.Errorf("Error getting PendingFileRenameOperations: %s", err)
+	} else {
+		for _, val := range vals {
+			if strings.Contains(strings.ToLower(val), "dokan") {
+				log.Info("Found Dokan reboot pending")
+				return true, nil
+			}
 		}
 	}
 
