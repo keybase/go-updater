@@ -229,8 +229,9 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	u.log.Debug("Prompt for update")
 
 	auto, autoSet := u.config.GetUpdateAuto()
-	u.log.Debugf("Auto update: %s (set=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet))
-	if auto {
+	autoOverride := u.config.GetUpdateAutoOverride()
+	u.log.Debugf("Auto update: %s (set=%s autoOverride=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet), strconv.FormatBool(autoOverride))
+	if auto && !autoOverride {
 		return UpdateActionAuto, nil
 	}
 
