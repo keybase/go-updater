@@ -41,10 +41,7 @@ func (p *ProgramNormal) GetExitOn() ExitOn {
 }
 
 func (p *ProgramNormal) DoStop(ospid int, log Log) {
-	matcher := process.NewMatcher(p.Path, process.PathEqual, log)
-	matcher.ExceptPID(ospid)
-	log.Infof("Terminating %s", p.Path)
-	process.TerminateAll(matcher, time.Second, log)
+	StopMatching(p.Path, ospid, log)
 }
 
 // Program is a program at path with arguments
@@ -71,6 +68,13 @@ func Watch(programs []Program, restartDelay time.Duration, log Log) error {
 	// Start monitoring all the programs
 	watchPrograms(programs, restartDelay, log)
 	return nil
+}
+
+func StopMatching(path string, ospid int, log Log) {
+	matcher := process.NewMatcher(path, process.PathEqual, log)
+	matcher.ExceptPID(ospid)
+	log.Infof("Terminating %s", path)
+	process.TerminateAll(matcher, time.Second, log)
 }
 
 func terminateExisting(programs []Program, log Log) {
