@@ -244,22 +244,23 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	localPath := update.Asset.LocalPath
 	destinationPath := options.DestinationPath
 
-	if err := c.apply(localPath, destinationPath, tmpDir); err != nil {
-		c.log.Errorf("Error trying to apply update: %s", err)
-		// If we were unable to move the Keybase.app out of the way, lets try to uninstall it
-		if lerr, ok := err.(*os.LinkError); ok && lerr.Op == "rename" && lerr.Old == "/Applications/Keybase.app" {
+	err := c.apply(localPath, destinationPath, tmpDir)
+	switch err := err.(type) {
+	case nil:
+	case *os.LinkError:
+		if err.Op == "rename" && err.Old == "/Applications/Keybase.app" {
 			c.log.Infof("The error was a problem renaming (moving) the app, let's trying uninstalling the app via keybase uninstall which has more privileges")
 			_, uninstallErr := command.Exec(c.config.keybasePath(), []string{"uninstall", "--components=app"}, 10*time.Second, c.log)
 			if uninstallErr != nil {
 				c.log.Errorf("Error trying to uninstall the app: %s", uninstallErr)
-				// We'll return the original error below
-			} else {
-				c.log.Infof("We uninstalled the app, let's try to apply again")
-				err = c.apply(localPath, destinationPath, tmpDir)
-				// If this sets err != nil, we'll return it below
+				// We'll return the original error
+				return err
 			}
-		}
-		if err != nil {
+			c.log.Infof("We uninstalled the app, let's try to apply again")
+			if reapplyErr := c.apply(localPath, destinationPath, tmpDir); reapplyErr != nil {
+				return reapplyErr
+			}
+		} else {
 			return err
 		}
 	}
