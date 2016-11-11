@@ -263,6 +263,8 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		} else {
 			return err
 		}
+	default:
+		return err
 	}
 
 	// Update spotlight
