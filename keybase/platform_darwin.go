@@ -231,6 +231,12 @@ func (c context) check(sourcePath string, destinationPath string) error {
 	return nil
 }
 
+func (c context) apply(localPath string, destinationPath string, tmpDir string) error {
+	// The file name we unzip over should match the (base) file in the destination path
+	filename := filepath.Base(destinationPath)
+	return util.UnzipOver(localPath, filename, destinationPath, c.check, tmpDir, c.log)
+}
+
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
 	if update.Asset == nil {
 		return fmt.Errorf("No asset")
@@ -238,10 +244,24 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	localPath := update.Asset.LocalPath
 	destinationPath := options.DestinationPath
 
-	// The file name we unzip over should match the (base) file in the destination path
-	filename := filepath.Base(destinationPath)
-	if err := util.UnzipOver(localPath, filename, destinationPath, c.check, tmpDir, c.log); err != nil {
-		return err
+	if err := c.apply(localPath, destinationPath, tmpDir); err != nil {
+		c.log.Errorf("Error trying to apply update: %s", err)
+		// If we were unable to move the Keybase.app out of the way, lets try to uninstall it
+		if lerr, ok := err.(*os.LinkError); ok && lerr.Op == "rename" && lerr.Old == "/Applications/Keybase.app" {
+			c.log.Infof("The error was a problem renaming (moving) the app, let's trying uninstalling the app via keybase uninstall which has more privileges")
+			_, uninstallErr := command.Exec(c.config.keybasePath(), []string{"uninstall", "--components=app"}, 10*time.Second, c.log)
+			if uninstallErr != nil {
+				c.log.Errorf("Error trying to uninstall the app: %s", uninstallErr)
+				// We'll return the original error below
+			} else {
+				c.log.Infof("We uninstalled the app, let's try to apply again")
+				err = c.apply(localPath, destinationPath, tmpDir)
+				// If this sets err != nil, we'll return it below
+			}
+		}
+		if err != nil {
+			return err
+		}
 	}
 
 	// Update spotlight
