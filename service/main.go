@@ -5,6 +5,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -51,12 +52,11 @@ func defaultAppName() string {
 }
 
 func run(f flags) {
-	ulog := logger{}
-
 	if f.version {
-		ulog.Infof("%s\n", updater.Version)
+		fmt.Printf("%s\n", updater.Version)
 		return
 	}
+	ulog := logger{}
 
 	if f.logToFile {
 		logFile, _, err := ulog.setLogToFile(f.appName, "keybase.updater.log")
