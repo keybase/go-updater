@@ -93,6 +93,11 @@
 			"revisionTime": "2016-04-19T13:20:54-07:00"
 		},
 		{
+			"path": "golang.org/x/sys/windows",
+			"revision": "c200b10b5d5e122be351b67af224adc6128af5bf",
+			"revisionTime": "2016-10-22T20:22:21+02:00"
+		},
+		{
 			"path": "golang.org/x/sys/windows/registry",
 			"revision": "eb2c74142fd19a79b3f237334c7384d5167b1b46",
 			"revisionTime": "2016-01-26T17:36:05-08:00"
