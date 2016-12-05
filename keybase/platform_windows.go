@@ -21,16 +21,17 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-type GUID struct {
+type guid struct {
 	Data1 uint32
 	Data2 uint16
 	Data3 uint16
 	Data4 [8]byte
 }
 
+// FOLDERID_LocalAppData
 // F1B32785-6FBA-4FCF-9D55-7B8E7F157091
 var (
-	FOLDERID_LocalAppData = GUID{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
+	folderIDLocalAppData = guid{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
 )
 
 var (
@@ -45,7 +46,7 @@ func coTaskMemFree(pv uintptr) {
 	return
 }
 
-func GetDataDir(id GUID) (string, error) {
+func getDataDir(id guid) (string, error) {
 
 	var pszPath uintptr
 	r0, _, _ := procSHGetKnownFolderPath.Call(uintptr(unsafe.Pointer(&id)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(&pszPath)))
@@ -65,8 +66,8 @@ func GetDataDir(id GUID) (string, error) {
 	return folder, nil
 }
 
-func LocalDataDir() (string, error) {
-	return GetDataDir(FOLDERID_LocalAppData)
+func localDataDir() (string, error) {
+	return getDataDir(folderIDLocalAppData)
 }
 
 func (c config) destinationPath() string {
@@ -81,8 +82,11 @@ func (c config) destinationPath() string {
 
 // Dir returns where to store config and log files
 func Dir(appName string) (string, error) {
-	dir, err := LocalDataDir()
-	if err != nil || dir == "" {
+	dir, err := localDataDir()
+	if err != nil {
+		return "", err
+	}
+	if dir == "" {
 		return "", fmt.Errorf("No LocalDataDir")
 	}
 	if appName == "" {
