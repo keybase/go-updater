@@ -5,18 +5,70 @@ package keybase
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
+
+type guid struct {
+	Data1 uint32
+	Data2 uint16
+	Data3 uint16
+	Data4 [8]byte
+}
+
+// FOLDERID_LocalAppData
+// F1B32785-6FBA-4FCF-9D55-7B8E7F157091
+var (
+	folderIDLocalAppData = guid{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
+)
+
+var (
+	modShell32               = windows.NewLazySystemDLL("Shell32.dll")
+	modOle32                 = windows.NewLazySystemDLL("Ole32.dll")
+	procSHGetKnownFolderPath = modShell32.NewProc("SHGetKnownFolderPath")
+	procCoTaskMemFree        = modOle32.NewProc("CoTaskMemFree")
+)
+
+func coTaskMemFree(pv uintptr) {
+	syscall.Syscall(procCoTaskMemFree.Addr(), 1, uintptr(pv), 0, 0)
+	return
+}
+
+func getDataDir(id guid) (string, error) {
+
+	var pszPath uintptr
+	r0, _, _ := procSHGetKnownFolderPath.Call(uintptr(unsafe.Pointer(&id)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(&pszPath)))
+	if r0 != 0 {
+		return "", errors.New("can't get FOLDERID_RoamingAppData")
+	}
+
+	defer coTaskMemFree(pszPath)
+
+	// go vet: "possible misuse of unsafe.Pointer"
+	folder := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(pszPath))[:])
+
+	if len(folder) == 0 {
+		return "", errors.New("can't get AppData directory")
+	}
+
+	return folder, nil
+}
+
+func localDataDir() (string, error) {
+	return getDataDir(folderIDLocalAppData)
+}
 
 func (c config) destinationPath() string {
 	pathName, err := osext.Executable()
@@ -30,9 +82,12 @@ func (c config) destinationPath() string {
 
 // Dir returns where to store config and log files
 func Dir(appName string) (string, error) {
-	dir := os.Getenv("APPDATA")
+	dir, err := localDataDir()
+	if err != nil {
+		return "", err
+	}
 	if dir == "" {
-		return "", fmt.Errorf("No APPDATA env set")
+		return "", fmt.Errorf("No LocalDataDir")
 	}
 	if appName == "" {
 		return "", fmt.Errorf("No app name for dir")
