@@ -96,9 +96,11 @@ func execWithFunc(name string, args []string, env []string, execCmd execCmd, tim
 	// Wait for the command to finish or time out
 	select {
 	case cmdErr := <-doneCh:
+		log.Debugf("Executed %s %s", name, args)
 		return result, cmdErr
 	case <-time.After(timeout):
 		// Timed out
+		log.Warningf("Process timed out")
 	}
 	// If no process, nothing to kill
 	if cmd.Process == nil {
