@@ -182,7 +182,7 @@ func (c config) keybasePath() string {
 }
 
 func (c config) keybaseVersion() string {
-	result, err := command.Exec(c.keybasePath(), []string{"version", "-S"}, 5*time.Second, c.log)
+	result, err := command.Exec(c.keybasePath(), []string{"version", "-S"}, 20*time.Second, c.log)
 	if err != nil {
 		c.log.Warningf("Couldn't get keybase version: %s (%s)", err, result.CombinedOutput())
 		return ""
