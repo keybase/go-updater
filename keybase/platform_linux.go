@@ -92,6 +92,14 @@ func (c context) PausedPrompt() bool {
 	return false
 }
 
+func (c context) beforeApply(update updater.Update) error {
+	return nil
+}
+
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	return nil
+}
+
+func (c context) AfterApply(update updater.Update) error {
 	return nil
 }

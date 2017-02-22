@@ -298,6 +298,10 @@ func (c context) PausedPrompt() bool {
 	return false
 }
 
+func (c context) beforeApply(update updater.Update) error {
+	return nil
+}
+
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
@@ -309,4 +313,8 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	}
 	_, err := command.Exec(update.Asset.LocalPath, args, time.Hour, c.log)
 	return err
+}
+
+func (c context) AfterApply(update updater.Update) error {
+	return nil
 }

@@ -126,18 +126,7 @@ func (c context) BeforeApply(update updater.Update) error {
 			return fmt.Errorf("Canceled by user from paused prompt")
 		}
 	}
-	if err := c.stop(); err != nil {
-		c.log.Warningf("Error trying to stop the app: %s", err)
-	}
-	return nil
-}
-
-// AfterApply is called after an update is applied
-func (c context) AfterApply(update updater.Update) error {
-	if err := c.start(10*time.Second, time.Second); err != nil {
-		c.log.Warningf("Error trying to start the app: %s", err)
-	}
-	return nil
+	return c.beforeApply(update)
 }
 
 func (c context) AfterUpdateCheck(update *updater.Update) {

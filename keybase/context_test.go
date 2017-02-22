@@ -111,3 +111,7 @@ func (c testConfigPausedPrompt) keybasePath() string {
 func (c testConfigPausedPrompt) updaterOptions() updater.UpdateOptions {
 	return updater.UpdateOptions{}
 }
+
+func (c testConfigPausedPrompt) destinationPath() string {
+	return "/Applications/Test.app"
+}
