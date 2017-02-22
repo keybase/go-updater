@@ -21,12 +21,6 @@ func (c testConfigPlatform) promptProgram() (command.Program, error) {
 	if programPath == "" {
 		programPath = filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	}
-	if len(args) == 0 {
-		args = []string{"echo", `{
-				"action": "apply",
-  			"autoUpdate": true
-			}`}
-	}
 
 	return command.Program{
 		Path: programPath,
@@ -36,4 +30,8 @@ func (c testConfigPlatform) promptProgram() (command.Program, error) {
 
 func (c testConfigPlatform) notifyProgram() string {
 	return "echo"
+}
+
+func (c testConfigPlatform) keybasePath() string {
+	return filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 }
