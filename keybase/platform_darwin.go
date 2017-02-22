@@ -130,51 +130,73 @@ func (c context) PausedPrompt() bool {
 const serviceInBundlePath = "/Contents/SharedSupport/bin/keybase"
 const kbfsInBundlePath = "/Contents/SharedSupport/bin/kbfs"
 
-// Restart will stop the services and app, and then start the app.
-// The supervisor/watchdog process is in charge of restarting the services.
-func (c context) Restart() error {
-	return c.restart(10*time.Second, time.Second)
+type processPaths struct {
+	serviceProcPath string
+	kbfsProcPath    string
+	appPath         string
+	appProcPath     string
 }
 
-// restart will stop the services and app, and then start the app.
-// The supervisor/watchdog process is in charge of restarting the services.
-// The wait is how log to wait for processes and the app to start before
-// reporting that an error occurred.
-func (c context) restart(wait time.Duration, delay time.Duration) error {
+func (c context) lookupProcessPaths() (p processPaths, _ error) {
 	appPath := c.config.destinationPath() // "/Applications/Keybase.app"
 	if appPath == "" {
-		return fmt.Errorf("No destination path for restart")
+		return p, fmt.Errorf("No app path")
 	}
-
 	appBundleName := filepath.Base(appPath) // "Keybase.app"
 
-	serviceProcPath := appBundleName + serviceInBundlePath
-	kbfsProcPath := appBundleName + kbfsInBundlePath
-	appProcPath := appBundleName + "/Contents/MacOS/"
+	p.appPath = appPath
+	p.serviceProcPath = appBundleName + serviceInBundlePath
+	p.kbfsProcPath = appBundleName + kbfsInBundlePath
+	p.appProcPath = appBundleName + "/Contents/MacOS/"
 
-	// Request the app to exit (instead of sending a SIGTERM)
-	if appExitResult, err := command.Exec(c.config.keybasePath(), []string{"ctl", "app-exit"}, 5*time.Second, c.log); err != nil {
-		c.log.Warningf("Error requesting app exit: %s (%s)", err, appExitResult.CombinedOutput())
+	return p, nil
+}
+
+// stop will quit the app and any services
+func (c context) stop() error {
+	// Stop app
+	appExitResult, appExitErr := command.Exec(c.config.keybasePath(), []string{"ctl", "app-exit"}, 30*time.Second, c.log)
+	c.log.Infof("Stop output: %s", appExitResult.CombinedOutput())
+	if appExitErr != nil {
+		c.log.Warningf("Error requesting app exit: %s", appExitErr)
 	}
-	// Give the app time to exit
-	time.Sleep(time.Second)
-	// SIGKILL the app if it failed to exit
-	c.log.Infof("Killing (if failed to exit) %s", appProcPath)
-	process.KillAll(process.NewMatcher(appProcPath, process.PathContains, c.log), c.log)
 
-	c.log.Infof("Terminating %s", serviceProcPath)
-	process.TerminateAll(process.NewMatcher(serviceProcPath, process.PathContains, c.log), time.Second, c.log)
-	c.log.Infof("Terminating %s", kbfsProcPath)
-	process.TerminateAll(process.NewMatcher(kbfsProcPath, process.PathContains, c.log), time.Second, c.log)
+	// Stop services
+	servicesExitResult, servicesExitErr := command.Exec(c.config.keybasePath(), []string{"ctl", "stop", "--include=service,kbfs"}, 30*time.Second, c.log)
+	c.log.Infof("Stop output: %s", servicesExitResult.CombinedOutput())
+	if servicesExitErr != nil {
+		c.log.Warningf("Error stopping services: %s", servicesExitErr)
+	}
 
-	if err := OpenAppDarwin(appPath, c.log); err != nil {
+	paths, err := c.lookupProcessPaths()
+	if err != nil {
+		return err
+	}
+
+	// SIGKILL the app if it failed to exit (if it exited, then this doesn't do anything)
+	c.log.Infof("Killing (if failed to exit) %s", paths.appProcPath)
+	process.KillAll(process.NewMatcher(paths.appProcPath, process.PathContains, c.log), c.log)
+
+	return nil
+}
+
+// Start the app.
+// The wait is how log to wait for processes and the app to start before
+// reporting that an error occurred.
+func (c context) start(wait time.Duration, delay time.Duration) error {
+	procPaths, err := c.lookupProcessPaths()
+	if err != nil {
+		return err
+	}
+
+	if err := OpenAppDarwin(procPaths.appPath, c.log); err != nil {
 		c.log.Warningf("Error opening app: %s", err)
 	}
 
-	// Check to make sure processes restarted
-	serviceProcErr := c.checkProcess(serviceProcPath, wait, delay)
-	kbfsProcErr := c.checkProcess(kbfsProcPath, wait, delay)
-	appProcErr := c.checkProcess(appProcPath, wait, delay)
+	// Check to make sure processes started
+	serviceProcErr := c.checkProcess(procPaths.serviceProcPath, wait, delay)
+	kbfsProcErr := c.checkProcess(procPaths.kbfsProcPath, wait, delay)
+	appProcErr := c.checkProcess(procPaths.appProcPath, wait, delay)
 
 	return util.CombineErrors(serviceProcErr, kbfsProcErr, appProcErr)
 }
@@ -249,16 +271,11 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	case nil:
 	case *os.LinkError:
 		if err.Op == "rename" && err.Old == "/Applications/Keybase.app" {
-			c.log.Infof("The error was a problem renaming (moving) the app, let's trying uninstalling the app via keybase uninstall which has more privileges")
-			_, uninstallErr := command.Exec(c.config.keybasePath(), []string{"uninstall", "--components=app"}, 10*time.Second, c.log)
-			if uninstallErr != nil {
-				c.log.Errorf("Error trying to uninstall the app: %s", uninstallErr)
-				// We'll return the original error
-				return err
-			}
-			c.log.Infof("We uninstalled the app, let's try to apply again")
-			if reapplyErr := c.apply(localPath, destinationPath, tmpDir); reapplyErr != nil {
-				return reapplyErr
+			c.log.Infof("The error was a problem renaming (moving) the app, let's trying installing the app via keybase install --components=app which has more privileges")
+			_, installErr := command.Exec(c.config.keybasePath(), []string{"install", "--components=app", fmt.Sprintf("--source-path=%s", localPath)}, 20*time.Second, c.log)
+			if installErr != nil {
+				c.log.Errorf("Error trying to install the app (privileged): %s", installErr)
+				return installErr
 			}
 		} else {
 			return err

@@ -43,7 +43,7 @@ func TestUpdatePrompt(t *testing.T) {
 	assert.NotNil(t, resp)
 }
 
-func TestRestart(t *testing.T) {
+func TestStop(t *testing.T) {
 	ctx := newContext(&testConfigDarwin{}, testLog)
 	appPath := ctx.config.destinationPath()
 
@@ -53,10 +53,8 @@ func TestRestart(t *testing.T) {
 	}()
 	require.NoError(t, err)
 
-	// TODO: We don't have watchdog available in tests yet, coming next, so let's
-	// test the error that the app was ok, but the services didn't restart.
-	err = ctx.restart(20*time.Millisecond, 20*time.Millisecond)
-	assert.EqualError(t, err, "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs")
+	err = ctx.stop()
+	require.NoError(t, err)
 }
 
 func TestOpenDarwin(t *testing.T) {

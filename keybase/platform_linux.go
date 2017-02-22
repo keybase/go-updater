@@ -95,8 +95,3 @@ func (c context) PausedPrompt() bool {
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
 	return nil
 }
-
-func (c context) Restart() error {
-	// Restart is handled by the installer
-	return fmt.Errorf("Unsupported")
-}

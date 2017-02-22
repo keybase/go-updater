@@ -45,7 +45,6 @@ type testUpdateUI struct {
 	verifyErr          error
 	beforeApplyErr     error
 	afterApplyErr      error
-	restartErr         error
 	errReported        error
 	actionReported     UpdateAction
 	autoUpdateReported bool
@@ -88,10 +87,6 @@ func (u testUpdateUI) Verify(update Update) error {
 		"9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1": true,
 	}
 	return saltpack.VerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, testLog)
-}
-
-func (u testUpdateUI) Restart() error {
-	return u.restartErr
 }
 
 func (u *testUpdateUI) ReportError(err error, update *Update, options UpdateOptions) {
@@ -364,8 +359,6 @@ func testUpdaterError(t *testing.T, errorType ErrorType) {
 		ctx.promptErr = testErr
 	case VerifyError:
 		ctx.verifyErr = testErr
-	case RestartError:
-		ctx.restartErr = testErr
 	}
 
 	_, err := upr.Update(ctx)
@@ -378,7 +371,6 @@ func testUpdaterError(t *testing.T, errorType ErrorType) {
 func TestUpdaterErrors(t *testing.T) {
 	testUpdaterError(t, PromptError)
 	testUpdaterError(t, VerifyError)
-	testUpdaterError(t, RestartError)
 }
 
 func TestUpdaterConfigError(t *testing.T) {

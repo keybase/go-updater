@@ -310,8 +310,3 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	_, err := command.Exec(update.Asset.LocalPath, args, time.Hour, c.log)
 	return err
 }
-
-func (c context) Restart() error {
-	// Restart is handled by the installer
-	return nil
-}
