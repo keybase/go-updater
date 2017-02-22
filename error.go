@@ -25,7 +25,7 @@ const (
 	PromptError ErrorType = "prompt"
 	// DownloadError is an error trying to download the update
 	DownloadError ErrorType = "download"
-	// BeforeApplyError
+	// ApplyError is an error applying the update
 	ApplyError ErrorType = "apply"
 	// VerifyError is an error verifing the update (signature or digest)
 	VerifyError ErrorType = "verify"
