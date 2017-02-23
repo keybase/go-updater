@@ -153,7 +153,10 @@ func (c context) lookupProcessPaths() (p processPaths, _ error) {
 }
 
 func (c context) beforeApply(update updater.Update) error {
-	return c.stop()
+	if err := c.stop(); err != nil {
+		c.log.Warningf("Error trying to stop: %s", err)
+	}
+	return nil
 }
 
 // stop will quit the app and any services
@@ -206,6 +209,7 @@ func (c context) start(wait time.Duration, delay time.Duration) error {
 	}
 
 	// Check to make sure processes started
+	c.log.Debugf("Checking processes: %#v", procPaths)
 	serviceProcErr := c.checkProcess(procPaths.serviceProcPath, wait, delay)
 	kbfsProcErr := c.checkProcess(procPaths.kbfsProcPath, wait, delay)
 	appProcErr := c.checkProcess(procPaths.appProcPath, wait, delay)
