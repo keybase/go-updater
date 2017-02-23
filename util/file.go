@@ -310,7 +310,7 @@ func ReadFile(path string) ([]byte, error) {
 //     /usr/local/go/bin => file:///usr/local/go/bin
 //     C:\Go\bin => file:///C:/Go/bin
 func URLStringForPath(path string) string {
-	u := &url.URL{Path: filepath.ToSlash(filepath.Clean(path))}
+	u := &url.URL{Path: filepath.ToSlash(path)}
 	encodedPath := u.String()
 
 	switch runtime.GOOS {
