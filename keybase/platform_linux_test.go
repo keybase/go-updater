@@ -33,12 +33,6 @@ func TestPausedPrompt(t *testing.T) {
 	assert.False(t, cancel)
 }
 
-func TestRestart(t *testing.T) {
-	ctx := newContext(&config{}, testLog)
-	err := ctx.Restart()
-	assert.EqualError(t, err, "Unsupported")
-}
-
 func TestApplyNoAsset(t *testing.T) {
 	ctx := newContext(&testConfigPlatform{}, testLog)
 	tmpDir, err := util.MakeTempDir("TestApplyNoAsset.", 0700)
