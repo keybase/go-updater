@@ -137,6 +137,8 @@ func (c context) AfterUpdateCheck(update *updater.Update) {
 		// There is no difference between doing another update check in a loop after
 		// delay and restarting the service.
 		c.log.Infof("%s", "Exiting for restart")
+		// Allow the log to write, since os.Exit can be abrupt
+		time.Sleep(2 * time.Second)
 		os.Exit(0)
 	}
 }
