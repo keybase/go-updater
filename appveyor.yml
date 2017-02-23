@@ -1,13 +1,13 @@
 # environment variables
 environment:
-  global:
-    GOPATH: c:\work\
+  GOPATH: c:\work\
+  GOVERSION: 1.7
 
 # clone path
 clone_folder: c:\work\src\github.com\keybase\go-updater
 
 # build platform, i.e. x86, x64, Any CPU. This setting is optional.
-#platform: Any CPU
+platform: x64
 
 # scripts to run before build
 before_build:
