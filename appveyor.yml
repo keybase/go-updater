@@ -6,7 +6,7 @@ environment:
   GOPATH: c:\gopath\
 
 build_script:
-  - set PATH=%GOPATH%\bin;C:\go17\;%PATH%
+  - set PATH=%GOPATH%\bin;C:\go17\bin;%PATH%
   - go version
   - go build
   - go get github.com/stretchr/testify/assert
