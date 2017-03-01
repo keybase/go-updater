@@ -1,9 +1,7 @@
-platform: x64
-
 clone_folder: c:\gopath\src\github.com\keybase\go-updater
 
 environment:
-  GOPATH: c:\gopath\
+  GOPATH: c:\gopath
 
 install:
   - set PATH=%GOPATH%\bin;C:\go17\bin;%PATH%
