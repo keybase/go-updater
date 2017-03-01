@@ -1,22 +1,12 @@
-# environment variables
+platform: x64
+
+clone_folder: c:\gopath\src\github.com\keybase\go-updater
+
 environment:
-  global:
-    GOPATH: c:\work\
+  GOPATH: c:\gopath\
 
-# clone path
-clone_folder: c:\work\src\github.com\keybase\go-updater
-
-# build platform, i.e. x86, x64, Any CPU. This setting is optional.
-#platform: Any CPU
-
-# scripts to run before build
-before_build:
-
-# scripts to run after build
-after_build:
-
-# to run your custom scripts instead of automatic MSBuild
 build_script:
+  - set PATH=%GOPATH%\bin;C:\go17\bin;%PATH%
   - go version
   - go build
   - go get github.com/stretchr/testify/assert
@@ -25,8 +15,6 @@ build_script:
   - dir %GOPATH%\bin\test.exe /s
   - go test -short -v ./...
 
-# to disable automatic tests
 test: off
 
-# to disable deployment
 deploy: off
