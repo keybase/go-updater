@@ -5,15 +5,18 @@ clone_folder: c:\gopath\src\github.com\keybase\go-updater
 environment:
   GOPATH: c:\gopath\
 
-build_script:
+install:
   - set PATH=%GOPATH%\bin;C:\go17\bin;%PATH%
+  - echo %PATH%
   - go version
   - go build
   - go get github.com/stretchr/testify/assert
   - go get github.com/stretchr/testify/require
   - go get github.com/keybase/go-updater/test
   - dir %GOPATH%\bin\test.exe /s
-  - go test -short -v ./...
+
+build_script:
+  - go test -short -v
 
 test: off
 
