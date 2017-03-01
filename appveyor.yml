@@ -14,7 +14,6 @@ install:
   - 7z x go%GOVERSION%.windows-amd64.zip -y -oC:\ > NUL
   - go version
   - go env
-  - mkdir c:\gopath
   - go get -u github.com/stretchr/testify/assert
   - go get -u github.com/stretchr/testify/require
   - go get -u github.com/keybase/go-updater/test
