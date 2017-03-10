@@ -168,9 +168,9 @@ func testTerminateAll(t *testing.T, path string, matcher Matcher, numProcs int) 
 		defer cleanupProc(cmd, "")
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Second)
 
-	terminatePids := TerminateAll(matcher, 5*time.Second, testLog)
+	terminatePids := TerminateAll(matcher, time.Second, testLog)
 	for _, p := range pids {
 		assert.Contains(t, terminatePids, p)
 		assertTerminated(t, p, exitStatus)

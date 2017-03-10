@@ -13,7 +13,7 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.2.8"
+const Version = "0.2.9"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -40,7 +40,6 @@ type Context interface {
 	BeforeApply(update Update) error
 	Apply(update Update, options UpdateOptions, tmpDir string) error
 	AfterApply(update Update) error
-	Restart() error
 	ReportError(err error, update *Update, options UpdateOptions)
 	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
 	ReportSuccess(update *Update, options UpdateOptions)
@@ -145,11 +144,6 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
 		return update, err
-	}
-
-	u.log.Info("Restarting")
-	if err := ctx.Restart(); err != nil {
-		return update, restartErr(err)
 	}
 
 	return update, nil

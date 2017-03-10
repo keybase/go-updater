@@ -126,16 +126,7 @@ func (c context) BeforeApply(update updater.Update) error {
 			return fmt.Errorf("Canceled by user from paused prompt")
 		}
 	}
-	return nil
-}
-
-// AfterApply is called after an update is applied
-func (c context) AfterApply(update updater.Update) error {
-	result, err := command.Exec(c.config.keybasePath(), []string{"update", "notify", "after-apply"}, 2*time.Minute, c.log)
-	if err != nil {
-		c.log.Warningf("Error in after apply: %s (%s)", err, result.CombinedOutput())
-	}
-	return nil
+	return c.beforeApply(update)
 }
 
 func (c context) AfterUpdateCheck(update *updater.Update) {
@@ -146,6 +137,8 @@ func (c context) AfterUpdateCheck(update *updater.Update) {
 		// There is no difference between doing another update check in a loop after
 		// delay and restarting the service.
 		c.log.Infof("%s", "Exiting for restart")
+		// Allow the log to write, since os.Exit can be abrupt
+		time.Sleep(2 * time.Second)
 		os.Exit(0)
 	}
 }

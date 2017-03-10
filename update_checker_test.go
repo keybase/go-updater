@@ -69,10 +69,6 @@ func (u testUpdateCheckUI) Verify(update Update) error {
 	return u.verifyError
 }
 
-func (u testUpdateCheckUI) Restart() error {
-	return nil
-}
-
 func (u testUpdateCheckUI) AfterUpdateCheck(update *Update) {}
 
 func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {

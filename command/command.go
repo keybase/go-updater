@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -47,7 +48,14 @@ type Result struct {
 
 // CombinedOutput returns Stdout and Stderr as a single string.
 func (r Result) CombinedOutput() string {
-	return fmt.Sprintf("[Stdout] %s\n[Stdrr] %s", r.Stdout.String(), r.Stderr.String())
+	strs := []string{}
+	if sout := r.Stdout.String(); sout != "" {
+		strs = append(strs, fmt.Sprintf("[stdout]: %s", sout))
+	}
+	if serr := r.Stderr.String(); serr != "" {
+		strs = append(strs, fmt.Sprintf("[stderr]: %s", serr))
+	}
+	return strings.Join(strs, ", ")
 }
 
 type execCmd func(name string, arg ...string) *exec.Cmd

@@ -37,26 +37,16 @@ func (c testConfigDarwin) destinationPath() string {
 }
 
 func TestUpdatePrompt(t *testing.T) {
-	ctx := newContext(&testConfigPlatform{}, testLog)
+	config := &testConfigPlatform{
+		Args: []string{"echo", `{
+      "action": "apply",
+      "autoUpdate": true
+    }`},
+	}
+	ctx := newContext(config, testLog)
 	resp, err := ctx.UpdatePrompt(testUpdate, testOptions, updater.UpdatePromptOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-}
-
-func TestRestart(t *testing.T) {
-	ctx := newContext(&testConfigDarwin{}, testLog)
-	appPath := ctx.config.destinationPath()
-
-	err := OpenAppDarwin(appPath, testLog)
-	defer func() {
-		process.TerminateAll(process.NewMatcher(appPath, process.PathPrefix, testLog), 200*time.Millisecond, testLog)
-	}()
-	require.NoError(t, err)
-
-	// TODO: We don't have watchdog available in tests yet, coming next, so let's
-	// test the error that the app was ok, but the services didn't restart.
-	err = ctx.restart(20*time.Millisecond, 20*time.Millisecond)
-	assert.EqualError(t, err, "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs")
 }
 
 func TestOpenDarwin(t *testing.T) {
@@ -109,4 +99,29 @@ func TestApplyAsset(t *testing.T) {
 
 	err = ctx.Apply(update, options, tmpDir)
 	require.NoError(t, err)
+}
+
+func cleanupProc(appPath string) {
+	process.TerminateAll(process.NewMatcher(appPath, process.PathPrefix, testLog), 200*time.Millisecond, testLog)
+}
+
+func TestStop(t *testing.T) {
+	ctx := newContext(&testConfigDarwin{}, testLog)
+	appPath := ctx.config.destinationPath()
+
+	err := OpenAppDarwin(appPath, testLog)
+	defer cleanupProc(appPath)
+	require.NoError(t, err)
+
+	err = ctx.stop()
+	require.NoError(t, err)
+}
+
+func TestStartReportError(t *testing.T) {
+	ctx := newContext(&testConfigDarwin{}, testLog)
+	appPath := ctx.config.destinationPath()
+	defer cleanupProc(appPath)
+
+	err := ctx.start(0, 0)
+	assert.EqualError(t, err, "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs")
 }

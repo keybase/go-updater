@@ -29,8 +29,6 @@ const (
 	ApplyError ErrorType = "apply"
 	// VerifyError is an error verifing the update (signature or digest)
 	VerifyError ErrorType = "verify"
-	// RestartError is an error with the restart
-	RestartError ErrorType = "restart"
 )
 
 func (t ErrorType) String() string {
@@ -89,10 +87,6 @@ func verifyErr(err error) Error {
 
 func applyErr(err error) Error {
 	return NewError(ApplyError, err)
-}
-
-func restartErr(err error) Error {
-	return NewError(RestartError, err)
 }
 
 func configErr(err error) Error {

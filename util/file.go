@@ -305,21 +305,21 @@ func ReadFile(path string) ([]byte, error) {
 	return data, nil
 }
 
+func convertPathForWindows(path string) string {
+	return "/" + strings.Replace(path, `\`, `/`, -1)
+}
+
 // URLStringForPath returns an URL as string with file scheme for path.
 // For example,
 //     /usr/local/go/bin => file:///usr/local/go/bin
 //     C:\Go\bin => file:///C:/Go/bin
 func URLStringForPath(path string) string {
-	u := &url.URL{Path: filepath.ToSlash(path)}
-	encodedPath := u.String()
-
-	switch runtime.GOOS {
-	case "windows":
-		// Include leading slash on windows
-		return fmt.Sprintf("%s:///%s", fileScheme, encodedPath)
-	default:
-		return fmt.Sprintf("%s://%s", fileScheme, encodedPath)
+	if runtime.GOOS == "windows" {
+		path = convertPathForWindows(path)
 	}
+	u := &url.URL{Path: path}
+	encodedPath := u.String()
+	return fmt.Sprintf("%s://%s", fileScheme, encodedPath)
 }
 
 // PathFromURL returns path for file URL scheme
