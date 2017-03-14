@@ -152,13 +152,6 @@ func (c context) lookupProcessPaths() (p processPaths, _ error) {
 	return p, nil
 }
 
-func (c context) beforeApply(update updater.Update) error {
-	if err := c.stop(); err != nil {
-		c.log.Warningf("Error trying to stop: %s", err)
-	}
-	return nil
-}
-
 // stop will quit the app and any services
 func (c context) stop() error {
 	// Stop app
@@ -189,6 +182,10 @@ func (c context) stop() error {
 
 // AfterApply is called after an update is applied
 func (c context) AfterApply(update updater.Update) error {
+	if err := c.stop(); err != nil {
+		c.log.Warningf("Error trying to stop: %s", err)
+	}
+
 	if err := c.start(10*time.Second, time.Second); err != nil {
 		c.log.Warningf("Error trying to start the app: %s", err)
 	}

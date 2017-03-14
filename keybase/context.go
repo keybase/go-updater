@@ -126,7 +126,7 @@ func (c context) BeforeApply(update updater.Update) error {
 			return fmt.Errorf("Canceled by user from paused prompt")
 		}
 	}
-	return c.beforeApply(update)
+	return nil
 }
 
 func (c context) AfterUpdateCheck(update *updater.Update) {
