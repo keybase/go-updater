@@ -42,6 +42,16 @@ func UnzipOver(sourcePath string, path string, destinationPath string, check fun
 	return MoveFile(contentPath, destinationPath, tmpDir, log)
 }
 
+// UnzipPath unzips and returns path to unzipped directory
+func UnzipPath(sourcePath string, log Log) (string, error) {
+	unzipPath := fmt.Sprintf("%s.unzipped", sourcePath)
+	err := unzipOver(sourcePath, unzipPath, log)
+	if err != nil {
+		return "", err
+	}
+	return unzipPath, nil
+}
+
 func unzipOver(sourcePath string, destinationPath string, log Log) error {
 	if destinationPath == "" {
 		return fmt.Errorf("Invalid destination %q", destinationPath)

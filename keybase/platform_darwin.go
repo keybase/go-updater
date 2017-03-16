@@ -285,7 +285,16 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	case *os.LinkError:
 		if err.Op == "rename" && err.Old == "/Applications/Keybase.app" {
 			c.log.Infof("The error was a problem renaming (moving) the app, let's trying installing the app via keybase install --components=app which has more privileges")
-			_, installErr := command.Exec(c.config.keybasePath(), []string{"install", "--components=app", fmt.Sprintf("--source-path=%s", localPath)}, 20*time.Second, c.log)
+
+			// Unzip and get source path
+			unzipPath, err := util.UnzipPath(localPath, c.log)
+			defer util.RemoveFileAtPath(unzipPath)
+			if err != nil {
+				return err
+			}
+			sourcePath := filepath.Join(unzipPath, filepath.Base(destinationPath))
+
+			_, installErr := command.Exec(c.config.keybasePath(), []string{"install", "--components=app", fmt.Sprintf("--source-path=%s", sourcePath)}, time.Minute, c.log)
 			if installErr != nil {
 				c.log.Errorf("Error trying to install the app (privileged): %s", installErr)
 				return installErr
