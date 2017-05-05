@@ -305,7 +305,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	var args []string
 	auto, _ := c.config.GetUpdateAuto()
 	if auto && !c.config.GetUpdateAutoOverride() {
-		args = append(args, "/quiet")
+		args = append(args, "/quiet", "/norestart")
 	}
 	_, err := command.Exec(update.Asset.LocalPath, args, time.Hour, c.log)
 	return err
