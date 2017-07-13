@@ -22,7 +22,7 @@ func TestUpdateCheckerStart(t *testing.T) {
 	updater, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
 
-	checker := NewUpdateChecker(updater, testUpdateCheckUI{}, 5*time.Millisecond, testLog)
+	checker := NewUpdateChecker(updater, testUpdateCheckUI{}, time.Minute, testLog)
 	defer checker.Stop()
 	started := checker.Start()
 	require.True(t, started)
