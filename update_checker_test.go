@@ -22,7 +22,7 @@ func TestUpdateCheckerStart(t *testing.T) {
 	updater, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
 	assert.NoError(t, err)
 
-	checker := NewUpdateChecker(updater, testUpdateCheckUI{}, time.Minute, testLog)
+	checker := NewUpdateChecker(updater, testUpdateCheckUI{}, 5*time.Millisecond, testLog)
 	defer checker.Stop()
 	started := checker.Start()
 	require.True(t, started)
@@ -32,9 +32,7 @@ func TestUpdateCheckerStart(t *testing.T) {
 	for i := 0; checker.Count() == 0 && i < 10; i++ {
 		time.Sleep(5 * time.Millisecond)
 	}
-	assert.True(t, checker.Count() >= 1)
-
-	checker.Stop()
+	assert.True(t, checker.Count() >= 2)
 }
 
 type testUpdateCheckUI struct {
