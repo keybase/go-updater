@@ -46,6 +46,9 @@ func (u *UpdateChecker) Start() bool {
 	}
 	u.ticker = time.NewTicker(u.tickDuration)
 	go func() {
+		// Check immediately and then start ticker
+		u.Check()
+
 		u.log.Debugf("Starting (ticker %s)", u.tickDuration)
 		for range u.ticker.C {
 			u.log.Debugf("%s", "Checking for update (ticker)")

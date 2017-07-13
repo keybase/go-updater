@@ -47,8 +47,6 @@ func (s *service) Start() {
 		s.updateChecker = &updateChecker
 	}
 	s.updateChecker.Start()
-	// Check immediately on startup
-	s.updateChecker.Check()
 }
 
 func (s *service) Run() {
