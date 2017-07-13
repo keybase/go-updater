@@ -139,7 +139,7 @@ func newTestUpdate(uri string, needUpdate bool) *Update {
 		update.Asset = &Asset{
 			Name:      "test.zip",
 			URL:       uri,
-			Digest:    "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84",                                                                                                                                                                                                                       // shasum -a 256 test/test.zip
+			Digest:    "9b26d62eeca882b56cdc909d51977139d49423313688f84aeae99fe922ada345",                                                                                                                                                                                                                       // shasum -a 256 test/test.zip
 			Signature: `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`, // keybase sign -d -i test.zip
 		}
 	}
