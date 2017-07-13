@@ -46,6 +46,14 @@ func (u *UpdateChecker) Start() bool {
 	}
 	u.ticker = time.NewTicker(u.tickDuration)
 	go func() {
+		// Wait a little bit and then check before starting ticker.
+		// This is so if there is a crash on check, we don't spam the update API.
+		u.log.Debugf("Waiting a minute before initial update check", u.tickDuration)
+		time.Sleep(time.Minute)
+		u.Check()
+
+		// Check for update using ticker (this will delay for tickDuration between
+		// checks).
 		u.log.Debugf("Starting (ticker %s)", u.tickDuration)
 		for range u.ticker.C {
 			u.log.Debugf("%s", "Checking for update (ticker)")
