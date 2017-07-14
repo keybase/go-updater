@@ -33,6 +33,8 @@ func TestUpdateCheckerStart(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	assert.True(t, checker.Count() >= 1)
+
+	checker.Stop()
 }
 
 type testUpdateCheckUI struct {
