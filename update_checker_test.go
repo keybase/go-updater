@@ -29,10 +29,10 @@ func TestUpdateCheckerStart(t *testing.T) {
 	started = checker.Start()
 	require.False(t, started)
 	// Wait for the count to increase (to prevent flakeyness on slow CIs)
-	for i := 0; checker.Count() <= 1 && i < 10; i++ {
+	for i := 0; checker.Count() == 0 && i < 10; i++ {
 		time.Sleep(5 * time.Millisecond)
 	}
-	assert.True(t, checker.Count() >= 2)
+	assert.True(t, checker.Count() >= 1)
 }
 
 type testUpdateCheckUI struct {
