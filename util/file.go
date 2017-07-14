@@ -340,7 +340,8 @@ func PathFromURL(u *url.URL) string {
 
 // Touch a file, updating its modification time
 func Touch(path string) error {
-	_, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	Close(f)
 	return err
 }
 
