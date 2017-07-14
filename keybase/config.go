@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -105,6 +106,44 @@ func (c config) path() (string, error) {
 	}
 	path := filepath.Join(configDir, "updater.json")
 	return path, nil
+}
+
+// IsLastUpdateTimeRecent returns true if we've updated within duration.
+// If there is any kind of error, returns true.
+func (c config) IsLastUpdateTimeRecent(d time.Duration) bool {
+	configDir, err := Dir(c.appName)
+	if err != nil {
+		c.log.Errorf("Error getting config dir: %s", err)
+		return true
+	}
+	path := filepath.Join(configDir, "updater.last")
+	t, err := util.FileModTime(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			c.log.Infof("No last update time")
+		} else {
+			c.log.Errorf("Error getting last update time (for IsLastUpdateTimeRecent): %s", err)
+		}
+		return true
+	}
+	recent := time.Since(t) < d
+	c.log.Debugf("Last update time (is recent? %s): %s", strconv.FormatBool(recent), t)
+	return recent
+}
+
+// SetLastUpdateTime touches file to set last update time.
+func (c config) SetLastUpdateTime() {
+	configDir, err := Dir(c.appName)
+	if err != nil {
+		c.log.Errorf("Error getting config dir: %s", err)
+		return
+	}
+	path := filepath.Join(configDir, "updater.last")
+	terr := util.Touch(path)
+	if terr != nil {
+		c.log.Errorf("Error setting last update time: %s", terr)
+	}
+	c.log.Debugf("Set last update time")
 }
 
 func (c config) save() error {

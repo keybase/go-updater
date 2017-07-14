@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"net/http/httptest"
 	"os"
@@ -166,6 +167,14 @@ func (c *testConfig) SetUpdateAuto(b bool) error {
 	c.auto = b
 	c.autoSet = true
 	return c.err
+}
+
+func (c *testConfig) IsLastUpdateTimeRecent(d time.Duration) bool {
+	return true
+}
+
+func (c *testConfig) SetLastUpdateTime() {
+
 }
 
 // For overriding the current Auto setting

@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -146,6 +147,7 @@ func TestMoveFileValid(t *testing.T) {
 
 	// Move again with different source data, and overwrite
 	sourcePath2, err := WriteTempFile("TestMoveFile", []byte("test2"), 0600)
+	assert.NoError(t, err)
 	err = MoveFile(sourcePath2, destinationPath, "", testLog)
 	assert.NoError(t, err)
 	exists, err = FileExists(destinationPath)
@@ -175,6 +177,7 @@ func TestMoveFileDirValid(t *testing.T) {
 
 	// Move again with different source data, and overwrite
 	sourcePath2, err := MakeTempDir("TestMoveDir2", 0700)
+	assert.NoError(t, err)
 	defer RemoveFileAtPath(sourcePath2)
 	err = MoveFile(sourcePath2, destinationPath, "", testLog)
 	assert.NoError(t, err)
@@ -224,6 +227,7 @@ func TestCopyFileValid(t *testing.T) {
 
 	// Move again with different source data, and overwrite
 	sourcePath2, err := WriteTempFile("TestCopyFile", []byte("test2"), 0600)
+	assert.NoError(t, err)
 	err = CopyFile(sourcePath2, destinationPath, testLog)
 	assert.NoError(t, err)
 	exists, err = FileExists(destinationPath)
@@ -329,4 +333,24 @@ func TestPathFromURL(t *testing.T) {
 	url, err = url.Parse("file:///Applications/System%20Preferences.app")
 	require.NoError(t, err)
 	assert.Equal(t, "/Applications/System Preferences.app", PathFromURL(url))
+}
+
+func TestTouchModTime(t *testing.T) {
+	path, err := RandomID("TestTouchModTime")
+	defer RemoveFileAtPath(path)
+	require.NoError(t, err)
+	now := time.Now()
+	err = Touch(path)
+	require.NoError(t, err)
+	ti, err := FileModTime(path)
+	require.NoError(t, err)
+	assert.WithinDuration(t, now, ti, time.Second)
+	time.Sleep(1 * time.Second)
+
+	// Touch same path, ensure it updates mod time
+	err = Touch(path)
+	require.NoError(t, err)
+	ti2, err := FileModTime(path)
+	require.NoError(t, err)
+	assert.NotEqual(t, ti, ti2)
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/keybase/go-updater/util"
 )
@@ -54,6 +55,8 @@ type Config interface {
 	SetUpdateAutoOverride(bool) error
 	GetInstallID() string
 	SetInstallID(installID string) error
+	IsLastUpdateTimeRecent(d time.Duration) bool
+	SetLastUpdateTime()
 }
 
 // Log is the logging interface for this package
