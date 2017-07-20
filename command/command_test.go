@@ -148,6 +148,9 @@ func TestExecForJSONTimeout(t *testing.T) {
 
 // TestExecTimeoutProcessKilled checks to make sure process is killed after timeout
 func TestExecTimeoutProcessKilled(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unsupported on windows")
+	}
 	result, err := execWithFunc("sleep", []string{"10"}, nil, exec.Command, 10*time.Millisecond, testLog)
 	assert.Equal(t, result.Stdout.String(), "")
 	assert.Equal(t, result.Stderr.String(), "")

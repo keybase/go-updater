@@ -8,12 +8,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/keybase/go-updater/util"
 )
 
 // Version is the updater version
-const Version = "0.2.11"
+const Version = "0.2.12"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -54,6 +55,8 @@ type Config interface {
 	SetUpdateAutoOverride(bool) error
 	GetInstallID() string
 	SetInstallID(installID string) error
+	IsLastUpdateCheckTimeRecent(d time.Duration) bool
+	SetLastUpdateCheckTime()
 }
 
 // Log is the logging interface for this package

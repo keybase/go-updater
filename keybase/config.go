@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -105,6 +106,50 @@ func (c config) path() (string, error) {
 	}
 	path := filepath.Join(configDir, "updater.json")
 	return path, nil
+}
+
+func (c config) updateCheckTouchPath() (string, error) {
+	configDir, err := Dir(c.appName)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(configDir, "updater.last"), nil
+}
+
+// IsLastUpdateCheckTimeRecent returns true if we've updated within duration.
+// If there is any kind of error, returns true.
+func (c config) IsLastUpdateCheckTimeRecent(d time.Duration) bool {
+	path, err := c.updateCheckTouchPath()
+	if err != nil {
+		c.log.Errorf("Error getting check path: %s", err)
+		return true
+	}
+	t, err := util.FileModTime(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			c.log.Infof("No last update time")
+		} else {
+			c.log.Errorf("Error getting last update time: %s", err)
+		}
+		return true
+	}
+	recent := time.Since(t) < d
+	c.log.Debugf("Last update time (is recent? %s): %s", strconv.FormatBool(recent), t)
+	return recent
+}
+
+// SetLastUpdateCheckTime touches file to set last update time.
+func (c config) SetLastUpdateCheckTime() {
+	path, err := c.updateCheckTouchPath()
+	if err != nil {
+		c.log.Errorf("Error getting check path: %s", err)
+		return
+	}
+	terr := util.Touch(path)
+	if terr != nil {
+		c.log.Errorf("Error setting last update time: %s", terr)
+	}
+	c.log.Debugf("Set last update time")
 }
 
 func (c config) save() error {

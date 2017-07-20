@@ -42,6 +42,7 @@ func TestConfig(t *testing.T) {
 	assert.True(t, autoSet, "Auto should be set")
 	assert.False(t, auto, "Auto should be false")
 	err = cfg.SetUpdateAuto(true)
+	assert.NoError(t, err)
 	auto, autoSet = cfg.GetUpdateAuto()
 	assert.True(t, autoSet, "Auto should be set")
 	assert.True(t, auto, "Auto should be true")
