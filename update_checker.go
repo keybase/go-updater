@@ -34,7 +34,7 @@ func (u *UpdateChecker) check() error {
 
 // Check checks for an update.
 func (u *UpdateChecker) Check() {
-	u.updater.config.SetLastUpdateTime()
+	u.updater.config.SetLastUpdateCheckTime()
 	if err := u.check(); err != nil {
 		u.log.Errorf("Error in update: %s", err)
 	}
@@ -50,7 +50,7 @@ func (u *UpdateChecker) Start() bool {
 		// If we haven't done an update recently, check now.
 		// If there is an error getting the last update time, we don't trigger a
 		// check and let the ticker below trigger it.
-		if !u.updater.config.IsLastUpdateTimeRecent(u.tickDuration) {
+		if !u.updater.config.IsLastUpdateCheckTimeRecent(u.tickDuration) {
 			u.Check()
 		}
 

@@ -108,9 +108,9 @@ func (c config) path() (string, error) {
 	return path, nil
 }
 
-// IsLastUpdateTimeRecent returns true if we've updated within duration.
+// IsLastUpdateCheckTimeRecent returns true if we've updated within duration.
 // If there is any kind of error, returns true.
-func (c config) IsLastUpdateTimeRecent(d time.Duration) bool {
+func (c config) IsLastUpdateCheckTimeRecent(d time.Duration) bool {
 	configDir, err := Dir(c.appName)
 	if err != nil {
 		c.log.Errorf("Error getting config dir: %s", err)
@@ -122,7 +122,7 @@ func (c config) IsLastUpdateTimeRecent(d time.Duration) bool {
 		if os.IsNotExist(err) {
 			c.log.Infof("No last update time")
 		} else {
-			c.log.Errorf("Error getting last update time (for IsLastUpdateTimeRecent): %s", err)
+			c.log.Errorf("Error getting last update time: %s", err)
 		}
 		return true
 	}
@@ -131,8 +131,8 @@ func (c config) IsLastUpdateTimeRecent(d time.Duration) bool {
 	return recent
 }
 
-// SetLastUpdateTime touches file to set last update time.
-func (c config) SetLastUpdateTime() {
+// SetLastUpdateCheckTime touches file to set last update time.
+func (c config) SetLastUpdateCheckTime() {
 	configDir, err := Dir(c.appName)
 	if err != nil {
 		c.log.Errorf("Error getting config dir: %s", err)

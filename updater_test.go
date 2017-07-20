@@ -169,11 +169,11 @@ func (c *testConfig) SetUpdateAuto(b bool) error {
 	return c.err
 }
 
-func (c *testConfig) IsLastUpdateTimeRecent(d time.Duration) bool {
+func (c *testConfig) IsLastUpdateCheckTimeRecent(d time.Duration) bool {
 	return true
 }
 
-func (c *testConfig) SetLastUpdateTime() {
+func (c *testConfig) SetLastUpdateCheckTime() {
 
 }
 

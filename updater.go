@@ -55,8 +55,8 @@ type Config interface {
 	SetUpdateAutoOverride(bool) error
 	GetInstallID() string
 	SetInstallID(installID string) error
-	IsLastUpdateTimeRecent(d time.Duration) bool
-	SetLastUpdateTime()
+	IsLastUpdateCheckTimeRecent(d time.Duration) bool
+	SetLastUpdateCheckTime()
 }
 
 // Log is the logging interface for this package
