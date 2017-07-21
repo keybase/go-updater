@@ -148,6 +148,7 @@ func (c config) SetLastUpdateCheckTime() {
 	terr := util.Touch(path)
 	if terr != nil {
 		c.log.Errorf("Error setting last update time: %s", terr)
+		return
 	}
 	c.log.Debugf("Set last update time")
 }
