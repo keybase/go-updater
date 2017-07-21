@@ -22,10 +22,34 @@ const (
 )
 
 // Program is a program at path with arguments
-type Program struct {
+type ProgramNormal struct {
 	Path   string
 	Args   []string
 	ExitOn ExitOn
+}
+
+func (p *ProgramNormal) GetPath() string {
+	return p.Path
+}
+
+func (p *ProgramNormal) GetArgs() []string {
+	return p.Args
+}
+
+func (p *ProgramNormal) GetExitOn() ExitOn {
+	return p.ExitOn
+}
+
+func (p *ProgramNormal) DoStop(ospid int, log Log) {
+	StopMatching(p.Path, ospid, log)
+}
+
+// Program is a program at path with arguments
+type Program interface {
+	GetPath() string
+	GetArgs() []string
+	GetExitOn() ExitOn
+	DoStop(ospid int, log Log)
 }
 
 // Log is the logging interface for the watchdog package
@@ -46,15 +70,19 @@ func Watch(programs []Program, restartDelay time.Duration, log Log) error {
 	return nil
 }
 
+func StopMatching(path string, ospid int, log Log) {
+	matcher := process.NewMatcher(path, process.PathEqual, log)
+	matcher.ExceptPID(ospid)
+	log.Infof("Terminating %s", path)
+	process.TerminateAll(matcher, time.Second, log)
+}
+
 func terminateExisting(programs []Program, log Log) {
 	// Terminate any monitored processes
 	ospid := os.Getpid()
 	log.Infof("Terminating any existing programs we will be monitoring")
 	for _, program := range programs {
-		matcher := process.NewMatcher(program.Path, process.PathEqual, log)
-		matcher.ExceptPID(ospid)
-		log.Infof("Terminating %s", program.Path)
-		process.TerminateAll(matcher, time.Second, log)
+		program.DoStop(ospid, log)
 	}
 }
 
@@ -70,13 +98,13 @@ func watchProgram(program Program, restartDelay time.Duration, log Log) {
 	for {
 		start := time.Now()
 		log.Infof("Starting %#v", program)
-		cmd := exec.Command(program.Path, program.Args...)
+		cmd := exec.Command(program.GetPath(), program.GetArgs()...)
 		err := cmd.Run()
 		if err != nil {
 			log.Errorf("Error running program: %q; %s", program, err)
 		} else {
 			log.Infof("Program finished: %q", program)
-			if program.ExitOn == ExitOnSuccess {
+			if program.GetExitOn() == ExitOnSuccess {
 				log.Infof("Program configured to exit on success, not restarting")
 				break
 			}

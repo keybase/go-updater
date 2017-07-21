@@ -23,20 +23,20 @@ var testLog = &logging.Logger{Module: "test"}
 func TestWatchMultiple(t *testing.T) {
 	procProgram1 := procProgram(t, "testWatch1", "sleep")
 	procProgram2 := procProgram(t, "testWatch2", "sleep")
-	defer util.RemoveFileAtPath(procProgram1.Path)
-	defer util.RemoveFileAtPath(procProgram2.Path)
+	defer util.RemoveFileAtPath(procProgram1.GetPath())
+	defer util.RemoveFileAtPath(procProgram2.GetPath())
 
 	delay := 10 * time.Millisecond
 
 	err := Watch([]Program{procProgram1, procProgram2}, delay, testLog)
 	require.NoError(t, err)
 
-	matcher1 := process.NewMatcher(procProgram1.Path, process.PathEqual, testLog)
+	matcher1 := process.NewMatcher(procProgram1.GetPath(), process.PathEqual, testLog)
 	procs1, err := process.FindProcesses(matcher1, time.Second, 200*time.Millisecond, testLog)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(procs1))
 
-	matcher2 := process.NewMatcher(procProgram2.Path, process.PathEqual, testLog)
+	matcher2 := process.NewMatcher(procProgram2.GetPath(), process.PathEqual, testLog)
 	procs2, err := process.FindProcesses(matcher2, time.Second, 200*time.Millisecond, testLog)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(procs2))
@@ -57,12 +57,12 @@ func TestWatchMultiple(t *testing.T) {
 // terminated before a process is monitored.
 func TestTerminateBeforeWatch(t *testing.T) {
 	procProgram := procProgram(t, "testTerminateBeforeWatch", "sleep")
-	defer util.RemoveFileAtPath(procProgram.Path)
+	defer util.RemoveFileAtPath(procProgram.GetPath())
 
-	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
+	matcher := process.NewMatcher(procProgram.GetPath(), process.PathEqual, testLog)
 
 	// Launch program (so we can test it gets terminated on watch)
-	err := exec.Command(procProgram.Path, procProgram.Args...).Start()
+	err := exec.Command(procProgram.GetPath(), procProgram.GetArgs()...).Start()
 	require.NoError(t, err)
 
 	procsBefore, err := process.FindProcesses(matcher, time.Second, time.Millisecond, testLog)
@@ -93,16 +93,17 @@ func cleanupProc(cmd *exec.Cmd, procPath string) {
 }
 
 func TestExitOnSuccess(t *testing.T) {
-	procProgram := procProgram(t, "testExitOnSuccess", "echo")
-	procProgram.ExitOn = ExitOnSuccess
-	defer util.RemoveFileAtPath(procProgram.Path)
+	procNormal := procProgramNormal(t, "testExitOnSuccess", "echo")
+	procNormal.ExitOn = ExitOnSuccess
+	procProgram := Program(&procNormal)
+	defer util.RemoveFileAtPath(procProgram.GetPath())
 
 	err := Watch([]Program{procProgram}, 0, testLog)
 	require.NoError(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
+	matcher := process.NewMatcher(procProgram.GetPath(), process.PathEqual, testLog)
 	procsAfter, err := process.WaitForExit(matcher, 500*time.Millisecond, 50*time.Millisecond, testLog)
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(procsAfter))
@@ -116,8 +117,8 @@ func procTestPath(name string) (string, string) {
 	return filepath.Join(os.Getenv("GOPATH"), "bin", "test"), filepath.Join(os.TempDir(), name)
 }
 
-// procProgram returns a testable unique program at a temporary location
-func procProgram(t *testing.T, name string, testCommand string) Program {
+// procProgram returns a testable unique program struct at a temporary location
+func procProgramNormal(t *testing.T, name string, testCommand string) ProgramNormal {
 	path, procPath := procTestPath(name)
 	err := util.CopyFile(path, procPath, testLog)
 	require.NoError(t, err)
@@ -126,8 +127,14 @@ func procProgram(t *testing.T, name string, testCommand string) Program {
 	// Temp dir might have symlinks in which case we need the eval'ed path
 	procPath, err = filepath.EvalSymlinks(procPath)
 	require.NoError(t, err)
-	return Program{
+	return ProgramNormal{
 		Path: procPath,
 		Args: []string{testCommand},
 	}
+}
+
+// procProgram returns a testable unique program interface
+func procProgram(t *testing.T, name string, testCommand string) Program {
+	prog := procProgramNormal(t, name, testCommand)
+	return &prog
 }
