@@ -88,7 +88,14 @@ type promptInputResult struct {
 // pausedPrompt returns whether to cancel update and/or error.
 // If the user explicit wants to cancel the update, this may be different from
 // an error occurring, in which case
-func (c context) pausedPrompt(promptProgram command.Program, timeout time.Duration) (bool, error) {
+func (c context) pausedPrompt(promptProgram command.Program, inUse bool, timeout time.Duration) (bool, error) {
+	if inUse {
+		return c.pausedPromptInUse(promptProgram, timeout)
+	}
+	return c.pausedPromptApply(promptProgram, timeout)
+}
+
+func (c context) pausedPromptInUse(promptProgram command.Program, timeout time.Duration) (bool, error) {
 	const btnForce = "Force update"
 	const btnCancel = "Try again later"
 	promptJSONInput, err := json.Marshal(promptInput{
@@ -108,6 +115,35 @@ func (c context) pausedPrompt(promptProgram command.Program, timeout time.Durati
 
 	switch result.Button {
 	case btnForce:
+		return false, nil
+	case btnCancel:
+		// Cancel update
+		return true, nil
+	default:
+		return false, fmt.Errorf("Unexpected button result: %s", result.Button)
+	}
+}
+
+func (c context) pausedPromptApply(promptProgram command.Program, timeout time.Duration) (bool, error) {
+	const btnApply = "Apply Update"
+	const btnCancel = "Cancel"
+	promptJSONInput, err := json.Marshal(promptInput{
+		Type:    "generic",
+		Title:   "Keybase Update",
+		Message: "Do you want to apply this update and restart Keybase?",
+		Buttons: []string{btnApply, btnCancel},
+	})
+	if err != nil {
+		return false, fmt.Errorf("Error generating input: %s", err)
+	}
+
+	var result promptInputResult
+	if err := command.ExecForJSON(promptProgram.Path, promptProgram.ArgsWith([]string{string(promptJSONInput)}), &result, timeout, c.log); err != nil {
+		return false, fmt.Errorf("Error running command: %s", err)
+	}
+
+	switch result.Button {
+	case btnApply:
 		return false, nil
 	case btnCancel:
 		// Cancel update

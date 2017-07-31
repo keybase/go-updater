@@ -121,10 +121,8 @@ func (c context) BeforeApply(update updater.Update) error {
 	if err != nil {
 		c.log.Warningf("Error trying to check in use: %s", err)
 	}
-	if inUse {
-		if cancel := c.PausedPrompt(); cancel {
-			return fmt.Errorf("Canceled by user from paused prompt")
-		}
+	if cancel := c.PausedPrompt(inUse); cancel {
+		return fmt.Errorf("Canceled by user from paused prompt")
 	}
 	return nil
 }

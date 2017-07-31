@@ -117,16 +117,20 @@ func TestPromptError(t *testing.T) {
 		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
 		Args: []string{"err"},
 	}
-	cancel, err := testPausedPromptWithProgram(t, promptProgram, time.Second)
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, true, time.Second)
 	assert.Error(t, err)
 	assert.False(t, cancel)
+
+	cancelApply, errApply := testPausedPromptWithProgram(t, promptProgram, false, time.Second)
+	assert.Error(t, errApply)
+	assert.False(t, cancelApply)
 }
 
-func testPausedPromptWithProgram(t *testing.T, promptProgram command.Program, timeout time.Duration) (bool, error) {
+func testPausedPromptWithProgram(t *testing.T, promptProgram command.Program, inUse bool, timeout time.Duration) (bool, error) {
 	cfg, _ := testConfig(t)
 	ctx := newContext(cfg, testLog)
 	assert.NotNil(t, ctx)
-	return ctx.pausedPrompt(promptProgram, timeout)
+	return ctx.pausedPrompt(promptProgram, inUse, timeout)
 }
 
 func TestPausedPromptForce(t *testing.T) {
@@ -134,7 +138,27 @@ func TestPausedPromptForce(t *testing.T) {
 		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
 		Args: []string{"echo", `{"button": "Force update"}`},
 	}
-	cancel, err := testPausedPromptWithProgram(t, promptProgram, time.Second)
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, true, time.Second)
+	assert.NoError(t, err)
+	assert.False(t, cancel)
+}
+
+func TestPausedPromptTryLater(t *testing.T) {
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{"button": "Try again later"}`},
+	}
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, true, time.Second)
+	assert.NoError(t, err)
+	assert.True(t, cancel)
+}
+
+func TestPausedPromptApply(t *testing.T) {
+	promptProgram := command.Program{
+		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
+		Args: []string{"echo", `{"button": "Apply Update"}`},
+	}
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, false, time.Second)
 	assert.NoError(t, err)
 	assert.False(t, cancel)
 }
@@ -142,9 +166,9 @@ func TestPausedPromptForce(t *testing.T) {
 func TestPausedPromptCancel(t *testing.T) {
 	promptProgram := command.Program{
 		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
-		Args: []string{"echo", `{"button": "Try again later"}`},
+		Args: []string{"echo", `{"button": "Cancel"}`},
 	}
-	cancel, err := testPausedPromptWithProgram(t, promptProgram, time.Second)
+	cancel, err := testPausedPromptWithProgram(t, promptProgram, false, time.Second)
 	assert.NoError(t, err)
 	assert.True(t, cancel)
 }
