@@ -294,7 +294,7 @@ func (c context) updaterPromptResultFromFile(path string) (*updaterPromptInputRe
 	return &result, nil
 }
 
-func (c context) PausedPrompt() bool {
+func (c context) PausedPrompt(inUse bool) bool {
 	return false
 }
 
