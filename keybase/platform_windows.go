@@ -244,8 +244,7 @@ func (c config) promptProgram() (command.Program, error) {
 	}
 
 	return command.Program{
-		Path: "mshta.exe",
-		Args: []string{filepath.Join(destinationPath, "prompter", "prompter.hta")},
+		Path: filepath.Join(destinationPath, "prompter.exe"),
 	}, nil
 }
 

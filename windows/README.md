@@ -1,4 +1,3 @@
 ## Windows
 
-The updater expects to find prompter.hta in a subdirectory named prompter
-located in the same directory as the updater executable (upd.exe).
+The updater expects to find prompter.exe in the same directory as the updater executable (upd.exe).
