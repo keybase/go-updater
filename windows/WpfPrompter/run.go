@@ -44,11 +44,11 @@ func main() {
 		return
 	}
 
-	path := filepath.Join(pathName, "prompter.hta")
+	path := filepath.Join(pathName, "WpfApplication1\\bin\\Release\\prompter.exe")
 
-	testLog.Debugf("Executing: %s", string(string(promptJSONInput)))
+	testLog.Debugf("Executing: %s %s", path, string(string(promptJSONInput)))
 
-	_, err = command.Exec("mshta.exe", []string{path, string(promptJSONInput)}, 100*time.Second, testLog)
+	_, err = command.Exec(path, []string{string(promptJSONInput)}, 100*time.Second, testLog)
 	if err != nil {
 		testLog.Errorf("Error: %v", err)
 		return
