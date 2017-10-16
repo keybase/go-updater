@@ -1,6 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>"{\"title\":\"Keybase Update: Version Foobar\",\"message\":\"The version you are currently running %280.0%29 is outdated.\",\"description\":\"Recent changes:\n\n---------------\n\n- Introducing the main GUI screen - this is where you%27ll look people up, manage your folders, and perform other actions. A lot of the features are stubbed out, but you can start playing with it.\n\n- Sharing before signup - go ahead and put data in /keybase/private/you,friend%40twitter/ . If you have any invite codes, this will pop up a window with a link to DM them. It also works for end-to-end encryption with Reddit, Coinbase, Github, and Hacker News users.\n\nWhat we are currently working on:\n\n---------------------------------\n\n- KBFS performance, including delayed writes\n\n\",\"autoUpdate\":true,\"outPath\":\"c:\\work\\src\\github.com\\keybase\\go-updater\\windows\\prompter\\out.txt\"}"</StartArguments>
-  </PropertyGroup>
-</Project>
