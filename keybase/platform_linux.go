@@ -36,6 +36,11 @@ func Dir(appName string) (string, error) {
 	return filepath.Join(usr.HomeDir, ".config", appName), nil
 }
 
+// CacheDir returns where to store temporary files
+func CacheDir(appName string) (string, error) {
+	return LogDir(appName)
+}
+
 // LogDir is where to log
 func LogDir(appName string) (string, error) {
 	dir := os.Getenv("XDG_CACHE_HOME")
