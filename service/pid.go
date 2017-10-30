@@ -37,7 +37,7 @@ func (f *LockPIDFile) Lock() (err error) {
 	fmt.Fprintf(f.file, "%d", pid)
 	f.file.Sync()
 
-	f.log.Debug("Locked pidfile %s for pid=%d", f.name, pid)
+	f.log.Debugf("Locked pidfile %s for pid=%d", f.name, pid)
 
 	return nil
 }
@@ -48,7 +48,7 @@ func (f *LockPIDFile) Close() (err error) {
 		if e1 := f.file.Close(); e1 != nil {
 			f.log.Warningf("Error closing pid file: %s\n", e1)
 		}
-		f.log.Debug("Cleaning up pidfile %s", f.name)
+		f.log.Debugf("Cleaning up pidfile %s", f.name)
 		if err = os.Remove(f.name); err != nil {
 			f.log.Warningf("Error removing pidfile: %s\n", err)
 		}
