@@ -100,7 +100,7 @@ func run(f flags) {
 func serviceFromFlags(f flags, ulog logger) *service {
 	ulog.Infof("Updater %s", updater.Version)
 	ctx, upd := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog)
-	return newService(upd, ctx, ulog)
+	return newService(upd, ctx, ulog, f.appName)
 }
 
 func updateCheckFromFlags(f flags, ulog logger) error {

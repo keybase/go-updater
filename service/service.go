@@ -4,9 +4,11 @@
 package main
 
 import (
+	"path/filepath"
 	"time"
 
 	"github.com/keybase/go-updater"
+	"github.com/keybase/go-updater/keybase"
 	"github.com/keybase/go-updater/util"
 )
 
@@ -27,14 +29,16 @@ type service struct {
 	updateChecker *updater.UpdateChecker
 	context       updater.Context
 	log           Log
+	appName       string
 	ch            chan int
 }
 
-func newService(upd *updater.Updater, context updater.Context, log Log) *service {
+func newService(upd *updater.Updater, context updater.Context, log Log, appName string) *service {
 	svc := service{
 		updater: upd,
 		context: context,
 		log:     log,
+		appName: appName,
 		ch:      make(chan int),
 	}
 	return &svc
@@ -50,6 +54,18 @@ func (s *service) Start() {
 }
 
 func (s *service) Run() {
+	cacheDir, err := keybase.CacheDir(s.appName)
+	if err != nil {
+		s.log.Errorf("updater service not starting due to CacheDir error: %s", err)
+		return
+	}
+	lockPID := NewLockPIDFile(filepath.Join(cacheDir, "updater.pid"), s.log)
+	if err := lockPID.Lock(); err != nil {
+		s.log.Errorf("updater service not starting; could not obtain pid lock: %s", err)
+		return
+	}
+	s.log.Debug("update pid file %s created, updater service starting", lockPID.name)
+	defer lockPID.Close()
 	s.Start()
 	<-s.ch
 }

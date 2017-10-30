@@ -65,6 +65,18 @@ func Dir(appName string) (string, error) {
 	return filepath.Join(libDir, "Application Support", appName), nil
 }
 
+// CacheDir returns where to store temporary files
+func CacheDir(appName string) (string, error) {
+	if appName == "" {
+		return "", fmt.Errorf("No app name for dir")
+	}
+	libDir, err := libraryDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(libDir, "Caches", appName), nil
+}
+
 // LogDir is where to log
 func LogDir(appName string) (string, error) {
 	libDir, err := libraryDir()
