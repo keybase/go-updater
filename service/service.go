@@ -4,12 +4,9 @@
 package main
 
 import (
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/keybase/go-updater"
-	"github.com/keybase/go-updater/keybase"
 	"github.com/keybase/go-updater/util"
 )
 
@@ -55,20 +52,12 @@ func (s *service) Start() {
 }
 
 func (s *service) Run() {
-	if runtime.GOOS != "windows" {
-		cacheDir, err := keybase.CacheDir(s.appName)
-		if err != nil {
-			s.log.Errorf("updater service not starting due to CacheDir error: %s", err)
-			return
-		}
-		lockPID := NewLockPIDFile(filepath.Join(cacheDir, "updater.pid"), s.log)
-		if err := lockPID.Lock(); err != nil {
-			s.log.Errorf("updater service not starting; could not obtain pid lock: %s", err)
-			return
-		}
-		s.log.Debug("update pid file %s created, updater service starting", lockPID.name)
-		defer lockPID.Close()
+	closer, err := s.lockPID()
+	if err != nil {
+		s.log.Errorf("updater service not starting due to lockPID error: %s", err)
+		return
 	}
+	defer closer.Close()
 
 	s.Start()
 	<-s.ch
