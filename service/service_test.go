@@ -16,7 +16,7 @@ var testLog = &logging.Logger{Module: "test"}
 
 func TestService(t *testing.T) {
 	ctx, upd := keybase.NewUpdaterContext("KeybaseTest", "keybase", testLog)
-	svc := newService(upd, ctx, testLog)
+	svc := newService(upd, ctx, testLog, "KeybaseTest")
 	assert.NotNil(t, svc)
 
 	go func() {

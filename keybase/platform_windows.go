@@ -95,6 +95,11 @@ func Dir(appName string) (string, error) {
 	return filepath.Join(dir, appName), nil
 }
 
+// CacheDir returns where to store temporary files
+func CacheDir(appName string) (string, error) {
+	return Dir(appName)
+}
+
 // LogDir is where to log
 func LogDir(appName string) (string, error) {
 	return Dir(appName)

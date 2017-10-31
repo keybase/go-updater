@@ -27,14 +27,16 @@ type service struct {
 	updateChecker *updater.UpdateChecker
 	context       updater.Context
 	log           Log
+	appName       string
 	ch            chan int
 }
 
-func newService(upd *updater.Updater, context updater.Context, log Log) *service {
+func newService(upd *updater.Updater, context updater.Context, log Log, appName string) *service {
 	svc := service{
 		updater: upd,
 		context: context,
 		log:     log,
+		appName: appName,
 		ch:      make(chan int),
 	}
 	return &svc
@@ -50,6 +52,13 @@ func (s *service) Start() {
 }
 
 func (s *service) Run() {
+	closer, err := s.lockPID()
+	if err != nil {
+		s.log.Errorf("updater service not starting due to lockPID error: %s", err)
+		return
+	}
+	defer closer.Close()
+
 	s.Start()
 	<-s.ch
 }
