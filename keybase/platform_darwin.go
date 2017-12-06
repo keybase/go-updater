@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -93,6 +94,11 @@ func (c config) osVersion() string {
 		return ""
 	}
 	return strings.TrimSpace(result.Stdout.String())
+}
+
+// TODO: this only tells us the compile time arch
+func (c config) osArch() string {
+	return runtime.GOARCH
 }
 
 func (c config) promptProgram() (command.Program, error) {

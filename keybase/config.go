@@ -211,11 +211,12 @@ func (c *config) SetInstallID(installID string) error {
 func (c config) updaterOptions() updater.UpdateOptions {
 	version := c.keybaseVersion()
 	osVersion := c.osVersion()
+	osArch := c.osArch()
 
 	return updater.UpdateOptions{
 		Version:         version,
 		Platform:        runtime.GOOS,
-		Arch:            runtime.GOARCH,
+		Arch:            osArch,
 		DestinationPath: c.destinationPath(),
 		Env:             "prod",
 		OSVersion:       osVersion,
