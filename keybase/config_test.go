@@ -70,7 +70,7 @@ func TestConfig(t *testing.T) {
 		DestinationPath: options.DestinationPath,
 		Channel:         "",
 		Env:             "prod",
-		Arch:            runtime.GOARCH,
+		Arch:            cfg.osArch(),
 		Force:           false,
 		OSVersion:       cfg.osVersion(),
 		UpdaterVersion:  updater.Version,

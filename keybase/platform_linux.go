@@ -4,10 +4,13 @@
 package keybase
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -64,6 +67,17 @@ func (c config) osVersion() string {
 		return ""
 	}
 	return strings.TrimSpace(result.Stdout.String())
+}
+
+func (c config) osArch() string {
+	cmd := exec.Command("uname", "-m")
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	err := cmd.Run()
+	if err != nil {
+		return runtime.GOARCH
+	}
+	return buf.String()
 }
 
 func (c config) promptProgram() (command.Program, error) {

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -114,9 +115,27 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
+func (c config) osArch() string {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `Hardware\Description\System\CentralProcessor\0`, registry.QUERY_VALUE)
+	if err != nil {
+		return err.Error()
+	}
+	defer k.Close()
+
+	s, _, err := k.GetStringValue("Identifier")
+	if err != nil {
+		return err.Error()
+	}
+	words := strings.Fields(s)
+	if len(words) < 1 {
+		return "empty"
+	}
+	return words[0]
+}
+
 func (c config) notifyProgram() string {
 	// No notify program for Windows
-	return ""
+	return runtime.GOARCH
 }
 
 func (c *context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
