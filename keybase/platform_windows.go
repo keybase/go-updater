@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -134,7 +135,7 @@ func (c config) osArch() string {
 
 func (c config) notifyProgram() string {
 	// No notify program for Windows
-	return ""
+	return runtime.GOARCH
 }
 
 func (c *context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {

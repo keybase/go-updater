@@ -4,8 +4,10 @@
 package keybase
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"runtime"
@@ -67,9 +69,15 @@ func (c config) osVersion() string {
 	return strings.TrimSpace(result.Stdout.String())
 }
 
-// TODO: this only tells us the compile time arch
 func (c config) osArch() string {
-	return runtime.GOARCH
+	cmd := exec.Command("uname", "-m")
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	err := cmd.Run()
+	if err != nil {
+		return runtime.GOARCH
+	}
+	return buf.String()
 }
 
 func (c config) promptProgram() (command.Program, error) {
