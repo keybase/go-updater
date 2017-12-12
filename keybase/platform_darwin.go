@@ -70,7 +70,10 @@ func Dir(appName string) (string, error) {
 
 // CacheDir returns where to store temporary files
 func CacheDir(appName string) (string, error) {
-	return os.TempDir(), nil
+	if appName == "" {
+		return "", fmt.Errorf("No app name for dir")
+	}
+	return filepath.Join(os.TempDir(), appName), nil
 }
 
 // LogDir is where to log
