@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 )
 
@@ -23,6 +24,17 @@ func NewLockPIDFile(name string, log Log) *LockPIDFile {
 // Lock writes the pid to filename after acquiring a lock on the file.
 // When the process exits, the lock will be released.
 func (f *LockPIDFile) Lock() (err error) {
+	// make the parent directory
+	_, err = os.Stat(filepath.Dir(f.name))
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(f.name), 0700)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+
 	if f.file, err = os.OpenFile(f.name, os.O_CREATE|os.O_RDWR, 0600); err != nil {
 		return err
 	}

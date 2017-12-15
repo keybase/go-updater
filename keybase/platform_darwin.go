@@ -73,11 +73,7 @@ func CacheDir(appName string) (string, error) {
 	if appName == "" {
 		return "", fmt.Errorf("No app name for dir")
 	}
-	libDir, err := libraryDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(libDir, "Caches", appName), nil
+	return filepath.Join(os.TempDir(), appName), nil
 }
 
 // LogDir is where to log
