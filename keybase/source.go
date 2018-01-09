@@ -62,6 +62,7 @@ func (k UpdateSource) findUpdate(options updater.UpdateOptions, timeout time.Dur
 	urlValues.Add("run_mode", options.Env)
 	urlValues.Add("os_version", options.OSVersion)
 	urlValues.Add("upd_version", options.UpdaterVersion)
+	urlValues.Add("arch", options.Arch)
 
 	force := util.EnvBool("KEYBASE_UPDATER_FORCE", false)
 	if force {
