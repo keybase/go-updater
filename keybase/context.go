@@ -11,6 +11,7 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/saltpack"
+	//"github.com/keybase/go-updater/sources"
 )
 
 // validCodeSigningKIDs are the list of valid code signing IDs for saltpack verify
@@ -73,11 +74,18 @@ func NewUpdaterContext(appName string, pathToKeybase string, log Log) (updater.C
 
 	src := NewUpdateSource(cfg, log)
 
-	// For testing, use a local updater source
+	// For testing, you can use a local updater source.
+	// Add your local device signing key to `validCodeSigningKIDs` above (note that the first and last byte are stripped off).
 	// (cd /Applications; ditto -c -k --sequesterRsrc --keepParent Keybase.app /tmp/Keybase.zip)
-	// keybase sign -d -i "/tmp/Keybase.zip" -o "/tmp/update.sig"
+	// keybase sign --saltpack-version "1" -d -i "/tmp/Keybase.zip" -o "/tmp/update.sig"
 	// release update-json --version=`keybase version -S` --src=/tmp/Keybase.zip --uri=/tmp --signature=/tmp/update.sig > /tmp/update.json
+	// Uncomment the following line and the `sources` import above.
 	// src := sources.NewLocalUpdateSource("/tmp/Keybase.zip", "/tmp/update.json", log)
+	// cd $GOPATH/src/github.com/keybase/go-updater/service
+	// go build
+	// cp service /Applications/Keybase.app/Contents/SharedSupport/bin/updater
+	// keybase launchd stop keybase.updater
+	// keybase update check
 
 	upd := updater.NewUpdater(src, cfg, log)
 	return newContext(cfg, log), upd
