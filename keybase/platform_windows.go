@@ -32,7 +32,7 @@ type guid struct {
 // F1B32785-6FBA-4FCF-9D55-7B8E7F157091
 var (
 	folderIDLocalAppData = guid{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
-	folderIDSystem       = guid{0x1AC14E77, 0x02E7, 0x4E5D, [8]byte{0xB7, 0x44, 0x2E, 0xB1, 0xAE, 0x51, 0x99, 0xB7}}
+	folderIDSystem       = guid{0x1AC14E77, 0x02E7, 0x4E5D, [8]byte{0xB7, 0x44, 0x2E, 0xB1, 0xAE, 0x51, 0x98, 0xB7}}
 )
 
 var (
@@ -52,7 +52,7 @@ func getDataDir(id guid) (string, error) {
 	var pszPath uintptr
 	r0, _, _ := procSHGetKnownFolderPath.Call(uintptr(unsafe.Pointer(&id)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(&pszPath)))
 	if r0 != 0 {
-		return "", errors.New("can't get FOLDERID_RoamingAppData")
+		return "", errors.New("can't get known folder")
 	}
 
 	defer coTaskMemFree(pszPath)
@@ -61,7 +61,7 @@ func getDataDir(id guid) (string, error) {
 	folder := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(pszPath))[:])
 
 	if len(folder) == 0 {
-		return "", errors.New("can't get AppData directory")
+		return "", errors.New("can't get known folder")
 	}
 
 	return folder, nil
@@ -180,8 +180,8 @@ func CheckCanBeSilent(dokanCodeX86 string, dokanCodeX64 string, log Log, regFunc
 	} else {
 		// If we don't find our dokan installed, see whether another one is,
 		// and allow silent update if not.
-		if detectDokanDll(log) {
-			codeFound = false
+		if !detectDokanDll(log) {
+			codeFound = true
 		}
 	}
 
