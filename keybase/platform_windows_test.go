@@ -77,5 +77,6 @@ func testCheckCanBeSlient(t *testing.T, dokan86Code string, dokan64Code string, 
 func TestSearchInstallerLayout(t *testing.T) {
 	assert.Equal(t, testCheckCanBeSlient(t, legit86Code, legit64Code, legit64Code), true)
 	assert.Equal(t, testCheckCanBeSlient(t, legit86Code, legit64Code, legit86Code), true)
-	assert.Equal(t, testCheckCanBeSlient(t, legit86Code, legit64Code, mismatchedCode), false)
+	// This is now true because there's no dokan1.dll
+	assert.Equal(t, testCheckCanBeSlient(t, legit86Code, legit64Code, mismatchedCode), true)
 }
