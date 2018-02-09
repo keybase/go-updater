@@ -33,6 +33,7 @@ type guid struct {
 // F1B32785-6FBA-4FCF-9D55-7B8E7F157091
 var (
 	folderIDLocalAppData = guid{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
+	folderIDSystem       = guid{0x1AC14E77, 0x02E7, 0x4E5D, [8]byte{0xB7, 0x44, 0x2E, 0xB1, 0xAE, 0x51, 0x98, 0xB7}}
 )
 
 var (
@@ -52,7 +53,7 @@ func getDataDir(id guid) (string, error) {
 	var pszPath uintptr
 	r0, _, _ := procSHGetKnownFolderPath.Call(uintptr(unsafe.Pointer(&id)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(&pszPath)))
 	if r0 != 0 {
-		return "", errors.New("can't get FOLDERID_RoamingAppData")
+		return "", errors.New("can't get known folder")
 	}
 
 	defer coTaskMemFree(pszPath)
@@ -61,7 +62,7 @@ func getDataDir(id guid) (string, error) {
 	folder := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(pszPath))[:])
 
 	if len(folder) == 0 {
-		return "", errors.New("can't get AppData directory")
+		return "", errors.New("can't get known folder")
 	}
 
 	return folder, nil
@@ -160,13 +161,25 @@ func (c *context) BeforeUpdatePrompt(update updater.Update, options updater.Upda
 	return nil
 }
 
+func detectDokanDll(log Log) bool {
+	dir, err := getDataDir(folderIDSystem)
+	if err != nil {
+		log.Infof("detectDokanDll error getting system directory: %v", err)
+		return false
+	}
+
+	exists, _ := util.FileExists(filepath.Join(dir, "dokan1.dll"))
+	log.Infof("detectDokanDll: returning %v", exists)
+	return exists
+}
+
 type regUninstallGetter func(string, Log) bool
 
-// CheckCanBeSilent - Interrogate the incoming installer for its driver's
-// uninstall codes. It turns out a Wix bundle .exe supports "/layout", which
-// among other things generates a log of what it would do. We can parse this
-// for Dokan product code variables, which will be in the registry if the same
+// CheckCanBeSilent - Takes an incoming installer's driver
+// uninstall codes, which will be in the registry if the same
 // version is already present.
+// If it's not installed, check if dokan1.dll is present, which will indicate
+// some other version is present.
 func CheckCanBeSilent(dokanCodeX86 string, dokanCodeX64 string, log Log, regFunc regUninstallGetter) (bool, error) {
 	codeFound := false
 	var err error
@@ -183,6 +196,12 @@ func CheckCanBeSilent(dokanCodeX86 string, dokanCodeX64 string, log Log, regFunc
 
 	if regFunc(dokanCodeX86, log) || regFunc(dokanCodeX64, log) {
 		codeFound = true
+	} else {
+		// If we don't find our dokan installed, see whether another one is,
+		// and allow silent update if not.
+		if !detectDokanDll(log) {
+			codeFound = true
+		}
 	}
 
 	log.Infof("CheckCanBeSilent: returning %v", codeFound)
