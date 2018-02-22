@@ -184,7 +184,7 @@ func (c context) stop() error {
 	}
 
 	// Stop the redirector so it can be upgraded for all users.
-	_, redirectorErr := command.Exec(c.config.keybasePath(), []string{"uninstall", "--components=redirector", fmt.Sprintf("--source-path=%s", sourcePath)}, time.Minute, c.log)
+	_, redirectorErr := command.Exec(c.config.keybasePath(), []string{"uninstall", "--components=redirector"}, time.Minute, c.log)
 	if redirectorErr != nil {
 		c.log.Warningf("Error stopping the redirector: %s", redirectorErr)
 	}
