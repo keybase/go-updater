@@ -19,6 +19,7 @@ import (
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/util"
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
 )
 
 type guid struct {
@@ -32,7 +33,6 @@ type guid struct {
 // F1B32785-6FBA-4FCF-9D55-7B8E7F157091
 var (
 	folderIDLocalAppData = guid{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
-	folderIDSystem       = guid{0x1AC14E77, 0x02E7, 0x4E5D, [8]byte{0xB7, 0x44, 0x2E, 0xB1, 0xAE, 0x51, 0x98, 0xB7}}
 )
 
 var (
@@ -140,53 +140,6 @@ func (c config) notifyProgram() string {
 
 func (c *context) BeforeUpdatePrompt(update updater.Update, options updater.UpdateOptions) error {
 	return nil
-}
-
-func detectDokanDll(log Log) bool {
-	dir, err := getDataDir(folderIDSystem)
-	if err != nil {
-		log.Infof("detectDokanDll error getting system directory: %v", err)
-		return false
-	}
-
-	exists, _ := util.FileExists(filepath.Join(dir, "dokan1.dll"))
-	log.Infof("detectDokanDll: returning %v", exists)
-	return exists
-}
-
-type regUninstallGetter func(string, Log) bool
-
-// CheckCanBeSilent - Takes an incoming installer's driver
-// uninstall codes, which will be in the registry if the same
-// version is already present.
-// If it's not installed, check if dokan1.dll is present, which will indicate
-// some other version is present.
-func CheckCanBeSilent(dokanCodeX86 string, dokanCodeX64 string, log Log, regFunc regUninstallGetter) (bool, error) {
-	codeFound := false
-	var err error
-
-	// Also look in the registry whether a reboot is pending from a previous installer.
-	// Not finding the key is not an error.
-	if rebootPending, err := checkRebootPending(false, log); rebootPending && err == nil {
-		return false, nil
-	}
-
-	if rebootPending, err := checkRebootPending(true, log); rebootPending && err == nil {
-		return false, nil
-	}
-
-	if regFunc(dokanCodeX86, log) || regFunc(dokanCodeX64, log) {
-		codeFound = true
-	} else {
-		// If we don't find our dokan installed, see whether another one is,
-		// and allow silent update if not.
-		if !detectDokanDll(log) {
-			codeFound = true
-		}
-	}
-
-	log.Infof("CheckCanBeSilent: returning %v", codeFound)
-	return codeFound, err
 }
 
 func (c config) promptProgram() (command.Program, error) {
