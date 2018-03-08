@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -209,9 +208,22 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		return fmt.Errorf("No asset")
 	}
 	runCommand := update.Asset.LocalPath
-	args := []string{"/log", path.Join(os.TempDir(), "KeybaseApps_"+time.Now().Format(time.RFC3339)) + ".log"}
+	args := []string{
+		"/log",
+		filepath.Join(
+			os.TempDir(),
+			fmt.Sprintf("KeybaseApps_%d%02d%02d%02d%02d%02d.log",
+				time.Now().Year(),
+				time.Now().Month(),
+				time.Now().Day(),
+				time.Now().Hour(),
+				time.Now().Minute(),
+				time.Now().Second(),
+			),
+		),
+	}
 	if strings.HasSuffix(runCommand, "msi") || strings.HasSuffix(runCommand, "MSI") {
-		args = append([]string{runCommand}, args...)
+		args = append([]string{"/i", runCommand}, args...)
 		runCommand = "msiexec.exe"
 	}
 	auto, _ := c.config.GetUpdateAuto()
