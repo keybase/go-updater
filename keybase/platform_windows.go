@@ -208,13 +208,17 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
-
+	runCommand := update.Asset.LocalPath
 	args := []string{"/log", path.Join(os.TempDir(), "KeybaseApps_"+time.Now().Format(time.RFC3339)) + ".log"}
+	if strings.HasSuffix(runCommand, "msi") || strings.HasSuffix(runCommand, "MSI") {
+		args = append([]string{runCommand}, args...)
+		runCommand = "msiexec.exe"
+	}
 	auto, _ := c.config.GetUpdateAuto()
 	if auto && !c.config.GetUpdateAutoOverride() {
 		args = append(args, "/quiet", "/norestart")
 	}
-	_, err := command.Exec(update.Asset.LocalPath, args, time.Hour, c.log)
+	_, err := command.Exec(runCommand, args, time.Hour, c.log)
 	return err
 }
 
