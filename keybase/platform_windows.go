@@ -239,3 +239,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 func (c context) AfterApply(update updater.Update) error {
 	return nil
 }
+
+func (c context) GetAppStatePath() string {
+	return filepath.Join(c.config.destinationPath(), "app-state.json")
+}

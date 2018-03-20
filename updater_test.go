@@ -112,6 +112,10 @@ func (u testUpdateUI) UpdateOptions() UpdateOptions {
 	return u.options
 }
 
+func (c testUpdateCheckUI) GetAppStatePath() string {
+	return ""
+}
+
 type testUpdateSource struct {
 	testServer *httptest.Server
 	config     Config
