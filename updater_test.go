@@ -4,6 +4,7 @@
 package updater
 
 import (
+	"github.com/keybase/kbfs/ioutil"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,6 +26,8 @@ import (
 var testLog = &logging.Logger{Module: "test"}
 
 var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+
+var testAppStatePath = filepath.Join(os.TempDir(), "KBTest_app_state.json")
 
 func newTestUpdater(t *testing.T) (*Updater, error) {
 	return newTestUpdaterWithServer(t, nil, nil, &testConfig{})
@@ -113,7 +116,7 @@ func (u testUpdateUI) UpdateOptions() UpdateOptions {
 }
 
 func (c testUpdateUI) GetAppStatePath() string {
-	return ""
+	return testAppStatePath
 }
 
 type testUpdateSource struct {
@@ -452,4 +455,18 @@ func TestUpdaterNotNeeded(t *testing.T) {
 
 	assert.False(t, ctx.successReported)
 	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+}
+
+func TestUpdaterGuiBusy(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+	err := ioutil.WriteFile(testAppStatePath, []byte("{\"isUserActive\":true}"), 0644)
+	assert.NoError(t, err)
+	defer util.RemoveFileAtPath(testAppStatePath)
+	
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{auto: true, autoSet: true})
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (prompt): GUI is active, try later")
 }
