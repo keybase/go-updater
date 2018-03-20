@@ -4,7 +4,7 @@
 package updater
 
 import (
-	"github.com/keybase/kbfs/ioutil"
+	"io/ioutil"
 	"fmt"
 	"io"
 	"net/http"
