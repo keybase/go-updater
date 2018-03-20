@@ -112,7 +112,7 @@ func (u testUpdateUI) UpdateOptions() UpdateOptions {
 	return u.options
 }
 
-func (c testUpdateCheckUI) GetAppStatePath() string {
+func (c testUpdateUI) GetAppStatePath() string {
 	return ""
 }
 

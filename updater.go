@@ -280,13 +280,15 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 
 	rawState, err := util.ReadFile(ctx.GetAppStatePath())
 	if err != nil {
-		return false, err
+		u.log.Warningf("Error reading GUI state - proceeding", err)
+		return false, nil
 	}
 	
     guistate := guiAppState{}
 	err = json.Unmarshal(rawState, &guistate)
 	if err != nil {
-		return false, err
+		u.log.Warningf("Error parsing GUI state - proceeding", err)
+		return false, nil
 	}
 	if guistate.IsUserActive {
 		u.guiBusyCount++
