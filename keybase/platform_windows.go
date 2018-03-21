@@ -74,7 +74,7 @@ func localDataDir() (string, error) {
 }
 
 func roamingDataDir() (string, error) {
-	return getDataDir(folderIDLocalAppData)
+	return getDataDir(folderIDRoamingAppData)
 }
 
 func (c config) destinationPath() string {
