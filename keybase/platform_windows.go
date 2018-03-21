@@ -34,6 +34,7 @@ type guid struct {
 // F1B32785-6FBA-4FCF-9D55-7B8E7F157091
 var (
 	folderIDLocalAppData = guid{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
+	folderIDRoamingAppData = guid{0x3EB685DB, 0x65F9, 0x4CF6, [8]byte{0xA0, 0x3A, 0xE3, 0xEF, 0x65, 0x72, 0x9F, 0x3D}}
 )
 
 var (
@@ -69,6 +70,10 @@ func getDataDir(id guid) (string, error) {
 }
 
 func localDataDir() (string, error) {
+	return getDataDir(folderIDLocalAppData)
+}
+
+func roamingDataDir() (string, error) {
 	return getDataDir(folderIDLocalAppData)
 }
 
@@ -241,5 +246,6 @@ func (c context) AfterApply(update updater.Update) error {
 }
 
 func (c context) GetAppStatePath() string {
-	return filepath.Join(c.config.destinationPath(), "app-state.json")
+	roamingDir, _ := roamingDataDir()
+	return filepath.Join(roamingDir, "Keybase", "app-state.json")
 }
