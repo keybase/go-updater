@@ -120,5 +120,6 @@ func (c context) AfterApply(update updater.Update) error {
 }
 
 func (c context) GetAppStatePath() string {
-	return filepath.Join(Dir(), "app-state.json")
+	home, _ := Dir()
+	return filepath.Join(home, "app-state.json")
 }
