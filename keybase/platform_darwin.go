@@ -150,7 +150,8 @@ func (c context) PausedPrompt() bool {
 }
 
 func (c context) GetAppStatePath() string {
-	return filepath.Join(Dir(), "app-state.json")
+	home, _ := Dir("keybase")
+	return filepath.Join(home, "app-state.json")
 }
 
 const serviceInBundlePath = "/Contents/SharedSupport/bin/keybase"
