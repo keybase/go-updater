@@ -278,12 +278,13 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 		return false, nil
 	}
 
+	// Read app-state.json, written by the GUI
 	rawState, err := util.ReadFile(ctx.GetAppStatePath())
 	if err != nil {
 		u.log.Warningf("Error reading GUI state - proceeding", err)
 		return false, nil
 	}
-	
+
     guistate := guiAppState{}
 	err = json.Unmarshal(rawState, &guistate)
 	if err != nil {

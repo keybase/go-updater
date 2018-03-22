@@ -30,10 +30,13 @@ type guid struct {
 	Data4 [8]byte
 }
 
-// FOLDERID_LocalAppData
-// F1B32785-6FBA-4FCF-9D55-7B8E7F157091
 var (
+	// FOLDERID_LocalAppData
+	// F1B32785-6FBA-4FCF-9D55-7B8E7F157091
 	folderIDLocalAppData = guid{0xF1B32785, 0x6FBA, 0x4FCF, [8]byte{0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91}}
+
+	// FOLDERID_RoamingAppData
+	// {3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}
 	folderIDRoamingAppData = guid{0x3EB685DB, 0x65F9, 0x4CF6, [8]byte{0xA0, 0x3A, 0xE3, 0xEF, 0x65, 0x72, 0x9F, 0x3D}}
 )
 
@@ -245,6 +248,8 @@ func (c context) AfterApply(update updater.Update) error {
 	return nil
 }
 
+// app-state.json is written in the roaming settings directory, which
+// seems to be where Electron chooses
 func (c context) GetAppStatePath() string {
 	roamingDir, _ := roamingDataDir()
 	return filepath.Join(roamingDir, "Keybase", "app-state.json")
