@@ -45,21 +45,22 @@ func TestUnzipOtherUser(t *testing.T) {
 // TestUnzipFileModTime checks to make sure after unpacking zip file the file
 // modification time is "now" and not the original file time.
 func TestUnzipFileModTime(t *testing.T) {
-	now := time.Now().UnixNano()
-	t.Logf("Now: %d", now)
+	now := time.Now()
+	nowUnix := now.UnixNano()
+	t.Logf("Now: %d", nowUnix)
 	destinationPath := TempPath("", "TestUnzipFileModTime.")
 	err := Unzip(testZipPath, destinationPath, testLog)
 	require.NoError(t, err)
 
 	fileInfo, err := os.Stat(filepath.Join(destinationPath, "test"))
 	require.NoError(t, err)
-	diffDir := now - fileInfo.ModTime().UnixNano()
+	diffDir := nowUnix - fileInfo.ModTime().UnixNano()
 	t.Logf("Diff (dir): %d", diffDir)
-	assert.True(t, diffDir >= 0)
+	assert.True(t, diffDir >= 0, "now=%s, dirtime=%s")
 
 	fileInfo, err = os.Stat(filepath.Join(destinationPath, "test", "testfile"))
 	require.NoError(t, err)
-	diffFile := now - fileInfo.ModTime().UnixNano()
+	diffFile := nowUnix - fileInfo.ModTime().UnixNano()
 	t.Logf("Diff (file): %d", diffFile)
-	assert.True(t, diffFile >= 0)
+	assert.True(t, diffFile >= 0, "now=%s, filetime=%s")
 }
