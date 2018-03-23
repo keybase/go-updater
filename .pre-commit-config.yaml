@@ -1,10 +1,6 @@
--   repo: https://github.com/keybase/pre-commit-golang
+-   repo: https://github.com/keybase/pre-commit-golang.git
     sha: 06cb541d5ec2ec6adc218f7862098c55b5b24fc1
     hooks:
     -   id: go-fmt
-    -   id: go-metalinter
-        args:
-        - --deadline=60s
-        - --vendor
-        - --cyclo-over=20
-        - --dupl-threshold=100
+    -   id: go-vet
+    -   id: go-lint
