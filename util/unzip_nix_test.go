@@ -54,13 +54,15 @@ func TestUnzipFileModTime(t *testing.T) {
 
 	fileInfo, err := os.Stat(filepath.Join(destinationPath, "test"))
 	require.NoError(t, err)
-	diffDir := nowUnix - fileInfo.ModTime().UnixNano()
+	dirMod := fileInfo.ModTime()
+	diffDir := nowUnix - dirMod.UnixNano()
 	t.Logf("Diff (dir): %d", diffDir)
-	assert.True(t, diffDir >= 0, "now=%s, dirtime=%s")
+	assert.True(t, diffDir >= 0, "now=%s, dirtime=%s", now, dirMod)
 
 	fileInfo, err = os.Stat(filepath.Join(destinationPath, "test", "testfile"))
 	require.NoError(t, err)
-	diffFile := nowUnix - fileInfo.ModTime().UnixNano()
+	fileMod := fileInfo.ModTime()
+	diffFile := nowUnix - fileMod.UnixNano()
 	t.Logf("Diff (file): %d", diffFile)
-	assert.True(t, diffFile >= 0, "now=%s, filetime=%s")
+	assert.True(t, diffFile >= 0, "now=%s, filetime=%s", now, fileMod)
 }
