@@ -1,5 +1,5 @@
--   repo: https://github.com/gabriel/pre-commit-golang
-    sha: c02a81d85a5295886022b8106c367518e6c3760e
+-   repo: https://github.com/keybase/pre-commit-golang
+    sha: 06cb541d5ec2ec6adc218f7862098c55b5b24fc1
     hooks:
     -   id: go-fmt
     -   id: go-metalinter
