@@ -67,7 +67,7 @@ func VerifyDetachedCheckSender(message io.Reader, signature []byte, checkSender 
 	kr := basic.NewKeyring()
 	var skey sp.SigningPublicKey
 	var err error
-	skey, _, err = sp.Dearmor62VerifyDetachedReader(message, string(signature), kr)
+	skey, _, err = sp.Dearmor62VerifyDetachedReader(sp.CheckKnownMajorVersion, message, string(signature), kr)
 	if err != nil {
 		return err
 	}
