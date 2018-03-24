@@ -38,19 +38,22 @@
 			"revisionTime": "2016-06-23T20:06:58-07:00"
 		},
 		{
+			"checksumSHA1": "UT+c8olRWpXtZIw96rRFXYfBUzY=",
 			"path": "github.com/keybase/saltpack",
-			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
-			"revisionTime": "2016-04-14T14:15:52-04:00"
+			"revision": "282df2166aa71f1283de12d39a10addbb30bafb4",
+			"revisionTime": "2018-03-19T16:38:18Z"
 		},
 		{
+			"checksumSHA1": "D4hR7JGP+aNHyAfXjBumb6PU7IM=",
 			"path": "github.com/keybase/saltpack/basic",
-			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
-			"revisionTime": "2016-04-14T14:15:52-04:00"
+			"revision": "282df2166aa71f1283de12d39a10addbb30bafb4",
+			"revisionTime": "2018-03-19T16:38:18Z"
 		},
 		{
+			"checksumSHA1": "LpuohLoTQEeJxurlZ5ruBJFWh8E=",
 			"path": "github.com/keybase/saltpack/encoding/basex",
-			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
-			"revisionTime": "2016-04-14T14:15:52-04:00"
+			"revision": "282df2166aa71f1283de12d39a10addbb30bafb4",
+			"revisionTime": "2018-03-19T16:38:18Z"
 		},
 		{
 			"path": "github.com/pmezard/go-difflib/difflib",
@@ -102,5 +105,6 @@
 			"revision": "eb2c74142fd19a79b3f237334c7384d5167b1b46",
 			"revisionTime": "2016-01-26T17:36:05-08:00"
 		}
-	]
+	],
+	"rootPath": "github.com/keybase/go-updater"
 }

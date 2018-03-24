@@ -6,13 +6,24 @@ package basic
 import (
 	"crypto/rand"
 
-	"github.com/agl/ed25519"
 	"github.com/keybase/saltpack"
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/nacl/box"
 )
 
+// EphemeralKeyCreator creates random ephemeral keys.
+type EphemeralKeyCreator struct{}
+
+// CreateEphemeralKey creates a random ephemeral key.
+func (c EphemeralKeyCreator) CreateEphemeralKey() (saltpack.BoxSecretKey, error) {
+	return generateBoxKey()
+}
+
 // PublicKey is a basic implementation of a saltpack public key
-type PublicKey saltpack.RawBoxKey
+type PublicKey struct {
+	EphemeralKeyCreator
+	saltpack.RawBoxKey
+}
 
 // SecretKey is a basic implementation of a saltpack private key
 type SecretKey struct {
@@ -28,14 +39,14 @@ type PrecomputedSharedKey saltpack.RawBoxKey
 // just the key itself in this implementation. It can be used to identify
 // the key.
 func (k PublicKey) ToKID() []byte {
-	return k[:]
+	return k.RawBoxKey[:]
 }
 
 // ToRawBoxKeyPointer returns a RawBoxKey from a given public key.
 // A RawBoxKey is just a bunch of bytes that can be used in
 // the lower-level Box libraries.
 func (k PublicKey) ToRawBoxKeyPointer() *saltpack.RawBoxKey {
-	ret := saltpack.RawBoxKey(k)
+	ret := k.RawBoxKey
 	return &ret
 }
 
@@ -51,28 +62,18 @@ func generateBoxKey() (*SecretKey, error) {
 	return &ret, nil
 }
 
-// CreateEphemeralKey takes a PublicKey and returns a new ephemeral
-// secret key of the same type.
-func (k PublicKey) CreateEphemeralKey() (saltpack.BoxSecretKey, error) {
-	ret, err := generateBoxKey()
-	if err != nil {
-		return nil, err
-	}
-	return *ret, nil
-}
-
 var _ saltpack.BoxPublicKey = PublicKey{}
 
 // Box runs the NaCl box for the given sender and receiver key.
-func (k SecretKey) Box(receiver saltpack.BoxPublicKey, nonce *saltpack.Nonce, msg []byte) []byte {
-	ret := box.Seal([]byte{}, msg, (*[24]byte)(nonce), (*[32]byte)(receiver.ToRawBoxKeyPointer()), (*[32]byte)(&k.sec))
+func (k SecretKey) Box(receiver saltpack.BoxPublicKey, nonce saltpack.Nonce, msg []byte) []byte {
+	ret := box.Seal([]byte{}, msg, (*[24]byte)(&nonce), (*[32]byte)(receiver.ToRawBoxKeyPointer()), (*[32]byte)(&k.sec))
 	return ret
 }
 
 // Unbox runs the NaCl unbox operation on the given ciphertext and nonce,
 // using the receiver as the secret key.
-func (k SecretKey) Unbox(sender saltpack.BoxPublicKey, nonce *saltpack.Nonce, msg []byte) ([]byte, error) {
-	ret, ok := box.Open([]byte{}, msg, (*[24]byte)(nonce), (*[32]byte)(sender.ToRawBoxKeyPointer()), (*[32]byte)(&k.sec))
+func (k SecretKey) Unbox(sender saltpack.BoxPublicKey, nonce saltpack.Nonce, msg []byte) ([]byte, error) {
+	ret, ok := box.Open([]byte{}, msg, (*[24]byte)(&nonce), (*[32]byte)(sender.ToRawBoxKeyPointer()), (*[32]byte)(&k.sec))
 	if !ok {
 		return nil, saltpack.ErrDecryptionFailed
 	}
@@ -85,9 +86,9 @@ func (k SecretKey) GetPublicKey() saltpack.BoxPublicKey {
 }
 
 // Precompute computes a shared key with the passed public key.
-func (k SecretKey) Precompute(sender saltpack.BoxPublicKey) saltpack.BoxPrecomputedSharedKey {
+func (k SecretKey) Precompute(peer saltpack.BoxPublicKey) saltpack.BoxPrecomputedSharedKey {
 	var res PrecomputedSharedKey
-	box.Precompute((*[32]byte)(&res), (*[32]byte)(sender.ToRawBoxKeyPointer()), (*[32]byte)(&k.sec))
+	box.Precompute((*[32]byte)(&res), (*[32]byte)(peer.ToRawBoxKeyPointer()), (*[32]byte)(&k.sec))
 	return res
 }
 
@@ -96,21 +97,23 @@ func (k SecretKey) Precompute(sender saltpack.BoxPublicKey) saltpack.BoxPrecompu
 func NewSecretKey(pub, sec *[32]byte) SecretKey {
 	return SecretKey{
 		sec: saltpack.RawBoxKey(*sec),
-		pub: PublicKey(*pub),
+		pub: PublicKey{
+			RawBoxKey: *pub,
+		},
 	}
 }
 
 var _ saltpack.BoxSecretKey = SecretKey{}
 
 // Box runs the box computation given a precomputed key.
-func (k PrecomputedSharedKey) Box(nonce *saltpack.Nonce, msg []byte) []byte {
-	ret := box.SealAfterPrecomputation([]byte{}, msg, (*[24]byte)(nonce), (*[32]byte)(&k))
+func (k PrecomputedSharedKey) Box(nonce saltpack.Nonce, msg []byte) []byte {
+	ret := box.SealAfterPrecomputation([]byte{}, msg, (*[24]byte)(&nonce), (*[32]byte)(&k))
 	return ret
 }
 
 // Unbox runs the unbox computation given a precomputed key.
-func (k PrecomputedSharedKey) Unbox(nonce *saltpack.Nonce, msg []byte) ([]byte, error) {
-	ret, ok := box.OpenAfterPrecomputation([]byte{}, msg, (*[24]byte)(nonce), (*[32]byte)(&k))
+func (k PrecomputedSharedKey) Unbox(nonce saltpack.Nonce, msg []byte) ([]byte, error) {
+	ret, ok := box.OpenAfterPrecomputation([]byte{}, msg, (*[24]byte)(&nonce), (*[32]byte)(&k))
 	if !ok {
 		return nil, saltpack.ErrDecryptionFailed
 	}
@@ -121,6 +124,7 @@ var _ saltpack.BoxPrecomputedSharedKey = PrecomputedSharedKey{}
 
 // Keyring holds signing and box secret/public keypairs.
 type Keyring struct {
+	EphemeralKeyCreator
 	encKeys map[PublicKey]SecretKey
 	sigKeys map[SigningPublicKey]SigningSecretKey
 }
@@ -156,7 +160,20 @@ func (k *Keyring) GenerateSigningKey() (*SigningSecretKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret := NewSigningSecretKey(pub, sec)
+
+	if len(pub) != ed25519.PublicKeySize {
+		panic("unexpected public key size")
+	}
+	var pubArray [ed25519.PublicKeySize]byte
+	copy(pubArray[:], pub)
+
+	if len(sec) != ed25519.PrivateKeySize {
+		panic("unexpected private key size")
+	}
+	var privArray [ed25519.PrivateKeySize]byte
+	copy(privArray[:], sec)
+
+	ret := NewSigningSecretKey(&pubArray, &privArray)
 	return &ret, nil
 }
 
@@ -168,7 +185,7 @@ func (k *Keyring) ImportSigningKey(pub *[ed25519.PublicKeySize]byte, sec *[ed255
 
 func kidToPublicKey(kid []byte) PublicKey {
 	var tmp PublicKey
-	copy(tmp[:], kid)
+	copy(tmp.RawBoxKey[:], kid)
 	return tmp
 }
 
@@ -224,8 +241,7 @@ type SigningSecretKey struct {
 // Sign runs the NaCl signature scheme on the input message, returning
 // a signature.
 func (k SigningSecretKey) Sign(msg []byte) (ret []byte, err error) {
-	tmp := ed25519.Sign((*[ed25519.PrivateKeySize]byte)(&k.sec), msg)
-	return (*tmp)[:], nil
+	return ed25519.Sign(k.sec[:], msg), nil
 }
 
 var _ saltpack.SigningSecretKey = SigningSecretKey{}
@@ -245,9 +261,7 @@ func (k SigningSecretKey) GetPublicKey() saltpack.SigningPublicKey {
 // Verify runs the NaCl verification routine on the given msg / sig
 // input.
 func (k SigningPublicKey) Verify(msg []byte, sig []byte) error {
-	var tmp [ed25519.SignatureSize]byte
-	copy(tmp[:], sig)
-	ok := ed25519.Verify((*[ed25519.PublicKeySize]byte)(&k), msg, &tmp)
+	ok := ed25519.Verify(k[:], msg, sig)
 	if !ok {
 		return saltpack.ErrBadSignature
 	}
