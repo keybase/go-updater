@@ -45,7 +45,9 @@ func TestUnzipOtherUser(t *testing.T) {
 // TestUnzipFileModTime checks to make sure after unpacking zip file the file
 // modification time is "now" and not the original file time.
 func TestUnzipFileModTime(t *testing.T) {
-	now := time.Now()
+	// Fudge now a bit, since the timestamps below on Linux seem
+	// to happen a bit *before* now.
+	now := time.Now().Add(-time.Second)
 	t.Logf("Now: %s", now)
 	destinationPath := TempPath("", "TestUnzipFileModTime.")
 	err := Unzip(testZipPath, destinationPath, testLog)
