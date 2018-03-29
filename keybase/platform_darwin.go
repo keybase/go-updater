@@ -149,11 +149,6 @@ func (c context) PausedPrompt() bool {
 	return cancelUpdate
 }
 
-func (c context) GetAppStatePath() string {
-	home, _ := Dir("keybase")
-	return filepath.Join(home, "app-state.json")
-}
-
 const serviceInBundlePath = "/Contents/SharedSupport/bin/keybase"
 const kbfsInBundlePath = "/Contents/SharedSupport/bin/kbfs"
 
