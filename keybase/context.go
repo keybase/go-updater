@@ -40,6 +40,8 @@ type context struct {
 	config Config
 	// log is the logger
 	log Log
+	// isCheckCommand is whether the updater is being invoked with the check command
+	isCheckCommand bool
 }
 
 // endpoints define all the url locations for reporting, etc
@@ -57,16 +59,17 @@ var defaultEndpoints = endpoints{
 	err:     "https://api.keybase.io/_/api/1.0/pkg/error.json",
 }
 
-func newContext(cfg Config, log Log) *context {
+func newContext(cfg Config, log Log, isCheckCommand bool) *context {
 	ctx := context{
-		config: cfg,
-		log:    log,
+		config:         cfg,
+		log:            log,
+		isCheckCommand: isCheckCommand,
 	}
 	return &ctx
 }
 
 // NewUpdaterContext returns an updater context for Keybase
-func NewUpdaterContext(appName string, pathToKeybase string, log Log) (updater.Context, *updater.Updater) {
+func NewUpdaterContext(appName string, pathToKeybase string, log Log, isCheck bool) (updater.Context, *updater.Updater) {
 	cfg, err := newConfig(appName, pathToKeybase, log)
 	if err != nil {
 		log.Warningf("Error loading config for context: %s", err)
@@ -88,7 +91,7 @@ func NewUpdaterContext(appName string, pathToKeybase string, log Log) (updater.C
 	// keybase update check
 
 	upd := updater.NewUpdater(src, cfg, log)
-	return newContext(cfg, log), upd
+	return newContext(cfg, log, isCheck), upd
 }
 
 // UpdateOptions returns update options
