@@ -269,13 +269,11 @@ func TestUpdaterDownloadError(t *testing.T) {
 
 	require.NotNil(t, ctx.errReported)
 	assert.Equal(t, ctx.errReported.(Error).errorType, DownloadError)
-	assert.Equal(t, "deadbeef", ctx.updateReported.InstallID)
-	assert.Equal(t, "cafedead", ctx.updateReported.RequestID)
 	assert.False(t, ctx.successReported)
 }
 
 func TestUpdaterCancel(t *testing.T) {
-	testServer := testServerForError(t, fmt.Errorf("cancel"))
+	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})
@@ -289,7 +287,7 @@ func TestUpdaterCancel(t *testing.T) {
 }
 
 func TestUpdaterSnooze(t *testing.T) {
-	testServer := testServerForError(t, fmt.Errorf("snooze"))
+	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{})

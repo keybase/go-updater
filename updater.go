@@ -100,6 +100,24 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 	u.log.Infof("Got update with version: %s", update.Version)
 
+	// Linux updates don't have assets so it's ok to prompt for update above before
+	// we check for nil asset.
+	if update.Asset == nil || update.Asset.URL == "" {
+		u.log.Info("No update asset to apply")
+		return update, nil
+	}
+
+	tmpDir := u.tempDir()
+	defer u.Cleanup(tmpDir)
+	if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
+		return update, downloadErr(err)
+	}
+
+	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
+	if err := ctx.Verify(*update); err != nil {
+		return update, verifyErr(err)
+	}
+
 	err = ctx.BeforeUpdatePrompt(*update, options)
 	if err != nil {
 		return update, err
@@ -125,24 +143,6 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
 	case UpdateActionContinue:
 		// Continue
-	}
-
-	// Linux updates don't have assets so it's ok to prompt for update above before
-	// we check for nil asset.
-	if update.Asset == nil || update.Asset.URL == "" {
-		u.log.Info("No update asset to apply")
-		return update, nil
-	}
-
-	tmpDir := u.tempDir()
-	defer u.Cleanup(tmpDir)
-	if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
-		return update, downloadErr(err)
-	}
-
-	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
-	if err := ctx.Verify(*update); err != nil {
-		return update, verifyErr(err)
 	}
 
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
