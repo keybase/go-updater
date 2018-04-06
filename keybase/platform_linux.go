@@ -118,3 +118,8 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 func (c context) AfterApply(update updater.Update) error {
 	return nil
 }
+
+func (c context) GetAppStatePath() string {
+	home, _ := Dir("keybase")
+	return filepath.Join(home, "app-state.json")
+}
