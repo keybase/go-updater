@@ -123,3 +123,7 @@ func (c context) GetAppStatePath() string {
 	home, _ := Dir("keybase")
 	return filepath.Join(home, "app-state.json")
 }
+
+func (c context) IsCheckCommand() bool {
+	return c.isCheckCommand
+}

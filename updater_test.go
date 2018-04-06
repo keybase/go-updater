@@ -4,9 +4,9 @@
 package updater
 
 import (
-	"io/ioutil"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -54,6 +54,7 @@ type testUpdateUI struct {
 	autoUpdateReported bool
 	updateReported     *Update
 	successReported    bool
+	isCheckCommand     bool
 }
 
 func (u testUpdateUI) BeforeUpdatePrompt(_ Update, _ UpdateOptions) error {
@@ -117,6 +118,10 @@ func (u testUpdateUI) UpdateOptions() UpdateOptions {
 
 func (c testUpdateUI) GetAppStatePath() string {
 	return testAppStatePath
+}
+
+func (c testUpdateUI) IsCheckCommand() bool {
+	return c.isCheckCommand
 }
 
 type testUpdateSource struct {
@@ -463,10 +468,14 @@ func TestUpdaterGuiBusy(t *testing.T) {
 	err := ioutil.WriteFile(testAppStatePath, []byte("{\"isUserActive\":true}"), 0644)
 	assert.NoError(t, err)
 	defer util.RemoveFileAtPath(testAppStatePath)
-	
+
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{auto: true, autoSet: true})
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (prompt): GUI is active, try later")
+
+	ctx.isCheckCommand = true
+	_, err = upr.Update(ctx)
+	assert.NoError(t, err)
 }

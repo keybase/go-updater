@@ -19,9 +19,9 @@ const Version = "0.2.13"
 
 // Updater knows how to find and apply updates
 type Updater struct {
-	source UpdateSource
-	config Config
-	log    Log
+	source       UpdateSource
+	config       Config
+	log          Log
 	guiBusyCount int
 }
 
@@ -48,6 +48,7 @@ type Context interface {
 	ReportSuccess(update *Update, options UpdateOptions)
 	AfterUpdateCheck(update *Update)
 	GetAppStatePath() string
+	IsCheckCommand() bool
 }
 
 // Config defines configuration for the Updater
@@ -231,11 +232,11 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	auto, autoSet := u.config.GetUpdateAuto()
 	autoOverride := u.config.GetUpdateAutoOverride()
 	u.log.Debugf("Auto update: %s (set=%s autoOverride=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet), strconv.FormatBool(autoOverride))
-	if auto && !autoOverride {
+	if auto && !autoOverride && !ctx.IsCheckCommand() {
 		isActive, err := u.checkUserActive(ctx)
 		if isActive {
-			err =  fmt.Errorf("GUI is active, try later")
-		} 
+			err = fmt.Errorf("GUI is active, try later")
+		}
 		if err != nil {
 			return UpdateActionError, err
 		}
@@ -268,7 +269,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 }
 
 type guiAppState struct {
-    IsUserActive   bool      `json:"isUserActive"`
+	IsUserActive bool `json:"isUserActive"`
 }
 
 func (u *Updater) checkUserActive(ctx Context) (bool, error) {
@@ -285,7 +286,7 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 		return false, nil
 	}
 
-    guistate := guiAppState{}
+	guistate := guiAppState{}
 	err = json.Unmarshal(rawState, &guistate)
 	if err != nil {
 		u.log.Warningf("Error parsing GUI state - proceeding", err)
@@ -294,7 +295,7 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 	if guistate.IsUserActive {
 		u.guiBusyCount++
 	}
-	
+
 	return guistate.IsUserActive, nil
 }
 

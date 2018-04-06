@@ -254,3 +254,7 @@ func (c context) GetAppStatePath() string {
 	roamingDir, _ := roamingDataDir()
 	return filepath.Join(roamingDir, "Keybase", "app-state.json")
 }
+
+func (c context) IsCheckCommand() bool {
+	return c.isCheckCommand
+}
