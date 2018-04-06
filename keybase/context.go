@@ -59,13 +59,18 @@ var defaultEndpoints = endpoints{
 	err:     "https://api.keybase.io/_/api/1.0/pkg/error.json",
 }
 
-func newContext(cfg Config, log Log, isCheckCommand bool) *context {
+func newContext(cfg Config, log Log) *context {
 	ctx := context{
-		config:         cfg,
-		log:            log,
-		isCheckCommand: isCheckCommand,
+		config: cfg,
+		log:    log,
 	}
 	return &ctx
+}
+
+func newContextCheckCmd(cfg Config, log Log, isCheckCommand bool) *context {
+	ctx := newContext(cfg, log)
+	ctx.isCheckCommand = isCheckCommand
+	return ctx
 }
 
 // NewUpdaterContext returns an updater context for Keybase
@@ -91,7 +96,7 @@ func NewUpdaterContext(appName string, pathToKeybase string, log Log, isCheck bo
 	// keybase update check
 
 	upd := updater.NewUpdater(src, cfg, log)
-	return newContext(cfg, log, isCheck), upd
+	return newContextCheckCmd(cfg, log, isCheck), upd
 }
 
 // UpdateOptions returns update options
