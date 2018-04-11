@@ -4,6 +4,7 @@
 package updater
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,9 +19,10 @@ const Version = "0.2.13"
 
 // Updater knows how to find and apply updates
 type Updater struct {
-	source UpdateSource
-	config Config
-	log    Log
+	source       UpdateSource
+	config       Config
+	log          Log
+	guiBusyCount int
 }
 
 // UpdateSource defines where the updater can find updates
@@ -45,6 +47,8 @@ type Context interface {
 	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
 	ReportSuccess(update *Update, options UpdateOptions)
 	AfterUpdateCheck(update *Update)
+	GetAppStatePath() string
+	IsCheckCommand() bool
 }
 
 // Config defines configuration for the Updater
@@ -228,7 +232,15 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	auto, autoSet := u.config.GetUpdateAuto()
 	autoOverride := u.config.GetUpdateAutoOverride()
 	u.log.Debugf("Auto update: %s (set=%s autoOverride=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet), strconv.FormatBool(autoOverride))
-	if auto && !autoOverride {
+	if auto && !autoOverride && !ctx.IsCheckCommand() {
+		isActive, err := u.checkUserActive(ctx)
+		if isActive {
+			err = fmt.Errorf("GUI is active, try later")
+		}
+		if err != nil {
+			return UpdateActionError, err
+		}
+		u.guiBusyCount = 0
 		return UpdateActionAuto, nil
 	}
 
@@ -254,6 +266,37 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	}
 
 	return updatePromptResponse.Action, nil
+}
+
+type guiAppState struct {
+	IsUserActive bool `json:"isUserActive"`
+}
+
+func (u *Updater) checkUserActive(ctx Context) (bool, error) {
+
+	if u.guiBusyCount >= 3 {
+		u.log.Warningf("Waited for GUI %d times - ignoring busy", u.guiBusyCount)
+		return false, nil
+	}
+
+	// Read app-state.json, written by the GUI
+	rawState, err := util.ReadFile(ctx.GetAppStatePath())
+	if err != nil {
+		u.log.Warningf("Error reading GUI state - proceeding", err)
+		return false, nil
+	}
+
+	guistate := guiAppState{}
+	err = json.Unmarshal(rawState, &guistate)
+	if err != nil {
+		u.log.Warningf("Error parsing GUI state - proceeding", err)
+		return false, nil
+	}
+	if guistate.IsUserActive {
+		u.guiBusyCount++
+	}
+
+	return guistate.IsUserActive, nil
 }
 
 func report(ctx Context, err error, update *Update, options UpdateOptions) {

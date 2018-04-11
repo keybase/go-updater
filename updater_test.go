@@ -6,6 +6,7 @@ package updater
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -25,6 +26,8 @@ import (
 var testLog = &logging.Logger{Module: "test"}
 
 var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+
+var testAppStatePath = filepath.Join(os.TempDir(), "KBTest_app_state.json")
 
 func newTestUpdater(t *testing.T) (*Updater, error) {
 	return newTestUpdaterWithServer(t, nil, nil, &testConfig{})
@@ -51,6 +54,7 @@ type testUpdateUI struct {
 	autoUpdateReported bool
 	updateReported     *Update
 	successReported    bool
+	isCheckCommand     bool
 }
 
 func (u testUpdateUI) BeforeUpdatePrompt(_ Update, _ UpdateOptions) error {
@@ -110,6 +114,14 @@ func (u *testUpdateUI) AfterUpdateCheck(update *Update) {}
 
 func (u testUpdateUI) UpdateOptions() UpdateOptions {
 	return u.options
+}
+
+func (c testUpdateUI) GetAppStatePath() string {
+	return testAppStatePath
+}
+
+func (c testUpdateUI) IsCheckCommand() bool {
+	return c.isCheckCommand
 }
 
 type testUpdateSource struct {
@@ -448,4 +460,22 @@ func TestUpdaterNotNeeded(t *testing.T) {
 
 	assert.False(t, ctx.successReported)
 	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+}
+
+func TestUpdaterGuiBusy(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+	err := ioutil.WriteFile(testAppStatePath, []byte("{\"isUserActive\":true}"), 0644)
+	assert.NoError(t, err)
+	defer util.RemoveFileAtPath(testAppStatePath)
+
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{auto: true, autoSet: true})
+	assert.NoError(t, err)
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (prompt): GUI is active, try later")
+
+	ctx.isCheckCommand = true
+	_, err = upr.Update(ctx)
+	assert.NoError(t, err)
 }
