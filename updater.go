@@ -129,6 +129,8 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
 	case UpdateActionContinue:
 		// Continue
+	case UpdateActionUIBusy:
+		// Continue (no need to report this to the server)
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
@@ -232,15 +234,18 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	auto, autoSet := u.config.GetUpdateAuto()
 	autoOverride := u.config.GetUpdateAutoOverride()
 	u.log.Debugf("Auto update: %s (set=%s autoOverride=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet), strconv.FormatBool(autoOverride))
-	if auto && !autoOverride && !ctx.IsCheckCommand() {
-		isActive, err := u.checkUserActive(ctx)
-		if isActive {
-			err = fmt.Errorf("GUI is active, try later")
+	if auto && !autoOverride {
+		if !ctx.IsCheckCommand() {
+			isActive, err := u.checkUserActive(ctx)
+			if isActive {
+				err = fmt.Errorf("GUI is active, try later")
+				return UpdateActionUIBusy, err
+			}
+			if err != nil {
+				return UpdateActionError, err
+			}
+			u.guiBusyCount = 0
 		}
-		if err != nil {
-			return UpdateActionError, err
-		}
-		u.guiBusyCount = 0
 		return UpdateActionAuto, nil
 	}
 
