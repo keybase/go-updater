@@ -236,17 +236,12 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	u.log.Debugf("Auto update: %s (set=%s autoOverride=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet), strconv.FormatBool(autoOverride))
 	if auto && !autoOverride {
 		if !ctx.IsCheckCommand() {
+			// If there's an error getting active status, we'll just update
 			isActive, err := u.checkUserActive(ctx)
-			if err != nil {
-				// Eat the error here and aloow update to continue.
-				// it's already been logged.
-			} else {
-				if isActive {
-					u.log.Warningf("GUI is active, try later")
-					return UpdateActionUIBusy, nil
-				}
-				u.guiBusyCount = 0
+			if err == nil && isActive {
+				return UpdateActionUIBusy, nil
 			}
+			u.guiBusyCount = 0
 		}
 		return UpdateActionAuto, nil
 	}
