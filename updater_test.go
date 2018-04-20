@@ -473,7 +473,7 @@ func TestUpdaterGuiBusy(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
 	_, err = upr.Update(ctx)
-	assert.EqualError(t, err, "Update Error (prompt): GUI is active, try later")
+	assert.EqualError(t, err, "Update Error (guiBusy): User active, retrying later")
 
 	ctx.isCheckCommand = true
 	_, err = upr.Update(ctx)

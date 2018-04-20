@@ -130,7 +130,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	case UpdateActionContinue:
 		// Continue
 	case UpdateActionUIBusy:
-		// Continue (no need to report this to the server)
+		return update, guiBusyErr(fmt.Errorf("User active, retrying later"))
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
@@ -237,14 +237,16 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	if auto && !autoOverride {
 		if !ctx.IsCheckCommand() {
 			isActive, err := u.checkUserActive(ctx)
-			if isActive {
-				err = fmt.Errorf("GUI is active, try later")
-				return UpdateActionUIBusy, err
-			}
 			if err != nil {
-				return UpdateActionError, err
+				// Eat the error here and aloow update to continue.
+				// it's already been logged.
+			} else {
+				if isActive {
+					u.log.Warningf("GUI is active, try later")
+					return UpdateActionUIBusy, nil
+				}
+				u.guiBusyCount = 0
 			}
-			u.guiBusyCount = 0
 		}
 		return UpdateActionAuto, nil
 	}
@@ -288,14 +290,14 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 	rawState, err := util.ReadFile(ctx.GetAppStatePath())
 	if err != nil {
 		u.log.Warningf("Error reading GUI state - proceeding", err)
-		return false, nil
+		return false, err
 	}
 
 	guistate := guiAppState{}
 	err = json.Unmarshal(rawState, &guistate)
 	if err != nil {
 		u.log.Warningf("Error parsing GUI state - proceeding", err)
-		return false, nil
+		return false, err
 	}
 	if guistate.IsUserActive {
 		u.guiBusyCount++
@@ -306,10 +308,10 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 
 func report(ctx Context, err error, update *Update, options UpdateOptions) {
 	if err != nil {
-		// Don't report cancels
+		// Don't report cancels or GUI busy
 		switch e := err.(type) {
 		case Error:
-			if e.IsCancel() {
+			if e.IsCancel() || e.IsGUIBusy() {
 				return
 			}
 		}
