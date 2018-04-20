@@ -465,16 +465,22 @@ func TestUpdaterNotNeeded(t *testing.T) {
 func TestUpdaterGuiBusy(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
-	err := ioutil.WriteFile(testAppStatePath, []byte("{\"isUserActive\":true}"), 0644)
-	assert.NoError(t, err)
-	defer util.RemoveFileAtPath(testAppStatePath)
 
 	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate(testServer.URL), &testConfig{auto: true, autoSet: true})
 	assert.NoError(t, err)
 	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionApply, AutoUpdate: true})
+	// Expect no error when the app state config is not found, allowing auto update to continue
 	_, err = upr.Update(ctx)
-	assert.EqualError(t, err, "Update Error (prompt): GUI is active, try later")
+	assert.NoError(t, err)
 
+	// Now put the config file there and make sure the right error is returned
+	err = ioutil.WriteFile(testAppStatePath, []byte("{\"isUserActive\":true}"), 0644)
+	assert.NoError(t, err)
+	defer util.RemoveFileAtPath(testAppStatePath)
+	_, err = upr.Update(ctx)
+	assert.EqualError(t, err, "Update Error (guiBusy): User active, retrying later")
+
+	// Make sure check command doesn't skip update on active UI
 	ctx.isCheckCommand = true
 	_, err = upr.Update(ctx)
 	assert.NoError(t, err)
