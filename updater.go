@@ -249,7 +249,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	updateUI := ctx.GetUpdateUI()
 
 	// If auto update never set, default to true
-	autoUpdate := !autoSet
+	autoUpdate := auto || !autoSet
 	promptOptions := UpdatePromptOptions{AutoUpdate: autoUpdate}
 	updatePromptResponse, err := updateUI.UpdatePrompt(update, options, promptOptions)
 	if err != nil {
