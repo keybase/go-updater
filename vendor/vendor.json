@@ -3,16 +3,6 @@
 	"ignore": "test",
 	"package": [
 		{
-			"path": "github.com/agl/ed25519",
-			"revision": "278e1ec8e8a6e017cd07577924d6766039146ced",
-			"revisionTime": "2015-08-30T11:26:16-07:00"
-		},
-		{
-			"path": "github.com/agl/ed25519/edwards25519",
-			"revision": "278e1ec8e8a6e017cd07577924d6766039146ced",
-			"revisionTime": "2015-08-30T11:26:16-07:00"
-		},
-		{
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
 			"revisionTime": "2015-11-05T15:09:06-06:00"
@@ -38,19 +28,22 @@
 			"revisionTime": "2016-06-23T20:06:58-07:00"
 		},
 		{
+			"checksumSHA1": "UT+c8olRWpXtZIw96rRFXYfBUzY=",
 			"path": "github.com/keybase/saltpack",
-			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
-			"revisionTime": "2016-04-14T14:15:52-04:00"
+			"revision": "282df2166aa71f1283de12d39a10addbb30bafb4",
+			"revisionTime": "2018-03-19T16:38:18Z"
 		},
 		{
+			"checksumSHA1": "D4hR7JGP+aNHyAfXjBumb6PU7IM=",
 			"path": "github.com/keybase/saltpack/basic",
-			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
-			"revisionTime": "2016-04-14T14:15:52-04:00"
+			"revision": "282df2166aa71f1283de12d39a10addbb30bafb4",
+			"revisionTime": "2018-03-19T16:38:18Z"
 		},
 		{
+			"checksumSHA1": "LpuohLoTQEeJxurlZ5ruBJFWh8E=",
 			"path": "github.com/keybase/saltpack/encoding/basex",
-			"revision": "1ca5e0eff4cb8907b5244a46935635641db7763d",
-			"revisionTime": "2016-04-14T14:15:52-04:00"
+			"revision": "282df2166aa71f1283de12d39a10addbb30bafb4",
+			"revisionTime": "2018-03-19T16:38:18Z"
 		},
 		{
 			"path": "github.com/pmezard/go-difflib/difflib",
@@ -71,6 +64,18 @@
 			"path": "golang.org/x/crypto/curve25519",
 			"revision": "1777f3ba8c1fed80fcaec3317e3aaa4f627764d2",
 			"revisionTime": "2016-03-18T12:12:46Z"
+		},
+		{
+			"checksumSHA1": "wGb//LjBPNxYHqk+dcLo7BjPXK8=",
+			"path": "golang.org/x/crypto/ed25519",
+			"revision": "55a552f0823e0d3d54931488a2993ebd2fd0258c",
+			"revisionTime": "2017-04-07T13:23:05Z"
+		},
+		{
+			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
+			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
+			"revision": "55a552f0823e0d3d54931488a2993ebd2fd0258c",
+			"revisionTime": "2017-04-07T13:23:05Z"
 		},
 		{
 			"path": "golang.org/x/crypto/nacl/box",
@@ -102,5 +107,6 @@
 			"revision": "eb2c74142fd19a79b3f237334c7384d5167b1b46",
 			"revisionTime": "2016-01-26T17:36:05-08:00"
 		}
-	]
+	],
+	"rootPath": "github.com/keybase/go-updater"
 }
