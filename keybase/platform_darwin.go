@@ -133,15 +133,16 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	return c.updatePrompt(promptProgram, update, options, promptOptions, time.Hour)
 }
 
-// PausedPrompt is called when the we can't update cause the app is in use.
-// We return true if the use wants to cancel the update.
-func (c context) PausedPrompt() bool {
+// PausedPrompt is called when want to apply the update.
+// If inUse is true, then we should warn the user about KBFS mount changing.
+// We return true to apply the update, otherwise cancel.
+func (c context) PausedPrompt(inUse bool) bool {
 	promptProgram, err := c.config.promptProgram()
 	if err != nil {
 		c.log.Warningf("Error trying to get prompt path: %s", err)
 		return false
 	}
-	cancelUpdate, err := c.pausedPrompt(promptProgram, 5*time.Minute)
+	cancelUpdate, err := c.pausedPrompt(promptProgram, inUse, 5*time.Minute)
 	if err != nil {
 		c.log.Warningf("Error in paused prompt: %s", err)
 		return false

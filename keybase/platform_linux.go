@@ -107,7 +107,7 @@ func (c context) UpdatePrompt(update updater.Update, options updater.UpdateOptio
 	return &updater.UpdatePromptResponse{Action: updater.UpdateActionContinue}, nil
 }
 
-func (c context) PausedPrompt() bool {
+func (c context) PausedPrompt(inUse bool) bool {
 	return false
 }
 
