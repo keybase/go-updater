@@ -4,6 +4,7 @@
 package updater
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,13 +15,14 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.2.13"
+const Version = "0.3.0"
 
 // Updater knows how to find and apply updates
 type Updater struct {
-	source UpdateSource
-	config Config
-	log    Log
+	source       UpdateSource
+	config       Config
+	log          Log
+	guiBusyCount int
 }
 
 // UpdateSource defines where the updater can find updates
@@ -45,6 +47,8 @@ type Context interface {
 	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
 	ReportSuccess(update *Update, options UpdateOptions)
 	AfterUpdateCheck(update *Update)
+	GetAppStatePath() string
+	IsCheckCommand() bool
 }
 
 // Config defines configuration for the Updater
@@ -143,6 +147,8 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
 	case UpdateActionContinue:
 		// Continue
+	case UpdateActionUIBusy:
+		return update, guiBusyErr(fmt.Errorf("User active, retrying later"))
 	}
 
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
@@ -229,13 +235,21 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	autoOverride := u.config.GetUpdateAutoOverride()
 	u.log.Debugf("Auto update: %s (set=%s autoOverride=%s)", strconv.FormatBool(auto), strconv.FormatBool(autoSet), strconv.FormatBool(autoOverride))
 	if auto && !autoOverride {
+		if !ctx.IsCheckCommand() {
+			// If there's an error getting active status, we'll just update
+			isActive, err := u.checkUserActive(ctx)
+			if err == nil && isActive {
+				return UpdateActionUIBusy, nil
+			}
+			u.guiBusyCount = 0
+		}
 		return UpdateActionAuto, nil
 	}
 
 	updateUI := ctx.GetUpdateUI()
 
 	// If auto update never set, default to true
-	autoUpdate := !autoSet
+	autoUpdate := auto || !autoSet
 	promptOptions := UpdatePromptOptions{AutoUpdate: autoUpdate}
 	updatePromptResponse, err := updateUI.UpdatePrompt(update, options, promptOptions)
 	if err != nil {
@@ -256,12 +270,43 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	return updatePromptResponse.Action, nil
 }
 
+type guiAppState struct {
+	IsUserActive bool `json:"isUserActive"`
+}
+
+func (u *Updater) checkUserActive(ctx Context) (bool, error) {
+
+	if u.guiBusyCount >= 3 {
+		u.log.Warningf("Waited for GUI %d times - ignoring busy", u.guiBusyCount)
+		return false, nil
+	}
+
+	// Read app-state.json, written by the GUI
+	rawState, err := util.ReadFile(ctx.GetAppStatePath())
+	if err != nil {
+		u.log.Warningf("Error reading GUI state - proceeding", err)
+		return false, err
+	}
+
+	guistate := guiAppState{}
+	err = json.Unmarshal(rawState, &guistate)
+	if err != nil {
+		u.log.Warningf("Error parsing GUI state - proceeding", err)
+		return false, err
+	}
+	if guistate.IsUserActive {
+		u.guiBusyCount++
+	}
+
+	return guistate.IsUserActive, nil
+}
+
 func report(ctx Context, err error, update *Update, options UpdateOptions) {
 	if err != nil {
-		// Don't report cancels
+		// Don't report cancels or GUI busy
 		switch e := err.(type) {
 		case Error:
-			if e.IsCancel() {
+			if e.IsCancel() || e.IsGUIBusy() {
 				return
 			}
 		}

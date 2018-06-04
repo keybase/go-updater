@@ -85,6 +85,8 @@ const (
 	UpdateActionError UpdateAction = "error"
 	// UpdateActionContinue means no update action was available and the update should continue
 	UpdateActionContinue UpdateAction = "continue"
+	// UpdateActionUIBusy means the UI was busy and the update should be attempted later
+	UpdateActionUIBusy UpdateAction = "uiBusy"
 )
 
 // String is a unique string label for the action

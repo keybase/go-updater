@@ -99,12 +99,12 @@ func run(f flags) {
 
 func serviceFromFlags(f flags, ulog logger) *service {
 	ulog.Infof("Updater %s", updater.Version)
-	ctx, upd := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog)
+	ctx, upd := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, false)
 	return newService(upd, ctx, ulog, f.appName)
 }
 
 func updateCheckFromFlags(f flags, ulog logger) error {
-	ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog)
+	ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true)
 	_, err := updater.Update(ctx)
 	return err
 }

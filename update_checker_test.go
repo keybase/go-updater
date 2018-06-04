@@ -81,6 +81,14 @@ func (u testUpdateCheckUI) ReportError(_ error, _ *Update, _ UpdateOptions) {}
 
 func (u testUpdateCheckUI) ReportSuccess(_ *Update, _ UpdateOptions) {}
 
+func (c testUpdateCheckUI) GetAppStatePath() string {
+	return ""
+}
+
+func (c testUpdateCheckUI) IsCheckCommand() bool {
+	return true
+}
+
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()

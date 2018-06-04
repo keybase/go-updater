@@ -5,6 +5,7 @@ package saltpack
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,7 +84,7 @@ func TestVerifyNilInput(t *testing.T) {
 func TestVerifyNoSignature(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))
 	err := VerifyDetached(reader, "", validCodeSigningKIDs, testLog)
-	require.EqualError(t, err, "Error in framing: wrong number of words (1)")
+	require.Equal(t, io.ErrUnexpectedEOF, err)
 }
 
 type testSigningKey struct {
