@@ -169,6 +169,7 @@ func (u *Updater) apply(ctx Context, update Update, options UpdateOptions, tmpDi
 
 	u.log.Info("Applying update")
 	if err := ctx.Apply(update, options, tmpDir); err != nil {
+		u.log.Info("Apply error: %v", err)
 		return applyErr(err)
 	}
 

@@ -255,20 +255,20 @@ func (c context) doKeybaseUninstall(wow64 bool) error {
 
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", access)
 	if err != nil {
-		c.log.Infof("Error %s opening uninstall subkeys\n", err.Error())
+		c.log.Infof("Error opening uninstall subkeys: %s\n", err.Error())
 		return err
 	}
 	defer k.Close()
 
 	names, err := k.ReadSubKeyNames(-1)
 	if err != nil {
-		c.log.Infof("Error %s reading subkeys\n", err.Error())
+		c.log.Infof("Error reading subkeys: %s\n", err.Error())
 		return err
 	}
 	for _, name := range names {
 		subKey, err := registry.OpenKey(k, name, registry.QUERY_VALUE)
 		if err != nil {
-			c.log.Infof("Error %s opening subkey %s\n", err.Error(), name)
+			c.log.Infof("Error opening subkey %s: %s\n", name, err.Error())
 		}
 
 		displayName, _, err := subKey.GetStringValue("DisplayName")
@@ -279,7 +279,7 @@ func (c context) doKeybaseUninstall(wow64 bool) error {
 				uninstall, _, err = subKey.GetStringValue("UninstallString")
 			}
 			if err != nil {
-				c.log.Infof("Error %s opening subkey UninstallString", err.Error())
+				c.log.Infof("Error opening subkey UninstallString: %s", err.Error())
 			} else {
 				c.doUninstallAction(uninstall)
 			}
@@ -295,43 +295,61 @@ func (c context) deleteRegistryProducts(wow64 bool) {
 	if wow64 {
 		readAccess = readAccess | registry.WOW64_32KEY
 	}
+	writeAccess := readAccess | registry.SET_VALUE
 
 	rootName := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData"
 
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, rootName, readAccess)
 	if err != nil {
-		c.log.Infof("Error %s opening uninstall subkeys\n", err.Error())
+		c.log.Infof("Error opening uninstall subkeys: %s\n", err.Error())
 		return
 	}
 	defer k.Close()
 
 	UIDs, err := k.ReadSubKeyNames(-1)
 	if err != nil {
-		c.log.Infof("Error %s reading subkeys\n", err.Error())
+		c.log.Infof("Error reading subkeys: %s\n", err.Error())
 		return
 	}
 	for _, UID := range UIDs {
-		productsKey, err := registry.OpenKey(k, UID+"\\Products", registry.QUERY_VALUE)
+		productsKey, err := registry.OpenKey(k, UID+"\\Products", writeAccess)
 		if err != nil {
-			c.log.Infof("Error %s opening subkey %s\n", err.Error(), UID+"\\Products")
+			c.log.Infof("Error opening subkey %s: %s\n", UID+"\\Products", err.Error())
+			continue
 		}
 
 		productKeyNames, err := productsKey.ReadSubKeyNames(-1)
 		if err != nil {
-			c.log.Infof("Error %s reading subkeys\n", err.Error())
-			return
+			c.log.Infof("Error reading subkeys: %s\n", err.Error())
+			continue
 		}
 		for _, productKeyName := range productKeyNames {
 			installPropsKey, err := registry.OpenKey(productsKey, productKeyName+"\\InstallProperties", registry.QUERY_VALUE)
 			if err != nil {
-				c.log.Infof("Error %s opening subkey %s\n", err.Error(), productKeyName+"\\InstallProperties")
+				c.log.Infof("Error opening subkey %s: %s\n", productKeyName+"\\InstallProperties", err.Error())
 			}
 			displayName, _, err := installPropsKey.GetStringValue("DisplayName")
+			installPropsKey.Close()
 			if err == nil && strings.HasPrefix(displayName, "Keybase") {
-				c.log.Infof("Found Keybase product %s, deleting\n", displayName)
-				registry.DeleteKey(registry.LOCAL_MACHINE, rootName+"\\"+UID+"\\Products\\"+productKeyName)
+				c.log.Infof("Found Keybase product %s, deleting\n", productKeyName)
+
+				uninstall, _, err := installPropsKey.GetStringValue("QuietUninstallString")
+				if err != nil {
+					uninstall, _, err = installPropsKey.GetStringValue("UninstallString")
+				}
+				if err != nil {
+					c.log.Infof("Error opening subkey UninstallString: %s", err.Error())
+				} else {
+					c.doUninstallAction(uninstall)
+				}
+
+				err = registry.DeleteKey(productsKey, productKeyName)
+				if err != nil {
+					c.log.Infof("Error deleting key %s: %s\n", rootName+"\\"+UID+"\\Products\\"+productKeyName, err.Error())
+				}
 			}
 		}
+		productsKey.Close()
 	}
 }
 
@@ -350,36 +368,37 @@ func (c context) deleteRegistryComponents(wow64 bool) {
 
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, rootName, readAccess)
 	if err != nil {
-		c.log.Infof("Error %s opening uninstall subkeys\n", err.Error())
+		c.log.Infof("Error opening uninstall subkeys: %s\n", err.Error())
 		return
 	}
 	defer k.Close()
 
 	UIDs, err := k.ReadSubKeyNames(-1)
 	if err != nil {
-		c.log.Infof("Error %s reading subkeys\n", err.Error())
+		c.log.Infof("Error reading subkeys: %s\n", err.Error())
 		return
 	}
 	for _, UID := range UIDs {
-		componentsKey, err := registry.OpenKey(k, UID+"\\Components", registry.QUERY_VALUE)
+		componentsKey, err := registry.OpenKey(k, UID+"\\Components", readAccess)
 		if err != nil {
-			c.log.Infof("Error %s opening subkey %s\n", err.Error(), UID+"\\Components")
+			c.log.Infof("Error opening subkey %s: %s\n", UID+"\\Components", err.Error())
 		}
 
 		componentKeyNames, err := componentsKey.ReadSubKeyNames(-1)
 		if err != nil {
-			c.log.Infof("Error %s reading subkeys\n", err.Error())
-			return
+			c.log.Infof("Error reading subkeys: %s\n", err.Error())
+			continue
 		}
 		for _, componentKeyName := range componentKeyNames {
 			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, writeAccess)
 			if err != nil {
-				c.log.Infof("Error %s opening subkey %s\n", err.Error(), componentKeyName)
+				c.log.Infof("Error opening subkey %s: %s\n", componentKeyName, err.Error())
+				continue
 			}
 
 			productValueNames, err := componentKey.ReadValueNames(-1)
 			if err != nil {
-				c.log.Infof("Error %s reading values\n", err.Error())
+				c.log.Infof("Error reading values: %s\n", err.Error())
 				continue
 			}
 
@@ -387,10 +406,15 @@ func (c context) deleteRegistryComponents(wow64 bool) {
 				componentPath, _, err := componentKey.GetStringValue(productValueName)
 				if err == nil && strings.Contains(componentPath, "\\AppData\\Local\\Keybase\\") {
 					c.log.Infof("Found Keybase component %s, deleting\n", componentPath)
-					componentKey.DeleteValue(productValueName)
+					err = componentKey.DeleteValue(productValueName)
+					if err != nil {
+						c.log.Infof("Error DeleteValue %s: %s\n", productValueName, err.Error())
+					}
 				}
 			}
+			componentKey.Close()
 		}
+		componentsKey.Close()
 	}
 }
 
@@ -473,12 +497,14 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if auto && !c.config.GetUpdateAutoOverride() {
 		args = append(args, "/quiet", "/norestart")
 	}
+	c.config.SetLastAppliedVersion(update.Version)
 	_, err := command.Exec(runCommand, args, time.Hour, c.log)
 	return err
 }
 
+// Note that when a Windows installer runs, it kills the running updater, even
+// before AfterApply() ruhs
 func (c context) AfterApply(update updater.Update) error {
-	c.config.SetLastAppliedVersion(update.Version)
 	return nil
 }
 
