@@ -92,6 +92,14 @@ func run(f flags) {
 	case "service", "":
 		svc := serviceFromFlags(f, ulog)
 		svc.Run()
+	case "clean":
+		if runtime.GOOS == "windows" {
+			ctx, _ := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true)
+			fmt.Printf("Doing DeepClean\n")
+			ctx.DeepClean()
+		} else {
+			ulog.Errorf("Unknown command: %s", f.command)
+		}
 	default:
 		ulog.Errorf("Unknown command: %s", f.command)
 	}

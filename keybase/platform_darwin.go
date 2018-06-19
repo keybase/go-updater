@@ -154,7 +154,6 @@ func (c context) GetAppStatePath() string {
 	return filepath.Join(home, "app-state.json")
 }
 
-
 func (c context) IsCheckCommand() bool {
 	return c.isCheckCommand
 }
@@ -360,3 +359,6 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 
 	return nil
 }
+
+// DeepClean is called when a faulty upgrade has been detected
+func (c context) DeepClean() {}

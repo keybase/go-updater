@@ -49,6 +49,7 @@ type Context interface {
 	AfterUpdateCheck(update *Update)
 	GetAppStatePath() string
 	IsCheckCommand() bool
+	DeepClean()
 }
 
 // Config defines configuration for the Updater
@@ -61,6 +62,8 @@ type Config interface {
 	SetInstallID(installID string) error
 	IsLastUpdateCheckTimeRecent(d time.Duration) bool
 	SetLastUpdateCheckTime()
+	SetLastAppliedVersion(string) error
+	GetLastAppliedVersion() string
 }
 
 // Log is the logging interface for this package

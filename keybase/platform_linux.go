@@ -127,3 +127,6 @@ func (c context) GetAppStatePath() string {
 func (c context) IsCheckCommand() bool {
 	return c.isCheckCommand
 }
+
+// DeepClean is called when a faulty upgrade has been detected
+func (c context) DeepClean() {}

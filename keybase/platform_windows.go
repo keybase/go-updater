@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -211,7 +212,239 @@ func (c context) PausedPrompt() bool {
 	return false
 }
 
+func (c context) doUninstallAction(uninst string) error {
+
+	// Parse out the command, which may be inside quotes, and arguments
+	// e.g.:
+	//    "C:\ProgramData\Package Cache\{d36c41f1-e204-487e-9c4a-29834dddcabe}\DokanSetup.exe" /uninstall /quiet
+	var command string
+	if strings.HasPrefix(uninst, "\"") {
+		if commandEnd := strings.Index(uninst[1:], "\""); commandEnd != -1 {
+			command = uninst[1 : commandEnd+1]
+			uninst = strings.TrimSpace(uninst[commandEnd+2:])
+		}
+	}
+
+	// If this is an msi package, it probably has no QuietUninstallString
+	if strings.HasPrefix(strings.ToLower(uninst), "msiexec") {
+		// for some reason, our mis package has the wrong command (/I) for uninstall (/X)
+		uninst = strings.Replace(uninst, "/I", "/X", 1)
+		uninst = uninst + " /q"
+	}
+
+	args := strings.Split(uninst, " ")
+	if command == "" {
+		command = args[0]
+		args = args[1:]
+	}
+
+	c.log.Infof("Executing %s %s", command, strings.Join(args, " "))
+	uninstCmd := exec.Command(command, args...)
+	err := uninstCmd.Run()
+
+	return err
+}
+
+// Read all the uninstall subkeys and find the ones with DisplayName starting with "Dokan Library".
+// If not just listing, execute each uninstaller we find and merge return codes.
+func (c context) doKeybaseUninstall(wow64 bool) error {
+	var access uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
+	if wow64 {
+		access = access | registry.WOW64_32KEY
+	}
+
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", access)
+	if err != nil {
+		c.log.Infof("Error %s opening uninstall subkeys\n", err.Error())
+		return err
+	}
+	defer k.Close()
+
+	names, err := k.ReadSubKeyNames(-1)
+	if err != nil {
+		c.log.Infof("Error %s reading subkeys\n", err.Error())
+		return err
+	}
+	for _, name := range names {
+		subKey, err := registry.OpenKey(k, name, registry.QUERY_VALUE)
+		if err != nil {
+			c.log.Infof("Error %s opening subkey %s\n", err.Error(), name)
+		}
+
+		displayName, _, err := subKey.GetStringValue("DisplayName")
+		if err == nil && strings.HasPrefix(displayName, "Keybase") {
+			c.log.Infof("Found %s  %s\n", displayName, name)
+			uninstall, _, err := subKey.GetStringValue("QuietUninstallString")
+			if err != nil {
+				uninstall, _, err = subKey.GetStringValue("UninstallString")
+			}
+			if err != nil {
+				c.log.Infof("Error %s opening subkey UninstallString", err.Error())
+			} else {
+				c.doUninstallAction(uninstall)
+			}
+		}
+	}
+	return err
+}
+
+func (c context) deleteRegistryProducts(wow64 bool) {
+	// [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-21-2398092721-582601651-115936829-1001\Products\D6A082CFDEED2984C8688664C76174BC\InstallProperties]
+
+	var readAccess uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
+	if wow64 {
+		readAccess = readAccess | registry.WOW64_32KEY
+	}
+
+	rootName := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData"
+
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, rootName, readAccess)
+	if err != nil {
+		c.log.Infof("Error %s opening uninstall subkeys\n", err.Error())
+		return
+	}
+	defer k.Close()
+
+	UIDs, err := k.ReadSubKeyNames(-1)
+	if err != nil {
+		c.log.Infof("Error %s reading subkeys\n", err.Error())
+		return
+	}
+	for _, UID := range UIDs {
+		productsKey, err := registry.OpenKey(k, UID+"\\Products", registry.QUERY_VALUE)
+		if err != nil {
+			c.log.Infof("Error %s opening subkey %s\n", err.Error(), UID+"\\Products")
+		}
+
+		productKeyNames, err := productsKey.ReadSubKeyNames(-1)
+		if err != nil {
+			c.log.Infof("Error %s reading subkeys\n", err.Error())
+			return
+		}
+		for _, productKeyName := range productKeyNames {
+			installPropsKey, err := registry.OpenKey(productsKey, productKeyName+"\\InstallProperties", registry.QUERY_VALUE)
+			if err != nil {
+				c.log.Infof("Error %s opening subkey %s\n", err.Error(), productKeyName+"\\InstallProperties")
+			}
+			displayName, _, err := installPropsKey.GetStringValue("DisplayName")
+			if err == nil && strings.HasPrefix(displayName, "Keybase") {
+				c.log.Infof("Found Keybase product %s, deleting\n", displayName)
+				registry.DeleteKey(registry.LOCAL_MACHINE, rootName+"\\"+UID+"\\Products\\"+productKeyName)
+			}
+		}
+	}
+}
+
+func (c context) deleteRegistryComponents(wow64 bool) {
+	// [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-21-2398092721-582601651-115936829-1001\Components\024E69EF1A837C752BFB37F494D86925]
+	// "D6A082CFDEED2984C8688664C76174BC"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
+	// "50DC76D18793BC24DA7D4D681AE74262"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
+
+	var readAccess uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
+	if wow64 {
+		readAccess = readAccess | registry.WOW64_32KEY
+	}
+	writeAccess := readAccess | registry.SET_VALUE
+
+	rootName := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData"
+
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, rootName, readAccess)
+	if err != nil {
+		c.log.Infof("Error %s opening uninstall subkeys\n", err.Error())
+		return
+	}
+	defer k.Close()
+
+	UIDs, err := k.ReadSubKeyNames(-1)
+	if err != nil {
+		c.log.Infof("Error %s reading subkeys\n", err.Error())
+		return
+	}
+	for _, UID := range UIDs {
+		componentsKey, err := registry.OpenKey(k, UID+"\\Components", registry.QUERY_VALUE)
+		if err != nil {
+			c.log.Infof("Error %s opening subkey %s\n", err.Error(), UID+"\\Components")
+		}
+
+		componentKeyNames, err := componentsKey.ReadSubKeyNames(-1)
+		if err != nil {
+			c.log.Infof("Error %s reading subkeys\n", err.Error())
+			return
+		}
+		for _, componentKeyName := range componentKeyNames {
+			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, writeAccess)
+			if err != nil {
+				c.log.Infof("Error %s opening subkey %s\n", err.Error(), componentKeyName)
+			}
+
+			productValueNames, err := componentKey.ReadValueNames(-1)
+			if err != nil {
+				c.log.Infof("Error %s reading values\n", err.Error())
+				continue
+			}
+
+			for _, productValueName := range productValueNames {
+				componentPath, _, err := componentKey.GetStringValue(productValueName)
+				if err == nil && strings.Contains(componentPath, "\\AppData\\Local\\Keybase\\") {
+					c.log.Infof("Found Keybase component %s, deleting\n", componentPath)
+					componentKey.DeleteValue(productValueName)
+				}
+			}
+		}
+	}
+}
+
+func (c context) deleteProductFiles() {
+	path, err := Dir("Keybase")
+	if err != nil {
+		c.log.Infof("Error getting Keybase directory: %s", err.Error())
+		return
+	}
+	err = os.RemoveAll(filepath.Join(path, "Gui"))
+	if err != nil {
+		c.log.Infof("Error removing Gui directory: %s", err.Error())
+	}
+
+	files, err := filepath.Glob(filepath.Join(path, "*.exe"))
+	if err != nil {
+		c.log.Infof("Error getting exe files: %s", err.Error())
+	} else {
+		for _, f := range files {
+			c.log.Infof("Removing %s", f)
+			if err = os.Remove(f); err != nil {
+				c.log.Infof("Error removing file: %s", err.Error())
+			}
+		}
+	}
+}
+
+// DeepClean is called when a faulty upgrade has been detected
+func (c context) DeepClean() {
+	// Explicitly shutdown Keybase, kill processes
+	uninstCmd := exec.Command("keybase", "ctl", "stop")
+	uninstCmd.Run()
+	time.Sleep(3 * time.Second)
+	killCmd := exec.Command("taskkill", "/F", "/IM", "keybase.exe")
+	killCmd.Run()
+	killCmd = exec.Command("taskkill", "/F", "/IM", "kbfsdokan.exe")
+	killCmd.Run()
+	// Walk registry looking for Keybase to uninstall
+	// Apply uninstallera
+	c.doKeybaseUninstall(false)
+	c.doKeybaseUninstall(true)
+	// Clean out feature and component registry entries
+	c.deleteRegistryProducts(true)
+	c.deleteRegistryProducts(false)
+	c.deleteRegistryComponents(true)
+	c.deleteRegistryComponents(false)
+	c.deleteProductFiles()
+}
+
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	if c.config.GetLastAppliedVersion() == update.Version {
+		c.log.Info("Previously applied version detected - doing deep clean")
+		c.DeepClean()
+	}
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
@@ -245,6 +478,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 }
 
 func (c context) AfterApply(update updater.Update) error {
+	c.config.SetLastAppliedVersion(update.Version)
 	return nil
 }
 
