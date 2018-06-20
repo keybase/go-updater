@@ -237,6 +237,7 @@ func (c context) doUninstallAction(uninst string) error {
 		command = args[0]
 		args = args[1:]
 	}
+	args = append(args, "nologout")
 
 	c.log.Infof("Executing %s %s", command, strings.Join(args, " "))
 	uninstCmd := exec.Command(command, args...)
@@ -245,7 +246,7 @@ func (c context) doUninstallAction(uninst string) error {
 	return err
 }
 
-// Read all the uninstall subkeys and find the ones with DisplayName starting with "Dokan Library".
+// Read all the uninstall subkeys and find the ones with DisplayName starting with "Keybase".
 // If not just listing, execute each uninstaller we find and merge return codes.
 func (c context) doKeybaseUninstall(wow64 bool) error {
 	var access uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
@@ -353,7 +354,10 @@ func (c context) deleteRegistryProducts(wow64 bool) {
 	}
 }
 
-func (c context) deleteRegistryComponents(wow64 bool) {
+// checkRegistryComponents will fall back to read-only if it can't do deletion,
+// returning true if either entries were deleted, or multiple Keybase products were found
+func (c context) checkRegistryComponents(wow64, readonly bool) (result bool) {
+	// e.g.
 	// [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-21-2398092721-582601651-115936829-1001\Components\024E69EF1A837C752BFB37F494D86925]
 	// "D6A082CFDEED2984C8688664C76174BC"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
 	// "50DC76D18793BC24DA7D4D681AE74262"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
@@ -389,11 +393,23 @@ func (c context) deleteRegistryComponents(wow64 bool) {
 			c.log.Infof("Error reading subkeys: %s\n", err.Error())
 			continue
 		}
+		componentKeyAccess := writeAccess
+		if readonly {
+			componentKeyAccess = readAccess
+		}
 		for _, componentKeyName := range componentKeyNames {
-			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, writeAccess)
+			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, componentKeyAccess)
 			if err != nil {
-				c.log.Infof("Error opening subkey %s: %s\n", componentKeyName, err.Error())
-				continue
+				if componentKeyAccess == writeAccess {
+					c.log.Infof("Error opening subkey for writing %s: %s\n", componentKeyName, err.Error())
+					componentKeyAccess = readAccess
+					componentKey, err = registry.OpenKey(componentsKey, componentKeyName, componentKeyAccess)
+				}
+				// TODO: No need to list all the components we couldn't open in write mode.
+				// This is expected when run without elevated permissions.
+				if err != nil {
+					continue
+				}
 			}
 
 			productValueNames, err := componentKey.ReadValueNames(-1)
@@ -401,21 +417,30 @@ func (c context) deleteRegistryComponents(wow64 bool) {
 				c.log.Infof("Error reading values: %s\n", err.Error())
 				continue
 			}
-
-			for _, productValueName := range productValueNames {
+			foundKeybase := false
+			for i, productValueName := range productValueNames {
 				componentPath, _, err := componentKey.GetStringValue(productValueName)
 				if err == nil && strings.Contains(componentPath, "\\AppData\\Local\\Keybase\\") {
-					c.log.Infof("Found Keybase component %s, deleting\n", componentPath)
-					err = componentKey.DeleteValue(productValueName)
-					if err != nil {
-						c.log.Infof("Error DeleteValue %s: %s\n", productValueName, err.Error())
+					if componentKeyAccess == writeAccess {
+						c.log.Infof("Found Keybase component %s, deleting\n", componentPath)
+						err = componentKey.DeleteValue(productValueName)
+						if err != nil {
+							c.log.Infof("Error DeleteValue %s: %s\n", productValueName, err.Error())
+						}
+					} else {
+						if i > 0 && foundKeybase {
+							c.log.Infof("Found multiple Keybase product codes on %s\n", componentPath)
+							result = true
+						}
 					}
+					foundKeybase = true
 				}
 			}
 			componentKey.Close()
 		}
 		componentsKey.Close()
 	}
+	return
 }
 
 func (c context) deleteProductFiles() {
@@ -459,15 +484,22 @@ func (c context) DeepClean() {
 	// Clean out feature and component registry entries
 	c.deleteRegistryProducts(true)
 	c.deleteRegistryProducts(false)
-	c.deleteRegistryComponents(true)
-	c.deleteRegistryComponents(false)
+	if c.checkRegistryComponents(true, false) || c.checkRegistryComponents(false, false) {
+		c.log.Info("-- Detected multiple Keybase products in install registry -- ")
+	}
 	c.deleteProductFiles()
 }
 
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
 	if c.config.GetLastAppliedVersion() == update.Version {
 		c.log.Info("Previously applied version detected - doing deep clean")
+		c.config.SetLastAppliedVersion("")
 		c.DeepClean()
+	} else {
+		// Check our suspicous regist;ry condition and log it
+		if c.checkRegistryComponents(true, true) || c.checkRegistryComponents(false, true) {
+			c.log.Info("-- Detected multiple Keybase products in install registry -- ")
+		}
 	}
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
