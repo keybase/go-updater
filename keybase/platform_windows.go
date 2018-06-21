@@ -212,148 +212,6 @@ func (c context) PausedPrompt() bool {
 	return false
 }
 
-func (c context) doUninstallAction(uninst string) error {
-
-	// Parse out the command, which may be inside quotes, and arguments
-	// e.g.:
-	//    "C:\ProgramData\Package Cache\{d36c41f1-e204-487e-9c4a-29834dddcabe}\DokanSetup.exe" /uninstall /quiet
-	var command string
-	if strings.HasPrefix(uninst, "\"") {
-		if commandEnd := strings.Index(uninst[1:], "\""); commandEnd != -1 {
-			command = uninst[1 : commandEnd+1]
-			uninst = strings.TrimSpace(uninst[commandEnd+2:])
-		}
-	}
-
-	// If this is an msi package, it probably has no QuietUninstallString
-	if strings.HasPrefix(strings.ToLower(uninst), "msiexec") {
-		// for some reason, our mis package has the wrong command (/I) for uninstall (/X)
-		uninst = strings.Replace(uninst, "/I", "/X", 1)
-		uninst = uninst + " /q"
-	}
-
-	args := strings.Split(uninst, " ")
-	if command == "" {
-		command = args[0]
-		args = args[1:]
-	}
-	args = append(args, "nologout")
-
-	c.log.Infof("Executing %s %s", command, strings.Join(args, " "))
-	uninstCmd := exec.Command(command, args...)
-	err := uninstCmd.Run()
-
-	return err
-}
-
-// Read all the uninstall subkeys and find the ones with DisplayName starting with "Keybase".
-// If not just listing, execute each uninstaller we find and merge return codes.
-func (c context) doKeybaseUninstall(wow64 bool) error {
-	var access uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
-	if wow64 {
-		access = access | registry.WOW64_32KEY
-	}
-
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", access)
-	if err != nil {
-		c.log.Infof("Error opening uninstall subkeys: %s\n", err.Error())
-		return err
-	}
-	defer k.Close()
-
-	names, err := k.ReadSubKeyNames(-1)
-	if err != nil {
-		c.log.Infof("Error reading subkeys: %s\n", err.Error())
-		return err
-	}
-	for _, name := range names {
-		subKey, err := registry.OpenKey(k, name, registry.QUERY_VALUE)
-		if err != nil {
-			c.log.Infof("Error opening subkey %s: %s\n", name, err.Error())
-		}
-
-		displayName, _, err := subKey.GetStringValue("DisplayName")
-		if err == nil && strings.HasPrefix(displayName, "Keybase") {
-			c.log.Infof("Found %s  %s\n", displayName, name)
-			uninstall, _, err := subKey.GetStringValue("QuietUninstallString")
-			if err != nil {
-				uninstall, _, err = subKey.GetStringValue("UninstallString")
-			}
-			if err != nil {
-				c.log.Infof("Error opening subkey UninstallString: %s", err.Error())
-			} else {
-				c.doUninstallAction(uninstall)
-			}
-		}
-	}
-	return err
-}
-
-func (c context) deleteRegistryProducts(wow64 bool) {
-	// [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-21-2398092721-582601651-115936829-1001\Products\D6A082CFDEED2984C8688664C76174BC\InstallProperties]
-
-	var readAccess uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
-	if wow64 {
-		readAccess = readAccess | registry.WOW64_32KEY
-	}
-	writeAccess := readAccess | registry.SET_VALUE
-
-	rootName := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData"
-
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, rootName, readAccess)
-	if err != nil {
-		c.log.Infof("Error opening uninstall subkeys: %s\n", err.Error())
-		return
-	}
-	defer k.Close()
-
-	UIDs, err := k.ReadSubKeyNames(-1)
-	if err != nil {
-		c.log.Infof("Error reading subkeys: %s\n", err.Error())
-		return
-	}
-	for _, UID := range UIDs {
-		productsKey, err := registry.OpenKey(k, UID+"\\Products", writeAccess)
-		if err != nil {
-			c.log.Infof("Error opening subkey %s: %s\n", UID+"\\Products", err.Error())
-			continue
-		}
-
-		productKeyNames, err := productsKey.ReadSubKeyNames(-1)
-		if err != nil {
-			c.log.Infof("Error reading subkeys: %s\n", err.Error())
-			continue
-		}
-		for _, productKeyName := range productKeyNames {
-			installPropsKey, err := registry.OpenKey(productsKey, productKeyName+"\\InstallProperties", registry.QUERY_VALUE)
-			if err != nil {
-				c.log.Infof("Error opening subkey %s: %s\n", productKeyName+"\\InstallProperties", err.Error())
-			}
-			displayName, _, err := installPropsKey.GetStringValue("DisplayName")
-			installPropsKey.Close()
-			if err == nil && strings.HasPrefix(displayName, "Keybase") {
-				c.log.Infof("Found Keybase product %s, deleting\n", productKeyName)
-
-				uninstall, _, err := installPropsKey.GetStringValue("QuietUninstallString")
-				if err != nil {
-					uninstall, _, err = installPropsKey.GetStringValue("UninstallString")
-				}
-				if err != nil {
-					c.log.Infof("Error opening subkey UninstallString: %s", err.Error())
-				} else {
-					c.doUninstallAction(uninstall)
-				}
-
-				err = registry.DeleteKey(productsKey, productKeyName)
-				if err != nil {
-					c.log.Infof("Error deleting key %s: %s\n", rootName+"\\"+UID+"\\Products\\"+productKeyName, err.Error())
-				}
-			}
-		}
-		productsKey.Close()
-	}
-}
-
 // checkRegistryComponents will fall back to read-only if it can't do deletion,
 // returning true if either entries were deleted, or multiple Keybase products were found
 func (c context) checkRegistryComponents(wow64, readonly bool) (result bool) {
@@ -468,42 +326,35 @@ func (c context) deleteProductFiles() {
 }
 
 // DeepClean is called when a faulty upgrade has been detected
+// Eventually we may need to preform full uninstalls but that is kind of riskyk
 func (c context) DeepClean() {
 	// Explicitly shutdown Keybase, kill processes
-	uninstCmd := exec.Command("keybase", "ctl", "stop")
-	uninstCmd.Run()
+	stopCmd := exec.Command("keybase", "ctl", "stop")
+	stopCmd.Run()
 	time.Sleep(3 * time.Second)
 	killCmd := exec.Command("taskkill", "/F", "/IM", "keybase.exe")
 	killCmd.Run()
 	killCmd = exec.Command("taskkill", "/F", "/IM", "kbfsdokan.exe")
 	killCmd.Run()
-	// Walk registry looking for Keybase to uninstall
-	// Apply uninstallera
-	c.doKeybaseUninstall(false)
-	c.doKeybaseUninstall(true)
-	// Clean out feature and component registry entries
-	c.deleteRegistryProducts(true)
-	c.deleteRegistryProducts(false)
-	if c.checkRegistryComponents(true, false) || c.checkRegistryComponents(false, false) {
-		c.log.Info("-- Detected multiple Keybase products in install registry -- ")
-	}
+
 	c.deleteProductFiles()
 }
 
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
-	if c.config.GetLastAppliedVersion() == update.Version {
-		c.log.Info("Previously applied version detected - doing deep clean")
-		c.config.SetLastAppliedVersion("")
-		c.DeepClean()
-	} else {
-		// Check our suspicous regist;ry condition and log it
-		if c.checkRegistryComponents(true, true) || c.checkRegistryComponents(false, true) {
-			c.log.Info("-- Detected multiple Keybase products in install registry -- ")
-		}
-	}
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
+	if c.config.GetLastAppliedVersion() == update.Version {
+		// We could do automatic cleaning but we need to wait to upgrade from
+		// a version with matching installer changes
+		c.log.Info("Previously applied version detected - cleaning")
+		c.config.SetLastAppliedVersion("")
+		c.DeepClean()
+	} else if c.checkRegistryComponents(true, true) || c.checkRegistryComponents(false, true) {
+		c.log.Info("Detected multiple Keybase products in install registry - cleaning")
+		c.DeepClean()
+	}
+
 	runCommand := update.Asset.LocalPath
 	args := []string{}
 	if strings.HasSuffix(runCommand, "msi") || strings.HasSuffix(runCommand, "MSI") {
