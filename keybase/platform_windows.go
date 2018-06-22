@@ -386,7 +386,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 }
 
 // Note that when a Windows installer runs, it kills the running updater, even
-// before AfterApply() ruhs
+// before AfterApply() runs
 func (c context) AfterApply(update updater.Update) error {
 	return nil
 }
