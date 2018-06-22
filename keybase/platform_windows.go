@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -212,19 +211,31 @@ func (c context) PausedPrompt() bool {
 	return false
 }
 
-// checkRegistryComponents will fall back to read-only if it can't do deletion,
-// returning true if either entries were deleted, or multiple Keybase products were found
-func (c context) checkRegistryComponents(wow64, readonly bool) (result bool) {
+type componentProductFunc func(componentKey registry.Key, productValueName, componentPath string)
+
+type ComponentsChecker struct {
+	context
+	RegAccess    uint32
+	RegWow       uint32
+	PerComponent componentProductFunc
+}
+
+func (i *ComponentsChecker) deleteProductsFunc(componentKey registry.Key, productValueName, componentPath string) {
+	i.log.Infof("Found Keybase component %s, deleting\n", componentPath)
+	err := componentKey.DeleteValue(productValueName)
+	if err != nil {
+		i.log.Infof("Error DeleteValue %s: %s\n", productValueName, err.Error())
+	}
+}
+
+// checkRegistryComponents returns true if any component has more than one keybase product code
+func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
 	// e.g.
 	// [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-21-2398092721-582601651-115936829-1001\Components\024E69EF1A837C752BFB37F494D86925]
 	// "D6A082CFDEED2984C8688664C76174BC"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
 	// "50DC76D18793BC24DA7D4D681AE74262"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
 
-	var readAccess uint32 = registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE
-	if wow64 {
-		readAccess = readAccess | registry.WOW64_32KEY
-	}
-	writeAccess := readAccess | registry.SET_VALUE
+	readAccess := registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE | c.RegWow
 
 	rootName := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData"
 
@@ -244,6 +255,7 @@ func (c context) checkRegistryComponents(wow64, readonly bool) (result bool) {
 		componentsKey, err := registry.OpenKey(k, UID+"\\Components", readAccess)
 		if err != nil {
 			c.log.Infof("Error opening subkey %s: %s\n", UID+"\\Components", err.Error())
+			continue
 		}
 
 		componentKeyNames, err := componentsKey.ReadSubKeyNames(-1)
@@ -251,23 +263,15 @@ func (c context) checkRegistryComponents(wow64, readonly bool) (result bool) {
 			c.log.Infof("Error reading subkeys: %s\n", err.Error())
 			continue
 		}
-		componentKeyAccess := writeAccess
-		if readonly {
-			componentKeyAccess = readAccess
-		}
+
 		for _, componentKeyName := range componentKeyNames {
-			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, componentKeyAccess)
+			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, readAccess|c.RegAccess)
 			if err != nil {
-				if componentKeyAccess == writeAccess {
-					c.log.Infof("Error opening subkey for writing %s: %s\n", componentKeyName, err.Error())
-					componentKeyAccess = readAccess
-					componentKey, err = registry.OpenKey(componentsKey, componentKeyName, componentKeyAccess)
-				}
-				// TODO: No need to list all the components we couldn't open in write mode.
+				c.log.Infof("Error opening subkey %s: %s\n", componentKeyName, err.Error())
+				// No need to list all the components we couldn't open in write mode.
 				// This is expected when run without elevated permissions.
-				if err != nil {
-					continue
-				}
+				c.log.Infof("skipping subsequent subkeys of  %s\n", UID+"\\Components")
+				continue
 			}
 
 			productValueNames, err := componentKey.ReadValueNames(-1)
@@ -275,30 +279,24 @@ func (c context) checkRegistryComponents(wow64, readonly bool) (result bool) {
 				c.log.Infof("Error reading values: %s\n", err.Error())
 				continue
 			}
-			foundKeybase := false
-			for i, productValueName := range productValueNames {
+
+			for n, productValueName := range productValueNames {
 				componentPath, _, err := componentKey.GetStringValue(productValueName)
 				if err == nil && strings.Contains(componentPath, "\\AppData\\Local\\Keybase\\") {
-					if componentKeyAccess == writeAccess {
-						c.log.Infof("Found Keybase component %s, deleting\n", componentPath)
-						err = componentKey.DeleteValue(productValueName)
-						if err != nil {
-							c.log.Infof("Error DeleteValue %s: %s\n", productValueName, err.Error())
-						}
-					} else {
-						if i > 0 && foundKeybase {
-							c.log.Infof("Found multiple Keybase product codes on %s\n", componentPath)
-							result = true
-						}
+					if c.PerComponent != nil {
+						c.PerComponent(componentKey, productValueName, componentPath)
 					}
-					foundKeybase = true
+					if n > 0 {
+						result = true
+						c.log.Infof("Found multiple Keybase product codes on %s\n", componentPath)
+					}
 				}
 			}
 			componentKey.Close()
 		}
 		componentsKey.Close()
 	}
-	return
+	return result
 }
 
 func (c context) deleteProductFiles() {
@@ -325,18 +323,14 @@ func (c context) deleteProductFiles() {
 	}
 }
 
-// DeepClean is called when a faulty upgrade has been detected
-// Eventually we may need to preform full uninstalls but that is kind of riskyk
+// DeepClean is only invoked from the command line, for now.
+// Eventually we may need to do full uninstalls but that is kind of risky
 func (c context) DeepClean() {
-	// Explicitly shutdown Keybase, kill processes
-	stopCmd := exec.Command("keybase", "ctl", "stop")
-	stopCmd.Run()
-	time.Sleep(3 * time.Second)
-	killCmd := exec.Command("taskkill", "/F", "/IM", "keybase.exe")
-	killCmd.Run()
-	killCmd = exec.Command("taskkill", "/F", "/IM", "kbfsdokan.exe")
-	killCmd.Run()
-
+	i := &ComponentsChecker{context: c, RegAccess: registry.SET_VALUE}
+	i.PerComponent = i.deleteProductsFunc
+	i.checkRegistryComponents()
+	i.RegWow = registry.WOW64_32KEY
+	i.checkRegistryComponents()
 	c.deleteProductFiles()
 }
 
@@ -345,14 +339,19 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		return fmt.Errorf("No asset")
 	}
 	if c.config.GetLastAppliedVersion() == update.Version {
-		// We could do automatic cleaning but we need to wait to upgrade from
-		// a version with matching installer changes
-		c.log.Info("Previously applied version detected - cleaning")
+		c.log.Info("Previously applied version detected - deleting product files")
 		c.config.SetLastAppliedVersion("")
-		c.DeepClean()
-	} else if c.checkRegistryComponents(true, true) || c.checkRegistryComponents(false, true) {
-		c.log.Info("Detected multiple Keybase products in install registry - cleaning")
-		c.DeepClean()
+		c.deleteProductFiles()
+	} else {
+		i := &ComponentsChecker{context: c}
+		foundKeybase := i.checkRegistryComponents()
+		i.RegWow = registry.WOW64_32KEY
+		foundKeybase = foundKeybase || i.checkRegistryComponents()
+
+		if foundKeybase {
+			c.log.Info("Detected multiple Keybase products in install registry - deleting product files")
+			c.deleteProductFiles()
+		}
 	}
 
 	runCommand := update.Asset.LocalPath
