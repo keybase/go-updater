@@ -210,6 +210,14 @@ func (c *testConfig) SetInstallID(s string) error {
 	return c.err
 }
 
+func (c testConfig) GetLastAppliedVersion() string {
+	return ""
+}
+
+func (c *testConfig) SetLastAppliedVersion(version string) error {
+	return nil
+}
+
 func newDefaultTestUpdateOptions() UpdateOptions {
 	return UpdateOptions{
 		Version:         "1.0.0",

@@ -199,7 +199,7 @@ func (c *config) SetUpdateAutoOverride(auto bool) error {
 	return nil
 }
 
-// For overriding the current Auto setting
+// For reporting the last version applied
 func (c config) GetLastAppliedVersion() string {
 	return c.store.LastAppliedVersion
 }
