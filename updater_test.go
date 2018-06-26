@@ -124,6 +124,8 @@ func (c testUpdateUI) IsCheckCommand() bool {
 	return c.isCheckCommand
 }
 
+func (c testUpdateUI) DeepClean() {}
+
 type testUpdateSource struct {
 	testServer *httptest.Server
 	config     Config
@@ -206,6 +208,14 @@ func (c testConfig) GetInstallID() string {
 func (c *testConfig) SetInstallID(s string) error {
 	c.installID = s
 	return c.err
+}
+
+func (c testConfig) GetLastAppliedVersion() string {
+	return ""
+}
+
+func (c *testConfig) SetLastAppliedVersion(version string) error {
+	return nil
 }
 
 func newDefaultTestUpdateOptions() UpdateOptions {

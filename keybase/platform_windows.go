@@ -211,10 +211,149 @@ func (c context) PausedPrompt() bool {
 	return false
 }
 
+type componentProductFunc func(componentKey registry.Key, productValueName, componentPath string)
+
+type ComponentsChecker struct {
+	context
+	RegAccess    uint32
+	RegWow       uint32
+	PerComponent componentProductFunc
+}
+
+func (i *ComponentsChecker) deleteProductsFunc(componentKey registry.Key, productValueName, componentPath string) {
+	i.log.Infof("Found Keybase component %s, deleting\n", componentPath)
+	err := componentKey.DeleteValue(productValueName)
+	if err != nil {
+		i.log.Infof("Error DeleteValue %s: %s\n", productValueName, err.Error())
+	}
+}
+
+// checkRegistryComponents returns true if any component has more than one keybase product code
+func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
+	// e.g.
+	// [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-21-2398092721-582601651-115936829-1001\Components\024E69EF1A837C752BFB37F494D86925]
+	// "D6A082CFDEED2984C8688664C76174BC"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
+	// "50DC76D18793BC24DA7D4D681AE74262"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
+
+	readAccess := registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE | c.RegWow
+
+	rootName := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData"
+
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, rootName, readAccess)
+	if err != nil {
+		c.log.Infof("Error opening uninstall subkeys: %s\n", err.Error())
+		return
+	}
+	defer k.Close()
+
+	UIDs, err := k.ReadSubKeyNames(-1)
+	if err != nil {
+		c.log.Infof("Error reading subkeys: %s\n", err.Error())
+		return
+	}
+	for _, UID := range UIDs {
+		componentsKey, err := registry.OpenKey(k, UID+"\\Components", readAccess)
+		if err != nil {
+			c.log.Infof("Error opening subkey %s: %s\n", UID+"\\Components", err.Error())
+			continue
+		}
+
+		componentKeyNames, err := componentsKey.ReadSubKeyNames(-1)
+		if err != nil {
+			c.log.Infof("Error reading subkeys: %s\n", err.Error())
+			continue
+		}
+
+		for _, componentKeyName := range componentKeyNames {
+			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, readAccess|c.RegAccess)
+			if err != nil {
+				c.log.Infof("Error opening subkey %s: %s\n", componentKeyName, err.Error())
+				// No need to list all the components we couldn't open in write mode.
+				// This is expected when run without elevated permissions.
+				c.log.Infof("skipping subsequent subkeys of  %s\n", UID+"\\Components")
+				continue
+			}
+
+			productValueNames, err := componentKey.ReadValueNames(-1)
+			if err != nil {
+				c.log.Infof("Error reading values: %s\n", err.Error())
+				continue
+			}
+
+			for n, productValueName := range productValueNames {
+				componentPath, _, err := componentKey.GetStringValue(productValueName)
+				if err == nil && strings.Contains(componentPath, "\\AppData\\Local\\Keybase\\") {
+					if c.PerComponent != nil {
+						c.PerComponent(componentKey, productValueName, componentPath)
+					}
+					if n > 0 {
+						result = true
+						c.log.Infof("Found multiple Keybase product codes on %s\n", componentPath)
+					}
+				}
+			}
+			componentKey.Close()
+		}
+		componentsKey.Close()
+	}
+	return result
+}
+
+func (c context) deleteProductFiles() {
+	path, err := Dir("Keybase")
+	if err != nil {
+		c.log.Infof("Error getting Keybase directory: %s", err.Error())
+		return
+	}
+	err = os.RemoveAll(filepath.Join(path, "Gui"))
+	if err != nil {
+		c.log.Infof("Error removing Gui directory: %s", err.Error())
+	}
+
+	files, err := filepath.Glob(filepath.Join(path, "*.exe"))
+	if err != nil {
+		c.log.Infof("Error getting exe files: %s", err.Error())
+	} else {
+		for _, f := range files {
+			c.log.Infof("Removing %s", f)
+			if err = os.Remove(f); err != nil {
+				c.log.Infof("Error removing file: %s", err.Error())
+			}
+		}
+	}
+}
+
+// DeepClean is only invoked from the command line, for now.
+// Eventually we may need to do full uninstalls but that is kind of risky
+func (c context) DeepClean() {
+	i := &ComponentsChecker{context: c, RegAccess: registry.SET_VALUE}
+	i.PerComponent = i.deleteProductsFunc
+	i.checkRegistryComponents()
+	i.RegWow = registry.WOW64_32KEY
+	i.checkRegistryComponents()
+	c.deleteProductFiles()
+}
+
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
+	if c.config.GetLastAppliedVersion() == update.Version {
+		c.log.Info("Previously applied version detected - deleting product files")
+		c.config.SetLastAppliedVersion("")
+		c.deleteProductFiles()
+	} else {
+		i := &ComponentsChecker{context: c}
+		foundKeybase := i.checkRegistryComponents()
+		i.RegWow = registry.WOW64_32KEY
+		foundKeybase = foundKeybase || i.checkRegistryComponents()
+
+		if foundKeybase {
+			c.log.Info("Detected multiple Keybase products in install registry - deleting product files")
+			c.deleteProductFiles()
+		}
+	}
+
 	runCommand := update.Asset.LocalPath
 	args := []string{}
 	if strings.HasSuffix(runCommand, "msi") || strings.HasSuffix(runCommand, "MSI") {
@@ -240,10 +379,13 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if auto && !c.config.GetUpdateAutoOverride() {
 		args = append(args, "/quiet", "/norestart")
 	}
+	c.config.SetLastAppliedVersion(update.Version)
 	_, err := command.Exec(runCommand, args, time.Hour, c.log)
 	return err
 }
 
+// Note that when a Windows installer runs, it kills the running updater, even
+// before AfterApply() runs
 func (c context) AfterApply(update updater.Update) error {
 	return nil
 }

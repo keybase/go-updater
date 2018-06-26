@@ -51,6 +51,8 @@ type store struct {
 	Auto bool `json:"auto"`
 	// AutoSet is whether a user set the Auto config
 	AutoSet bool `json:"autoSet"`
+	// LastAppliedVersion is for detecting upgrade error condition
+	LastAppliedVersion string `json:"lastAppliedVersion"`
 }
 
 // newConfig loads a config, which is valid even if it has an error
@@ -195,6 +197,16 @@ func (c config) GetUpdateAutoOverride() bool {
 func (c *config) SetUpdateAutoOverride(auto bool) error {
 	c.autoOverride = auto
 	return nil
+}
+
+// For reporting the last version applied
+func (c config) GetLastAppliedVersion() string {
+	return c.store.LastAppliedVersion
+}
+
+func (c *config) SetLastAppliedVersion(version string) error {
+	c.store.LastAppliedVersion = version
+	return c.save()
 }
 
 // GetInstallID is an identifier returned by the API on first update that is a

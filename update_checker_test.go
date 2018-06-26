@@ -89,6 +89,8 @@ func (c testUpdateCheckUI) IsCheckCommand() bool {
 	return true
 }
 
+func (c testUpdateCheckUI) DeepClean() {}
+
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()
