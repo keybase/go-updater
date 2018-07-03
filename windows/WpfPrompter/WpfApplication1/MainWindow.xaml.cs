@@ -74,12 +74,6 @@ namespace WpfApplication1
             writeResult();
         }
 
-        private void snooze_Click(object sender, RoutedEventArgs e)
-        {
-            result.action = "snooze";
-            writeResult();
-        }
-
         private void writeResult()
         {
             JavaScriptSerializer serializer = new JavaScriptSerializer();
@@ -91,6 +85,16 @@ namespace WpfApplication1
         {
             var hwnd = new WindowInteropHelper(this).Handle;
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
+        }
+
+        private void snoozeDuration_DropDownClosed(object sender, EventArgs e)
+        {
+            var snoozeVal = (System.Windows.Controls.ComboBoxItem) snoozeDuration.SelectedItem;
+            if (snoozeVal != null && snoozeDuration.SelectedIndex > 0)
+            {
+                result.action = snoozeVal.Name;
+                writeResult();
+            }
         }
     }
 }
