@@ -18,6 +18,7 @@ public class Result
 {
     public string action { get; set; }
     public bool autoUpdate { get; set; }
+    public int snooze_duration { get; set; }
 }
 
 namespace WpfApplication1
@@ -37,6 +38,8 @@ namespace WpfApplication1
         [DllImport("user32.dll")]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
+        private const int snoozeDay = 60 * 60 * 24; // km per sec.
+
         public MainWindow()
         {
             InitializeComponent();
@@ -46,25 +49,28 @@ namespace WpfApplication1
             {
                 JavaScriptSerializer serializer = new JavaScriptSerializer();
                 input = serializer.Deserialize<Input>(args[1]);
-                if (input.title.Length > 0)
-                {
-                    title.Text = input.title;
-                }
-                if(input.message.Length > 0)
-                {
-                    message.Text = input.message;
-                }
-                if (input.description.Length > 0)
-                {
-                    description.Text = input.description;
-                }
-                if (input.outPath.Length <= 0)
-                {
-                    input.outPath = "updaterPromptResult.txt";
-                }
-                silent.IsChecked = input.auto;
+            } else
+            {
+                input = new global::Input();
             }
-            
+            if (input.title != null && input.title.Length > 0)
+            {
+                title.Text = input.title;
+            }
+            if (input.message != null && input.message.Length > 0)
+            {
+                message.Text = input.message;
+            }
+            if (input.description != null && input.description.Length > 0)
+            {
+                description.Text = input.description;
+            }
+            if (input.outPath == null || input.outPath.Length <= 0)
+            {
+                input.outPath = "updaterPromptResult.txt";
+            }
+            silent.IsChecked = input.auto;
+          
         }
 
         private void apply_Click(object sender, RoutedEventArgs e)
@@ -92,7 +98,8 @@ namespace WpfApplication1
             var snoozeVal = (System.Windows.Controls.ComboBoxItem) snoozeDuration.SelectedItem;
             if (snoozeVal != null && snoozeDuration.SelectedIndex > 0)
             {
-                result.action = snoozeVal.Name;
+                result.action = "snooze";
+                result.snooze_duration = (snoozeVal.Name == "snooze7") ? snoozeDay * 7 : snoozeDay;
                 writeResult();
             }
         }
