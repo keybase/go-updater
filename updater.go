@@ -133,7 +133,8 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	case UpdateActionContinue:
 		// Continue
 	case UpdateActionUIBusy:
-		return update, guiBusyErr(fmt.Errorf("User active, retrying later"))
+		// Return nil so that AfterUpdateCheck won't exit the service
+		return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
 	}
 
 	// Linux updates don't have assets so it's ok to prompt for update above before
@@ -300,6 +301,7 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 	}
 	if guistate.IsUserActive {
 		u.guiBusyCount++
+		u.log.Infof("GUI busy on attempt %d", u.guiBusyCount)
 	}
 
 	return guistate.IsUserActive, nil
