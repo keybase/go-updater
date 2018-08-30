@@ -86,16 +86,12 @@ func run(f flags) {
 	switch f.command {
 	case "need-update":
 		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true)
-		outOfDate, err := updater.NeedUpdate(ctx)
+		needUpdate, err := updater.NeedUpdate(ctx)
 		if err != nil {
 			ulog.Error(err)
-			os.Exit(2)
-		}
-		if !outOfDate {
-			fmt.Println("NeedUpdate=false")
 			os.Exit(1)
 		}
-		fmt.Println("NeedUpdate=true")
+		fmt.Println(needUpdate)
 	case "check":
 		if err := updateCheckFromFlags(f, ulog); err != nil {
 			ulog.Error(err)
