@@ -231,6 +231,15 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 	return update, nil
 }
 
+// NeedUpdate returns true if we are out-of-date.
+func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
+	update, err := u.checkForUpdate(ctx, ctx.UpdateOptions())
+	if err != nil {
+		return false, err
+	}
+	return update.NeedUpdate, nil
+}
+
 // promptForUpdateAction prompts the user for permission to apply an update
 func (u *Updater) promptForUpdateAction(ctx Context, update Update, options UpdateOptions) (UpdateAction, error) {
 	u.log.Debug("Prompt for update")
