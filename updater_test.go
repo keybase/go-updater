@@ -98,8 +98,8 @@ func (u *testUpdateUI) ReportError(err error, update *Update, options UpdateOpti
 	u.errReported = err
 }
 
-func (u *testUpdateUI) ReportAction(action UpdateAction, update *Update, options UpdateOptions) {
-	u.actionReported = action
+func (u *testUpdateUI) ReportAction(actionResponse UpdateActionResponse, update *Update, options UpdateOptions) {
+	u.actionReported = actionResponse.action
 	autoUpdate, _ := u.cfg.GetUpdateAuto()
 	u.autoUpdateReported = autoUpdate
 	u.updateReported = update

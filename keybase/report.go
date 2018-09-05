@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/keybase/go-updater"
@@ -37,17 +38,20 @@ func (c context) reportError(err error, update *updater.Update, options updater.
 }
 
 // ReportAction notifies the API server of a client updater action
-func (c context) ReportAction(action updater.UpdateAction, update *updater.Update, options updater.UpdateOptions) {
-	if err := c.reportAction(action, update, options, defaultEndpoints.action, time.Minute); err != nil {
-		c.log.Warningf("Error notifying about an action (%s): %s", action, err)
+func (c context) ReportAction(actionResponse updater.UpdatePromptResponse, update *updater.Update, options updater.UpdateOptions) {
+	if err := c.reportAction(actionResponse, update, options, defaultEndpoints.action, time.Minute); err != nil {
+		c.log.Warningf("Error notifying about an action (%s): %s", actionResponse.Action, err)
 	}
 }
 
-func (c context) reportAction(action updater.UpdateAction, update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
+func (c context) reportAction(actionResponse updater.UpdatePromptResponse, update *updater.Update, options updater.UpdateOptions, uri string, timeout time.Duration) error {
 	data := url.Values{}
-	data.Add("action", action.String())
+	data.Add("action", actionResponse.Action.String())
 	autoUpdate, _ := c.config.GetUpdateAuto()
 	data.Add("auto_update", util.URLValueForBool(autoUpdate))
+	if actionResponse.SnoozeDuration > 0 {
+		data.Add("snooze_duration", strconv.Itoa(actionResponse.SnoozeDuration))
+	}
 	return c.report(data, update, options, uri, timeout)
 }
 
