@@ -99,7 +99,7 @@ func (u *testUpdateUI) ReportError(err error, update *Update, options UpdateOpti
 }
 
 func (u *testUpdateUI) ReportAction(actionResponse UpdatePromptResponse, update *Update, options UpdateOptions) {
-	u.actionReported = actionResponse.action
+	u.actionReported = actionResponse.Action
 	autoUpdate, _ := u.cfg.GetUpdateAuto()
 	u.autoUpdateReported = autoUpdate
 	u.updateReported = update
