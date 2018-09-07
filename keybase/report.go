@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/keybase/go-updater"
@@ -50,7 +49,7 @@ func (c context) reportAction(actionResponse updater.UpdatePromptResponse, updat
 	autoUpdate, _ := c.config.GetUpdateAuto()
 	data.Add("auto_update", util.URLValueForBool(autoUpdate))
 	if actionResponse.SnoozeDuration > 0 {
-		data.Add("snooze_duration", strconv.Itoa(actionResponse.SnoozeDuration))
+		data.Add("snooze_duration", fmt.Sprintf("%d", actionResponse.SnoozeDuration))
 	}
 	return c.report(data, update, options, uri, timeout)
 }
