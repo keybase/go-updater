@@ -75,7 +75,7 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()
 }
 
-func (u testUpdateCheckUI) ReportAction(_ UpdateAction, _ *Update, _ UpdateOptions) {}
+func (u testUpdateCheckUI) ReportAction(_ UpdatePromptResponse, _ *Update, _ UpdateOptions) {}
 
 func (u testUpdateCheckUI) ReportError(_ error, _ *Update, _ UpdateOptions) {}
 

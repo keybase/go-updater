@@ -21,8 +21,9 @@ type updaterPromptInput struct {
 }
 
 type updaterPromptInputResult struct {
-	Action     string `json:"action"`
-	AutoUpdate bool   `json:"autoUpdate"`
+	Action         string `json:"action"`
+	AutoUpdate     bool   `json:"autoUpdate"`
+	SnoozeDuration int    `json:"snooze_duration"`
 }
 
 func (c context) promptInput(update updater.Update, options updater.UpdateOptions, promptOptions updater.UpdatePromptOptions) (string, error) {
@@ -69,8 +70,9 @@ func (c context) responseForResult(result updaterPromptInputResult) (*updater.Up
 	}
 
 	return &updater.UpdatePromptResponse{
-		Action:     updateAction,
-		AutoUpdate: autoUpdate,
+		Action:         updateAction,
+		AutoUpdate:     autoUpdate,
+		SnoozeDuration: result.SnoozeDuration,
 	}, nil
 }
 

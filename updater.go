@@ -15,7 +15,7 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.3.3"
+const Version = "0.3.4"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -44,7 +44,7 @@ type Context interface {
 	Apply(update Update, options UpdateOptions, tmpDir string) error
 	AfterApply(update Update) error
 	ReportError(err error, update *Update, options UpdateOptions)
-	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
+	ReportAction(updatePromptResponse UpdatePromptResponse, update *Update, options UpdateOptions)
 	ReportSuccess(update *Update, options UpdateOptions)
 	AfterUpdateCheck(update *Update)
 	GetAppStatePath() string
@@ -113,20 +113,20 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 
 	// Prompt for update
-	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
+	updatePromptResponse, err := u.promptForUpdateAction(ctx, *update, options)
 	if err != nil {
 		return update, promptErr(err)
 	}
-	switch updateAction {
+	switch updatePromptResponse.Action {
 	case UpdateActionApply:
-		ctx.ReportAction(UpdateActionApply, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 	case UpdateActionAuto:
-		ctx.ReportAction(UpdateActionAuto, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 	case UpdateActionSnooze:
-		ctx.ReportAction(UpdateActionSnooze, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 		return update, CancelErr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
-		ctx.ReportAction(UpdateActionCancel, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 		return update, CancelErr(fmt.Errorf("Canceled"))
 	case UpdateActionError:
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
@@ -242,7 +242,7 @@ func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
 }
 
 // promptForUpdateAction prompts the user for permission to apply an update
-func (u *Updater) promptForUpdateAction(ctx Context, update Update, options UpdateOptions) (UpdateAction, error) {
+func (u *Updater) promptForUpdateAction(ctx Context, update Update, options UpdateOptions) (UpdatePromptResponse, error) {
 	u.log.Debug("Prompt for update")
 
 	auto, autoSet := u.config.GetUpdateAuto()
@@ -253,11 +253,11 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 			// If there's an error getting active status, we'll just update
 			isActive, err := u.checkUserActive(ctx)
 			if err == nil && isActive {
-				return UpdateActionUIBusy, nil
+				return UpdatePromptResponse{UpdateActionUIBusy, false, 0}, nil
 			}
 			u.guiBusyCount = 0
 		}
-		return UpdateActionAuto, nil
+		return UpdatePromptResponse{UpdateActionAuto, false, 0}, nil
 	}
 
 	updateUI := ctx.GetUpdateUI()
@@ -267,10 +267,10 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	promptOptions := UpdatePromptOptions{AutoUpdate: autoUpdate}
 	updatePromptResponse, err := updateUI.UpdatePrompt(update, options, promptOptions)
 	if err != nil {
-		return UpdateActionError, err
+		return UpdatePromptResponse{UpdateActionError, false, 0}, err
 	}
 	if updatePromptResponse == nil {
-		return UpdateActionError, fmt.Errorf("No response")
+		return UpdatePromptResponse{UpdateActionError, false, 0}, fmt.Errorf("No response")
 	}
 
 	if updatePromptResponse.Action != UpdateActionContinue {
@@ -281,7 +281,7 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 		}
 	}
 
-	return updatePromptResponse.Action, nil
+	return *updatePromptResponse, nil
 }
 
 type guiAppState struct {

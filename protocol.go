@@ -102,8 +102,9 @@ type UpdatePromptOptions struct {
 
 // UpdatePromptResponse is the result for UpdatePrompt
 type UpdatePromptResponse struct {
-	Action     UpdateAction `json:"action"`
-	AutoUpdate bool         `json:"autoUpdate"`
+	Action         UpdateAction `json:"action"`
+	AutoUpdate     bool         `json:"autoUpdate"`
+	SnoozeDuration int          `json:"snooze_duration"`
 }
 
 // UpdateUI is a UI interface
