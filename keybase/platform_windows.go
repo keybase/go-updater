@@ -305,6 +305,13 @@ func (c context) deleteProductFiles() {
 		c.log.Infof("Error getting Keybase directory: %s", err.Error())
 		return
 	}
+
+	args := []string{filepath.Join(path, "keybase.exe"), "ctl", "stop"}
+	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
+	if err != nil {
+		c.log.Infof("Error stopping keybase", err.Error())
+	}
+
 	err = os.RemoveAll(filepath.Join(path, "Gui"))
 	if err != nil {
 		c.log.Infof("Error removing Gui directory: %s", err.Error())
@@ -335,6 +342,7 @@ func (c context) DeepClean() {
 }
 
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	skipSilent := false
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
@@ -342,6 +350,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		c.log.Info("Previously applied version detected - deleting product files")
 		c.config.SetLastAppliedVersion("")
 		c.deleteProductFiles()
+		skipSilent = true
 	} else {
 		i := &ComponentsChecker{context: c}
 		foundKeybase := i.checkRegistryComponents()
@@ -351,6 +360,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		if foundKeybase {
 			c.log.Info("Detected multiple Keybase products in install registry - deleting product files")
 			c.deleteProductFiles()
+			skipSilent = true
 		}
 	}
 
@@ -376,7 +386,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		runCommand = "msiexec.exe"
 	}
 	auto, _ := c.config.GetUpdateAuto()
-	if auto && !c.config.GetUpdateAutoOverride() {
+	if auto && !c.config.GetUpdateAutoOverride() && !skipSilent {
 		args = append(args, "/quiet", "/norestart")
 	}
 	c.config.SetLastAppliedVersion(update.Version)
