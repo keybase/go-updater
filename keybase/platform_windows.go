@@ -299,7 +299,7 @@ func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
 	return result
 }
 
-func (c context) deleteProductFiles() {
+func (c context) stopKeybase() {
 	path, err := Dir("Keybase")
 	if err != nil {
 		c.log.Infof("Error getting Keybase directory: %s", err.Error())
@@ -310,6 +310,16 @@ func (c context) deleteProductFiles() {
 	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
 	if err != nil {
 		c.log.Infof("Error stopping keybase", err.Error())
+	}
+}
+
+func (c context) deleteProductFiles() {
+	c.stopKeybase()
+
+	path, err := Dir("Keybase")
+	if err != nil {
+		c.log.Infof("Error getting Keybase directory: %s", err.Error())
+		return
 	}
 
 	err = os.RemoveAll(filepath.Join(path, "Gui"))
@@ -347,21 +357,10 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		return fmt.Errorf("No asset")
 	}
 	if c.config.GetLastAppliedVersion() == update.Version {
-		c.log.Info("Previously applied version detected - deleting product files")
+		c.log.Info("Previously applied version detected - stopping services")
 		c.config.SetLastAppliedVersion("")
-		c.deleteProductFiles()
+		c.stopKeybase()
 		skipSilent = true
-	} else {
-		i := &ComponentsChecker{context: c}
-		foundKeybase := i.checkRegistryComponents()
-		i.RegWow = registry.WOW64_32KEY
-		foundKeybase = foundKeybase || i.checkRegistryComponents()
-
-		if foundKeybase {
-			c.log.Info("Detected multiple Keybase products in install registry - deleting product files")
-			c.deleteProductFiles()
-			skipSilent = true
-		}
 	}
 
 	runCommand := update.Asset.LocalPath
