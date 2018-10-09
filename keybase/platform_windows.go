@@ -357,7 +357,7 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		return fmt.Errorf("No asset")
 	}
 	if c.config.GetLastAppliedVersion() == update.Version {
-		c.log.Info("Previously applied version detected - deleting product files")
+		c.log.Info("Previously applied version detected - stopping services")
 		c.config.SetLastAppliedVersion("")
 		c.stopKeybase()
 		skipSilent = true
