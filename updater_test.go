@@ -126,6 +126,8 @@ func (c testUpdateUI) IsCheckCommand() bool {
 
 func (c testUpdateUI) DeepClean() {}
 
+func (c testUpdateUI) Launch() {}
+
 type testUpdateSource struct {
 	testServer *httptest.Server
 	config     Config

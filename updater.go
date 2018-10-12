@@ -50,6 +50,7 @@ type Context interface {
 	GetAppStatePath() string
 	IsCheckCommand() bool
 	DeepClean()
+	Launch()
 }
 
 // Config defines configuration for the Updater

@@ -91,6 +91,8 @@ func (c testUpdateCheckUI) IsCheckCommand() bool {
 
 func (c testUpdateCheckUI) DeepClean() {}
 
+func (c testUpdateCheckUI) Launch() {}
+
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()

@@ -409,3 +409,109 @@ func (c context) GetAppStatePath() string {
 func (c context) IsCheckCommand() bool {
 	return c.isCheckCommand
 }
+
+func (c context) stopKeybaseProcesses(path string) error {
+	
+	c.stopKeybase()
+	time.Sleep(time.Second)
+
+	// Terminate any executing processes
+	ospid := os.Getpid()
+
+	exes, err := filepath.Glob(filepath.Join(path, "*.exe"))
+	if err != nil {
+		c.log.Errorf("Unable to glob exe files: %s", err)
+	}
+	guiExes, err := filepath.Glob(filepath.Join(path, "Gui", "*.exe"))
+	if err != nil {
+		c.log.Errorf("Unable to glob exe files: %s", err)
+	} else {
+		exes = Append(exes, guiExes)
+	}
+
+	c.log.Infof("Terminating any existing programs we will be updating")
+	for _, program := range exes {
+		matcher := process.NewMatcher(program, process.PathEqual, log)
+		matcher.ExceptPID(ospid)
+		log.Infof("Terminating %s", program)
+		process.TerminateAll(matcher, time.Second, log)
+	}
+}
+
+// Launch is called on windows to see if executables should be switched.
+// Sequence:
+// Invoke with -launch to check for updates and launch the app
+// Is there an update directory containing an upd.exe? If so, invoke
+// update/upd.exe -launchupdate and exit.
+// If not, perform the launch command to start the app, then exit
+//
+// Invoke with -launchupdate from the update directory to update
+// Check again for running processes, then copy executables and the Gui directory
+// from the update directory to the parent directory, then start ..\upd.exe with --launchupdated
+//
+// Invoke with --launchupdated from the target directory to finish the update
+// and launch the app
+// Delete or rename the update directory
+// Launch the app and exit
+func (c context) Launch() error {
+
+	path, err := osext.ExecutableFolder()
+	if err != nil {
+		return err
+	}
+
+	if util.FileExists(filepath.Join(path, "update")) {
+		pathExe, err := osext.Executable()
+		if err != nil {
+			return err
+		}
+		_, exeName := filepath.Split(pathExe)
+
+		newerUpdaterPath = filepath.Join(path, "update", exeName)
+		if util.FileExists(newerUpdaterPath) {
+			c.stopKeybaseProcesses(path)
+			args := []string{newerUpdaterPath, "-launchupdate"}
+			_, err = command.Exec(filepath.Join(path, "update", "keybaserq.exe"), args, time.Minute, c.log)
+			if err != nil {
+				c.log.Infof("Error invoking new updater with -launchupdate", err.Error())
+			}
+		
+			return nil
+		}
+	}
+	
+	return LaunchApp()
+}
+
+
+// We are running from the update directory and we should copy stuff up
+func (c context) LaunchUpdate() error {
+	path, err := osext.ExecutableFolder()
+	if err != nil {
+		return err
+	}
+	if ! strings.HasSuffix(path, "update") {
+		return errors.New("launchupdate from non-update directory")
+	}
+	targetDir := filepath.Join(path, "..")
+
+	args := []string{filepath.Join(os.Getenv("windir"), "system32", "xcopy.exe"), "/E", "/I", "/Y", path, targetDir}
+	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
+	if err != nil {
+		c.log.Infof("LaunchUpdate error", err.Error())
+	}
+
+	updaterName := "upd.exe"
+	pathExe, err := osext.Executable()
+	if err != nil {
+		c.log.Infof("osext.Executable error", err.Error())
+	} else {
+		_, updaterName = filepath.Split(pathExe)
+	}
+
+	_, err = command.Exec(filepath.Join(targetDir, "keybaserq.exe"), args, time.Minute, c.log)
+	if err != nil {
+		c.log.Infof("Error invoking new updater with -launchupdate", err.Error())
+	}
+
+}

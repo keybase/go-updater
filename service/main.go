@@ -108,6 +108,14 @@ func run(f flags) {
 		} else {
 			ulog.Errorf("Unknown command: %s", f.command)
 		}
+	case "launch":
+		if runtime.GOOS == "windows" {
+			ctx, _ := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true)
+			fmt.Printf("Doing launch\n")
+			ctx.Launch()
+		} else {
+			ulog.Errorf("Unknown command: %s", f.command)
+		}
 	default:
 		ulog.Errorf("Unknown command: %s", f.command)
 	}

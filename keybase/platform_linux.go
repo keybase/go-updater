@@ -130,3 +130,6 @@ func (c context) IsCheckCommand() bool {
 
 // DeepClean is called when a faulty upgrade has been detected
 func (c context) DeepClean() {}
+
+// Launch is called on windows to see if executables should be switched
+func (c context) Launch() {}
