@@ -299,22 +299,27 @@ func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
 	return result
 }
 
-func (c context) stopKeybase() {
+func (c context) runKeybase(start bool) {
 	path, err := Dir("Keybase")
 	if err != nil {
 		c.log.Infof("Error getting Keybase directory: %s", err.Error())
 		return
 	}
 
-	args := []string{filepath.Join(path, "keybase.exe"), "ctl", "stop"}
+	args := []string{filepath.Join(path, "keybase.exe"), ctl}
+	if start {
+		args = Append(args, "watchdog2")
+	} else {
+		args = Append(args, "stop")
+	}
 	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
 	if err != nil {
-		c.log.Infof("Error stopping keybase", err.Error())
+		c.log.Infof("Error running keybase", err.Error())
 	}
 }
 
 func (c context) deleteProductFiles() {
-	c.stopKeybase()
+	c.runKeybase(false)
 
 	path, err := Dir("Keybase")
 	if err != nil {
@@ -455,32 +460,20 @@ func (c context) stopKeybaseProcesses(path string) error {
 // Launch the app and exit
 func (c context) Launch() error {
 
-	path, err := osext.ExecutableFolder()
-	if err != nil {
-		return err
-	}
-
-	if util.FileExists(filepath.Join(path, "update")) {
-		pathExe, err := osext.Executable()
+	path, command := c.getUpdatePathAndCommand()
+	if path != "" && command != 0 && exists, err := util.FileEsxists(path), exists && err == nil {
+		c.log.Infof("Staged update found for launching")
+		c.stopKeybaseProcesses(path)
+		_, err = command.Exec(COMMAND, []string{}, time.Minute, c.log)
 		if err != nil {
-			return err
-		}
-		_, exeName := filepath.Split(pathExe)
-
-		newerUpdaterPath = filepath.Join(path, "update", exeName)
-		if util.FileExists(newerUpdaterPath) {
-			c.stopKeybaseProcesses(path)
-			args := []string{newerUpdaterPath, "-launchupdate"}
-			_, err = command.Exec(filepath.Join(path, "update", "keybaserq.exe"), args, time.Minute, c.log)
-			if err != nil {
-				c.log.Infof("Error invoking new updater with -launchupdate", err.Error())
-			}
-		
+			c.log.Infof("Error invoking new updater with -launchupdate", err.Error())
+		} else {
 			return nil
 		}
 	}
 	
-	return LaunchApp()
+	err = c.runKeybase(true)
+
 }
 
 
@@ -509,9 +502,41 @@ func (c context) LaunchUpdate() error {
 		_, updaterName = filepath.Split(pathExe)
 	}
 
-	_, err = command.Exec(filepath.Join(targetDir, "keybaserq.exe"), args, time.Minute, c.log)
+	args = []string{"-LaunchUpdated"}
+	_, err = command.Exec(filepath.Join(targetDir, "..", updaterName), args, time.Minute, c.log)
 	if err != nil {
 		c.log.Infof("Error invoking new updater with -launchupdate", err.Error())
-	}
+	}	
+}
 
+func (c config) getUpdatePathAndCommand() (string, string) {
+	k, err := registry.OpenKey(registry.CURRENT_USER, `Keybase\Keybase`, registry.QUERY_VALUE)
+	if err != nil {
+		return err.Error()
+	}
+	defer k.Close()
+
+	s, _, err := k.GetStringValue("UpdatePath")
+	if err != nil {
+		s = ""
+	}
+	l, _, err := k.GetStringValue("UpdateLaunchCommand")
+	if err != nil {
+		l = ""
+	}
+	return s, l
+}
+
+// We just copied stuff up and got re-launched. Clean up and run the app
+func (c context) LaunchUpdated() error {
+	k, err := registry.OpenKey(registry.CURRENT_USER, `Keybase\Keybase`, registry.WRITE)
+	if err != nil {
+		c.log.Infof("Error opening registry for writing", err.Error())
+		return err.Error()
+	}
+	defer k.Close()
+
+	k.DeleteValue("UpdatePath")
+	k.DeleteValue("UpdateLaunchCommand")
+	c.runKeybase(true)
 }
