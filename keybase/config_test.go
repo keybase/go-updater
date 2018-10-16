@@ -20,7 +20,7 @@ func testConfig(t *testing.T) (*config, error) {
 	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	appName, err := util.RandomID("KeybaseTest.")
 	require.NoError(t, err)
-	return newConfig(appName, testPathToKeybase, testLog)
+	return newConfig(appName, testPathToKeybase, testLog, false)
 }
 
 func TestConfig(t *testing.T) {
@@ -79,7 +79,7 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, options, expectedOptions)
 
 	// Load new config and make sure it has the same values
-	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, testLog)
+	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, testLog, false)
 	assert.NoError(t, err)
 	assert.NotEqual(t, cfg2.path, "", "No config path")
 
@@ -93,7 +93,7 @@ func TestConfig(t *testing.T) {
 }
 
 func TestConfigBadPath(t *testing.T) {
-	cfg := newDefaultConfig("", "", testLog)
+	cfg := newDefaultConfig("", "", testLog, false)
 
 	var badPath string
 	if runtime.GOOS == "windows" {
@@ -128,7 +128,7 @@ func TestConfigExtra(t *testing.T) {
 	err := ioutil.WriteFile(path, []byte(data), 0644)
 	assert.NoError(t, err)
 
-	cfg := newDefaultConfig("", "", testLog)
+	cfg := newDefaultConfig("", "", testLog, false)
 	err = cfg.loadFromPath(path)
 	assert.NoError(t, err)
 
@@ -152,7 +152,7 @@ func TestConfigBadType(t *testing.T) {
 	err := ioutil.WriteFile(path, []byte(data), 0644)
 	assert.NoError(t, err)
 
-	cfg := newDefaultConfig("", "", testLog)
+	cfg := newDefaultConfig("", "", testLog, false)
 	err = cfg.loadFromPath(path)
 	assert.Error(t, err)
 	auto, autoSet := cfg.GetUpdateAuto()
@@ -162,7 +162,7 @@ func TestConfigBadType(t *testing.T) {
 
 func TestKeybaseVersionInvalid(t *testing.T) {
 	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/err.sh")
-	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, testLog)
+	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, testLog, false)
 	version := cfg.keybaseVersion()
 	assert.Equal(t, "", version)
 }
