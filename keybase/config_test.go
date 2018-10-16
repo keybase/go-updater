@@ -16,11 +16,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testConfig(t *testing.T) (*config, error) {
+func testConfigWithIgnoreSnooze(t *testing.T, ignoreSnooze bool) (*config, error) {
 	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "bin", "test")
 	appName, err := util.RandomID("KeybaseTest.")
 	require.NoError(t, err)
-	return newConfig(appName, testPathToKeybase, testLog, false)
+	return newConfig(appName, testPathToKeybase, testLog, ignoreSnooze)
+}
+
+func testConfig(t *testing.T) (*config, error) {
+	return testConfigWithIgnoreSnooze(t, false)
 }
 
 func TestConfig(t *testing.T) {
@@ -70,6 +74,7 @@ func TestConfig(t *testing.T) {
 		DestinationPath: options.DestinationPath,
 		Channel:         "",
 		Env:             "prod",
+		IgnoreSnooze:    false,
 		Arch:            cfg.osArch(),
 		Force:           false,
 		OSVersion:       cfg.osVersion(),
@@ -79,9 +84,12 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, options, expectedOptions)
 
 	// Load new config and make sure it has the same values
-	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, testLog, false)
+	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, testLog, true)
 	assert.NoError(t, err)
 	assert.NotEqual(t, cfg2.path, "", "No config path")
+
+	expectedOptions2 := expectedOptions
+	expectedOptions2.IgnoreSnooze = true
 
 	options2 := cfg2.updaterOptions()
 	assert.Equal(t, options2, expectedOptions)

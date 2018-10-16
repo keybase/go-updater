@@ -121,7 +121,7 @@ func TestUpdateSourceRequest(t *testing.T) {
 	update, err := updateSource.FindUpdate(options)
 	require.NoError(t, err)
 	require.NotNil(t, testAPIServer.lastRequest)
-	require.Equal(t, "/?arch=arch&auto_update=0&install_id=&os_version=100.1&platform=platform&run_mode=env&upd_version=200.2&version=1.2.3-400%2Babcdef", testAPIServer.lastRequest.RequestURI)
+	require.Equal(t, "/?arch=arch&auto_update=0&ignore_snooze=0&install_id=&os_version=100.1&platform=platform&run_mode=env&upd_version=200.2&version=1.2.3-400%2Babcdef", testAPIServer.lastRequest.RequestURI)
 
 	// Change install ID and auto update
 	require.Equal(t, "deadbeef", update.InstallID)
@@ -134,5 +134,5 @@ func TestUpdateSourceRequest(t *testing.T) {
 	update, err = updateSource.FindUpdate(options)
 	require.NoError(t, err)
 	require.NotNil(t, testAPIServer.lastRequest)
-	assert.Equal(t, "/?arch=arch&auto_update=1&install_id=deadbeef&os_version=100.1&platform=platform&run_mode=env&upd_version=200.2&version=1.2.3-400%2Babcdef", testAPIServer.lastRequest.RequestURI)
+	assert.Equal(t, "/?arch=arch&auto_update=1&ignore_snooze=0&install_id=deadbeef&os_version=100.1&platform=platform&run_mode=env&upd_version=200.2&version=1.2.3-400%2Babcdef", testAPIServer.lastRequest.RequestURI)
 }
