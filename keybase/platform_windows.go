@@ -18,6 +18,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"github.com/keybase/go-updater/process"
 	"github.com/keybase/go-updater/util"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
@@ -299,28 +300,32 @@ func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
 	return result
 }
 
-func (c context) stopKeybase() {
+func (c context) runKeybase(start bool) {
 	path, err := Dir("Keybase")
 	if err != nil {
 		c.log.Infof("Error getting Keybase directory: %s", err.Error())
 		return
 	}
 
-	args := []string{filepath.Join(path, "keybase.exe"), "ctl", "stop"}
+	args := []string{filepath.Join(path, "keybase.exe"), "ctl"}
+	if start {
+		args = append(args, "watchdog2")
+	} else {
+		args = append(args, "stop")
+	}
 	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
 	if err != nil {
-		c.log.Infof("Error stopping keybase", err.Error())
+		c.log.Infof("Error running keybase", err.Error())
 	}
 }
 
 func (c context) deleteProductFiles() {
-	c.stopKeybase()
-
 	path, err := Dir("Keybase")
 	if err != nil {
 		c.log.Infof("Error getting Keybase directory: %s", err.Error())
 		return
 	}
+	c.stopKeybaseProcesses()
 
 	err = os.RemoveAll(filepath.Join(path, "Gui"))
 	if err != nil {
@@ -356,10 +361,10 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
+	c.stopKeybaseProcesses()
 	if c.config.GetLastAppliedVersion() == update.Version {
-		c.log.Info("Previously applied version detected - stopping services")
+		c.log.Info("Previously applied version detected")
 		c.config.SetLastAppliedVersion("")
-		c.stopKeybase()
 		skipSilent = true
 	}
 
@@ -408,4 +413,39 @@ func (c context) GetAppStatePath() string {
 
 func (c context) IsCheckCommand() bool {
 	return c.isCheckCommand
+}
+
+// copied from watchdog
+func (c context) stopKeybaseProcesses() error {
+	path, err := Dir("Keybase")
+	if err != nil {
+		c.log.Infof("Error getting Keybase directory: %s", err.Error())
+		return err
+	}
+
+	c.runKeybase(false)
+	time.Sleep(time.Second)
+
+	// Terminate any executing processes
+	ospid := os.Getpid()
+
+	exes, err := filepath.Glob(filepath.Join(path, "*.exe"))
+	if err != nil {
+		c.log.Errorf("Unable to glob exe files: %s", err)
+	}
+	guiExes, err := filepath.Glob(filepath.Join(path, "Gui", "*.exe"))
+	if err != nil {
+		c.log.Errorf("Unable to glob exe files: %s", err)
+	} else {
+		exes = append(exes, guiExes...)
+	}
+
+	c.log.Infof("Terminating any existing programs we will be updating")
+	for _, program := range exes {
+		matcher := process.NewMatcher(program, process.PathEqual, c.log)
+		matcher.ExceptPID(ospid)
+		c.log.Infof("Terminating %s", program)
+		process.TerminateAll(matcher, time.Second, c.log)
+	}
+	return nil
 }
