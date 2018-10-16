@@ -92,7 +92,7 @@ func TestConfig(t *testing.T) {
 	expectedOptions2.IgnoreSnooze = true
 
 	options2 := cfg2.updaterOptions()
-	assert.Equal(t, options2, expectedOptions)
+	assert.Equal(t, options2, expectedOptions2)
 
 	auto2, autoSet2 := cfg2.GetUpdateAuto()
 	assert.True(t, autoSet2, "Auto should be set")
