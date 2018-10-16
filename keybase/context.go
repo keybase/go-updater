@@ -74,8 +74,8 @@ func newContextCheckCmd(cfg Config, log Log, isCheckCommand bool) *context {
 }
 
 // NewUpdaterContext returns an updater context for Keybase
-func NewUpdaterContext(appName string, pathToKeybase string, log Log, isCheck bool) (updater.Context, *updater.Updater) {
-	cfg, err := newConfig(appName, pathToKeybase, log)
+func NewUpdaterContext(appName string, pathToKeybase string, log Log, isCheck bool, ignoreSnooze bool) (updater.Context, *updater.Updater) {
+	cfg, err := newConfig(appName, pathToKeybase, log, ignoreSnooze)
 	if err != nil {
 		log.Warningf("Error loading config for context: %s", err)
 	}

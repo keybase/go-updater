@@ -39,6 +39,8 @@ type config struct {
 	store store
 	// autoOverride is whether the current auto setting should be temporarily overridden
 	autoOverride bool
+	// ignoreSnooze corresponds to UpdateOptions.IgnoreSnooze
+	ignoreSnooze bool
 }
 
 // store is the config values
@@ -56,17 +58,18 @@ type store struct {
 }
 
 // newConfig loads a config, which is valid even if it has an error
-func newConfig(appName string, pathToKeybase string, log Log) (*config, error) {
-	cfg := newDefaultConfig(appName, pathToKeybase, log)
+func newConfig(appName string, pathToKeybase string, log Log, ignoreSnooze bool) (*config, error) {
+	cfg := newDefaultConfig(appName, pathToKeybase, log, ignoreSnooze)
 	err := cfg.load()
 	return &cfg, err
 }
 
-func newDefaultConfig(appName string, pathToKeybase string, log Log) config {
+func newDefaultConfig(appName string, pathToKeybase string, log Log, ignoreSnooze bool) config {
 	return config{
 		appName:       appName,
 		pathToKeybase: pathToKeybase,
 		log:           log,
+		ignoreSnooze:  ignoreSnooze,
 	}
 }
 
@@ -233,6 +236,7 @@ func (c config) updaterOptions() updater.UpdateOptions {
 		Env:             "prod",
 		OSVersion:       osVersion,
 		UpdaterVersion:  updater.Version,
+		IgnoreSnooze:    c.ignoreSnooze,
 	}
 }
 

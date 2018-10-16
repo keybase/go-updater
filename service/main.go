@@ -85,7 +85,7 @@ func run(f flags) {
 
 	switch f.command {
 	case "need-update":
-		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true)
+		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true, true)
 		needUpdate, err := updater.NeedUpdate(ctx)
 		if err != nil {
 			ulog.Error(err)
@@ -102,7 +102,7 @@ func run(f flags) {
 		svc.Run()
 	case "clean":
 		if runtime.GOOS == "windows" {
-			ctx, _ := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true)
+			ctx, _ := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true, false)
 			fmt.Printf("Doing DeepClean\n")
 			ctx.DeepClean()
 		} else {
@@ -115,12 +115,12 @@ func run(f flags) {
 
 func serviceFromFlags(f flags, ulog logger) *service {
 	ulog.Infof("Updater %s", updater.Version)
-	ctx, upd := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, false)
+	ctx, upd := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, false, false)
 	return newService(upd, ctx, ulog, f.appName)
 }
 
 func updateCheckFromFlags(f flags, ulog logger) error {
-	ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true)
+	ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, true, true)
 	_, err := updater.Update(ctx)
 	return err
 }
