@@ -73,9 +73,29 @@ func newContextCheckCmd(cfg Config, log Log, isCheckCommand bool) *context {
 	return ctx
 }
 
+// UpdaterMode describes how updater should behave.
+type UpdaterMode int
+
+const (
+	_            UpdaterMode = iota
+	Service                  // used in service mode; never ignores snooze
+	Check                    // ignores snooze
+	CheckPassive             // does not ignore snooze
+)
+
+// IsCheck returns true if we are not running in service mode.
+func (m UpdaterMode) IsCheck() bool {
+	return m == Check || m == CheckPassive
+}
+
+// IgnoreSnooze returns true if we should ignore snooze.
+func (m UpdaterMode) IgnoreSnooze() bool {
+	return m == Check
+}
+
 // NewUpdaterContext returns an updater context for Keybase
-func NewUpdaterContext(appName string, pathToKeybase string, log Log, isCheck bool, ignoreSnooze bool) (updater.Context, *updater.Updater) {
-	cfg, err := newConfig(appName, pathToKeybase, log, ignoreSnooze)
+func NewUpdaterContext(appName string, pathToKeybase string, log Log, mode UpdaterMode) (updater.Context, *updater.Updater) {
+	cfg, err := newConfig(appName, pathToKeybase, log, mode.IgnoreSnooze())
 	if err != nil {
 		log.Warningf("Error loading config for context: %s", err)
 	}
@@ -96,7 +116,7 @@ func NewUpdaterContext(appName string, pathToKeybase string, log Log, isCheck bo
 	// keybase update check
 
 	upd := updater.NewUpdater(src, cfg, log)
-	return newContextCheckCmd(cfg, log, isCheck), upd
+	return newContextCheckCmd(cfg, log, mode.IsCheck()), upd
 }
 
 // UpdateOptions returns update options
