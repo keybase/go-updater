@@ -300,7 +300,12 @@ func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
 	return result
 }
 
-func (c context) runKeybase(start bool) {
+type KeybaseCommand string
+const (
+  KeybaseCommandStart KeybaseCommand = "watchdog2"
+  KeybaseCommandStop KeybaseCommand = "stop"
+)
+func (c context) runKeybase(cmd KeybaseCommand) {
 	path, err := Dir("Keybase")
 	if err != nil {
 		c.log.Infof("Error getting Keybase directory: %s", err.Error())
