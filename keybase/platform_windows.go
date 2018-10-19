@@ -301,10 +301,12 @@ func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
 }
 
 type KeybaseCommand string
+
 const (
-  KeybaseCommandStart KeybaseCommand = "watchdog2"
-  KeybaseCommandStop KeybaseCommand = "stop"
+	KeybaseCommandStart KeybaseCommand = "watchdog2"
+	KeybaseCommandStop  KeybaseCommand = "stop"
 )
+
 func (c context) runKeybase(cmd KeybaseCommand) {
 	path, err := Dir("Keybase")
 	if err != nil {
@@ -312,12 +314,8 @@ func (c context) runKeybase(cmd KeybaseCommand) {
 		return
 	}
 
-	args := []string{filepath.Join(path, "keybase.exe"), "ctl"}
-args = append(args, cmd)
-		args = append(args, "watchdog2")
-	} else {
-		args = append(args, "stop")
-	}
+	args := []string{filepath.Join(path, "keybase.exe"), "ctl", string(cmd)}
+
 	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
 	if err != nil {
 		c.log.Infof("Error %s'ing keybase", cmd, err.Error())
@@ -428,7 +426,7 @@ func (c context) stopKeybaseProcesses() error {
 		return err
 	}
 
-	c.runKeybase(false)
+	c.runKeybase(KeybaseCommandStop)
 	time.Sleep(time.Second)
 
 	// Terminate any executing processes
