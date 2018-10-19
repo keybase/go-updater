@@ -320,7 +320,7 @@ args = append(args, cmd)
 	}
 	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
 	if err != nil {
-		c.log.Infof("Error running keybase", err.Error())
+		c.log.Infof("Error %s'ing keybase", cmd, err.Error())
 	}
 }
 
