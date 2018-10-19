@@ -313,7 +313,7 @@ func (c context) runKeybase(cmd KeybaseCommand) {
 	}
 
 	args := []string{filepath.Join(path, "keybase.exe"), "ctl"}
-	if start {
+args = append(args, cmd)
 		args = append(args, "watchdog2")
 	} else {
 		args = append(args, "stop")
