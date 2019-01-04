@@ -6,8 +6,10 @@ package updater
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -142,6 +144,10 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	if update.Asset == nil || update.Asset.URL == "" {
 		u.log.Info("No update asset to apply")
 		return update, nil
+	}
+
+	if err := u.CleanupPreviousUpdates(); err != nil {
+		u.log.Infof("Error cleaning up previous downloads: %v", err)
 	}
 
 	tmpDir := u.tempDir()
@@ -342,7 +348,35 @@ func (u *Updater) tempDir() string {
 	return tmpDir
 }
 
-// Cleanup removes temporary files
+var tempDirRE = regexp.MustCompile(`^KeybaseUpdater.([ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{52}|\d{18,})$`)
+
+// CleanupPreviousUpdates removes temporary files from previous updates.
+func (u *Updater) CleanupPreviousUpdates() (err error) {
+	parent := os.TempDir()
+	if parent == "" || parent == "." {
+		return fmt.Errorf("temp directory is '%v'", parent)
+	}
+	files, err := ioutil.ReadDir(parent)
+	if err != nil {
+		return fmt.Errorf("listing parent directory: %v", err)
+	}
+	for _, fi := range files {
+		if !fi.IsDir() {
+			continue
+		}
+		if tempDirRE.MatchString(fi.Name()) {
+			targetPath := filepath.Join(parent, fi.Name())
+			u.log.Debugf("Cleaning old download: %v", targetPath)
+			err = os.RemoveAll(targetPath)
+			if err != nil {
+				u.log.Infof("Error deleting old temp dir %v: %v", fi.Name(), err)
+			}
+		}
+	}
+	return nil
+}
+
+// Cleanup removes temporary files from this update
 func (u *Updater) Cleanup(tmpDir string) {
 	if tmpDir != "" {
 		u.log.Debugf("Remove temporary directory: %q", tmpDir)
