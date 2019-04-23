@@ -72,7 +72,11 @@ func TestReportActionApply(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	actionResponse := updater.UpdatePromptResponse{updater.UpdateActionApply, false, 0}
+	actionResponse := updater.UpdatePromptResponse{
+		Action:         updater.UpdateActionApply,
+		AutoUpdate:     false,
+		SnoozeDuration: 0,
+	}
 	err := ctx.reportAction(actionResponse, &testUpdate, testOptions, server.URL, testReportTimeout)
 	assert.NoError(t, err)
 }
@@ -82,7 +86,11 @@ func TestReportActionEmpty(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	actionResponse := updater.UpdatePromptResponse{"", false, 0}
+	actionResponse := updater.UpdatePromptResponse{
+		Action:         "",
+		AutoUpdate:     false,
+		SnoozeDuration: 0,
+	}
 	err := ctx.reportAction(actionResponse, &testUpdate, testOptions, server.URL, testReportTimeout)
 	assert.NoError(t, err)
 }
