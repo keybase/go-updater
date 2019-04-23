@@ -14,11 +14,11 @@ import (
 func TestLoggerNil(t *testing.T) {
 	log := logger{}
 	log.Debug(nil)
-	log.Debugf("", nil)
+	log.Debugf("")
 	log.Info(nil)
-	log.Infof("", nil)
+	log.Infof("")
 	log.Warning(nil)
-	log.Warningf("", nil)
+	log.Warningf("")
 	log.Error(nil)
 	log.Errorf("")
 }
