@@ -98,7 +98,11 @@ func (c context) BeforeUpdatePrompt(update updater.Update, options updater.Updat
 	if err != nil {
 		c.log.Warningf("Error running notify-send: %s (%s)", err, result.CombinedOutput())
 	}
-	c.ReportAction(updater.UpdatePromptResponse{updater.UpdateActionSnooze, false, 0}, &update, options)
+	c.ReportAction(updater.UpdatePromptResponse{
+		Action:         updater.UpdateActionSnooze,
+		AutoUpdate:     false,
+		SnoozeDuration: 0,
+	}, &update, options)
 	return updater.CancelErr(fmt.Errorf("Linux uses system package manager"))
 }
 
