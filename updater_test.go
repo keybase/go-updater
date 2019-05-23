@@ -116,15 +116,15 @@ func (u testUpdateUI) UpdateOptions() UpdateOptions {
 	return u.options
 }
 
-func (c testUpdateUI) GetAppStatePath() string {
+func (u testUpdateUI) GetAppStatePath() string {
 	return testAppStatePath
 }
 
-func (c testUpdateUI) IsCheckCommand() bool {
-	return c.isCheckCommand
+func (u testUpdateUI) IsCheckCommand() bool {
+	return u.isCheckCommand
 }
 
-func (c testUpdateUI) DeepClean() {}
+func (u testUpdateUI) DeepClean() {}
 
 type testUpdateSource struct {
 	testServer *httptest.Server

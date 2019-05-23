@@ -15,6 +15,8 @@ before_install:
   - go get github.com/modocache/gover
   - go get github.com/keybase/go-updater/test
 script:
+    # staticcheck only works for two newest go versions
+    - if [[ "$(go version)" =~ go1.1[12] ]]; then go get honnef.co/go/tools/cmd/staticcheck && staticcheck ./... && echo "staticcheck complete"; fi
   - go vet ./...
   - go test -v -coverprofile=command.coverprofile ./command
   - go test -v -coverprofile=keybase.coverprofile ./keybase

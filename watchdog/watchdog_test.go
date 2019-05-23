@@ -85,13 +85,6 @@ func TestTerminateBeforeWatch(t *testing.T) {
 	assert.NotEqual(t, pidBefore, pidAfter)
 }
 
-func cleanupProc(cmd *exec.Cmd, procPath string) {
-	if cmd != nil && cmd.Process != nil {
-		_ = cmd.Process.Kill()
-	}
-	_ = os.Remove(procPath)
-}
-
 func TestExitOnSuccess(t *testing.T) {
 	procProgram := procProgram(t, "testExitOnSuccess", "echo")
 	procProgram.ExitOn = ExitOnSuccess

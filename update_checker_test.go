@@ -81,15 +81,15 @@ func (u testUpdateCheckUI) ReportError(_ error, _ *Update, _ UpdateOptions) {}
 
 func (u testUpdateCheckUI) ReportSuccess(_ *Update, _ UpdateOptions) {}
 
-func (c testUpdateCheckUI) GetAppStatePath() string {
+func (u testUpdateCheckUI) GetAppStatePath() string {
 	return ""
 }
 
-func (c testUpdateCheckUI) IsCheckCommand() bool {
+func (u testUpdateCheckUI) IsCheckCommand() bool {
 	return true
 }
 
-func (c testUpdateCheckUI) DeepClean() {}
+func (u testUpdateCheckUI) DeepClean() {}
 
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
