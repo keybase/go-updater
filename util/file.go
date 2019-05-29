@@ -330,9 +330,7 @@ func PathFromURL(u *url.URL) string {
 	path := u.Path
 	if runtime.GOOS == "windows" && u.Scheme == fileScheme {
 		// Remove leading slash for Windows
-		if strings.HasPrefix(path, "/") {
-			path = path[1:]
-		}
+		path = strings.TrimPrefix(path, "/")
 		path = filepath.FromSlash(path)
 	}
 	return path
