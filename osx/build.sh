@@ -8,7 +8,7 @@ cd "$dir"
 app_name="KeybaseUpdater"
 plist="$dir/Updater/Info.plist"
 scheme="Updater"
-code_sign_identity=${CODE_SIGN_IDENTITY:-"Developer ID Application: Keybase, Inc. (99229SGT5K)"}
+code_sign_identity=${CODE_SIGN_IDENTITY:-"9FC3A5BC09FA2EE307C04060C918486411869B65"}
 xcode_configuration="Release"
 install_app_path="/Applications/Keybase.app/Contents/Resources/$app_name.app"
 
@@ -25,12 +25,15 @@ xcodebuild archive -scheme "$scheme" -project "$dir/Updater.xcodeproj" -configur
 echo "Exporting"
 tmp_dir="/tmp"
 tmp_app_path="$tmp_dir/$app_name.app"
+export_dest="$tmp_dir/updater-build"
 rm -rf "$tmp_app_path"
-xcodebuild -exportArchive -archivePath "$archive_path" -exportFormat app -exportPath "$tmp_app_path" | xcpretty -c
+rm -rf "$export_dest"
+xcodebuild -exportArchive -archivePath "$archive_path" -exportOptionsPlist export.plist -exportPath "$export_dest"  | xcpretty -c
+mv "$export_dest/Updater.app" "$tmp_app_path"
 echo "Exported to $tmp_app_path"
 
 echo "Codesigning with $code_sign_identity"
-codesign --verbose --force --deep --sign "$code_sign_identity" "$tmp_app_path"
+codesign --verbose --force --deep --timestamp --options runtime --sign "$code_sign_identity" "$tmp_app_path"
 echo "Checking codesigning..."
 codesign -dvvvv "$tmp_app_path"
 echo " "
