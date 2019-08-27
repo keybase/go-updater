@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/keybase/go-updater"
-	"github.com/keybase/go-updater/command"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -80,38 +79,4 @@ func TestContextVerifyBadSignature(t *testing.T) {
 	ctx := testContext(t)
 	err := ctx.Verify(testContextUpdate(testMessagePath, "BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. END KEYBASE SALTPACK DETACHED SIGNATURE."))
 	require.Error(t, err)
-}
-
-type testConfigPausedPrompt struct {
-	config
-	inUse bool
-	force bool
-}
-
-func (c testConfigPausedPrompt) promptProgram() (command.Program, error) {
-	if c.force {
-		return command.Program{
-			Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
-			Args: []string{"echo", `{"button": "Force update"}`},
-		}, nil
-	}
-	return command.Program{
-		Path: filepath.Join(os.Getenv("GOPATH"), "bin", "test"),
-		Args: []string{"echo", `{"button": "Try again later"}`},
-	}, nil
-}
-
-func (c testConfigPausedPrompt) keybasePath() string {
-	if c.inUse {
-		return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-check-in-use-true.sh")
-	}
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-check-in-use-false.sh")
-}
-
-func (c testConfigPausedPrompt) updaterOptions() updater.UpdateOptions {
-	return updater.UpdateOptions{}
-}
-
-func (c testConfigPausedPrompt) destinationPath() string {
-	return "/Applications/Test.app"
 }
