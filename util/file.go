@@ -120,7 +120,7 @@ func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.F
 		return "", nil, err
 	}
 	if suffix != "" {
-		filename = filename + suffix
+		filename += suffix
 	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	if mode == 0 {

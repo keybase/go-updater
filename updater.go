@@ -330,8 +330,9 @@ func report(ctx Context, err error, update *Update, options UpdateOptions) {
 			if e.IsCancel() || e.IsGUIBusy() {
 				return
 			}
+		default:
+			ctx.ReportError(err, update, options)
 		}
-		ctx.ReportError(err, update, options)
 	} else if update != nil {
 		ctx.ReportSuccess(update, options)
 	}
