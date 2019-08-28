@@ -325,8 +325,7 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 func report(ctx Context, err error, update *Update, options UpdateOptions) {
 	if err != nil {
 		// Don't report cancels or GUI busy
-		switch e := err.(type) {
-		case Error:
+		if e, ok := err.(Error); ok {
 			if e.IsCancel() || e.IsGUIBusy() {
 				return
 			}
