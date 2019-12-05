@@ -161,6 +161,16 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, verifyErr(err)
 	}
 
+	// If we are auto-updating, do a final check if the user is active before
+	// killing the app. Note this can cause some churn with re-downloading the
+	// update on the next attempt.
+	if updatePromptResponse == UpdateActionAuto && !ctx.IsCheckCommand() {
+		isActive, err := u.checkUserActive(ctx)
+		if err == nil && isActive {
+			return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
+		}
+	}
+
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
 		return update, err
 	}
@@ -295,12 +305,6 @@ type guiAppState struct {
 }
 
 func (u *Updater) checkUserActive(ctx Context) (bool, error) {
-
-	if u.guiBusyCount >= 3 {
-		u.log.Warningf("Waited for GUI %d times - ignoring busy", u.guiBusyCount)
-		return false, nil
-	}
-
 	// Read app-state.json, written by the GUI
 	rawState, err := util.ReadFile(ctx.GetAppStatePath())
 	if err != nil {
