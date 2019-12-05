@@ -25,6 +25,7 @@ type Updater struct {
 	config       Config
 	log          Log
 	guiBusyCount int
+	tickDuration time.Duration
 }
 
 // UpdateSource defines where the updater can find updates
@@ -81,10 +82,15 @@ type Log interface {
 // NewUpdater constructs an Updater
 func NewUpdater(source UpdateSource, config Config, log Log) *Updater {
 	return &Updater{
-		source: source,
-		config: config,
-		log:    log,
+		source:       source,
+		config:       config,
+		log:          log,
+		tickDuration: DefaultTickDuration,
 	}
+}
+
+func (u *Updater) SetTickDuration(dur time.Duration) {
+	u.tickDuration = dur
 }
 
 // Update checks, downloads and performs an update
@@ -164,7 +170,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	// If we are auto-updating, do a final check if the user is active before
 	// killing the app. Note this can cause some churn with re-downloading the
 	// update on the next attempt.
-	if updatePromptResponse == UpdateActionAuto && !ctx.IsCheckCommand() {
+	if updatePromptResponse.Action == UpdateActionAuto && !ctx.IsCheckCommand() {
 		isActive, err := u.checkUserActive(ctx)
 		if err == nil && isActive {
 			return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
@@ -305,6 +311,11 @@ type guiAppState struct {
 }
 
 func (u *Updater) checkUserActive(ctx Context) (bool, error) {
+	if time.Duration(u.guiBusyCount)*u.tickDuration >= time.Hour*10 { // Allow the update through after 10 hours
+		u.log.Warningf("Waited for GUI %d times - ignoring busy", u.guiBusyCount)
+		return false, nil
+	}
+
 	// Read app-state.json, written by the GUI
 	rawState, err := util.ReadFile(ctx.GetAppStatePath())
 	if err != nil {
