@@ -307,7 +307,8 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 }
 
 type guiAppState struct {
-	IsUserActive bool `json:"isUserActive"`
+	IsUserActive bool  `json:"isUserActive"`
+	ChangedAtMs  int64 `json:"changedAtMs"`
 }
 
 func (u *Updater) checkUserActive(ctx Context) (bool, error) {
@@ -324,17 +325,19 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 	}
 
 	guistate := guiAppState{}
-	err = json.Unmarshal(rawState, &guistate)
-	if err != nil {
+	if err = json.Unmarshal(rawState, &guistate); err != nil {
 		u.log.Warningf("Error parsing GUI state - proceeding", err)
 		return false, err
 	}
-	if guistate.IsUserActive {
+	// check if the user is currently active or was active in the last 5
+	// minutes.
+	isActive := guistate.IsUserActive || time.Since(time.Unix(guistate.ChangedAtMs/1000, 0)) <= time.Minute*5
+	if isActive {
 		u.guiBusyCount++
 		u.log.Infof("GUI busy on attempt %d", u.guiBusyCount)
 	}
 
-	return guistate.IsUserActive, nil
+	return isActive, nil
 }
 
 func report(ctx Context, err error, update *Update, options UpdateOptions) {
