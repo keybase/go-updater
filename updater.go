@@ -312,7 +312,7 @@ type guiAppState struct {
 }
 
 func (u *Updater) checkUserActive(ctx Context) (bool, error) {
-	if time.Duration(u.guiBusyCount)*u.tickDuration >= time.Hour*10 { // Allow the update through after 10 hours
+	if time.Duration(u.guiBusyCount)*u.tickDuration >= time.Hour*6 { // Allow the update through after 6 hours
 		u.log.Warningf("Waited for GUI %d times - ignoring busy", u.guiBusyCount)
 		return false, nil
 	}
