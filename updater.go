@@ -25,6 +25,7 @@ type Updater struct {
 	config       Config
 	log          Log
 	guiBusyCount int
+	tickDuration time.Duration
 }
 
 // UpdateSource defines where the updater can find updates
@@ -81,10 +82,15 @@ type Log interface {
 // NewUpdater constructs an Updater
 func NewUpdater(source UpdateSource, config Config, log Log) *Updater {
 	return &Updater{
-		source: source,
-		config: config,
-		log:    log,
+		source:       source,
+		config:       config,
+		log:          log,
+		tickDuration: DefaultTickDuration,
 	}
+}
+
+func (u *Updater) SetTickDuration(dur time.Duration) {
+	u.tickDuration = dur
 }
 
 // Update checks, downloads and performs an update
@@ -159,6 +165,16 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
 	if err := ctx.Verify(*update); err != nil {
 		return update, verifyErr(err)
+	}
+
+	// If we are auto-updating, do a final check if the user is active before
+	// killing the app. Note this can cause some churn with re-downloading the
+	// update on the next attempt.
+	if updatePromptResponse.Action == UpdateActionAuto && !ctx.IsCheckCommand() {
+		isActive, err := u.checkUserActive(ctx)
+		if err == nil && isActive {
+			return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
+		}
 	}
 
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
@@ -291,12 +307,12 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 }
 
 type guiAppState struct {
-	IsUserActive bool `json:"isUserActive"`
+	IsUserActive bool  `json:"isUserActive"`
+	ChangedAtMs  int64 `json:"changedAtMs"`
 }
 
 func (u *Updater) checkUserActive(ctx Context) (bool, error) {
-
-	if u.guiBusyCount >= 3 {
+	if time.Duration(u.guiBusyCount)*u.tickDuration >= time.Hour*6 { // Allow the update through after 6 hours
 		u.log.Warningf("Waited for GUI %d times - ignoring busy", u.guiBusyCount)
 		return false, nil
 	}
@@ -309,17 +325,19 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 	}
 
 	guistate := guiAppState{}
-	err = json.Unmarshal(rawState, &guistate)
-	if err != nil {
+	if err = json.Unmarshal(rawState, &guistate); err != nil {
 		u.log.Warningf("Error parsing GUI state - proceeding", err)
 		return false, err
 	}
-	if guistate.IsUserActive {
+	// check if the user is currently active or was active in the last 5
+	// minutes.
+	isActive := guistate.IsUserActive || time.Since(time.Unix(guistate.ChangedAtMs/1000, 0)) <= time.Minute*5
+	if isActive {
 		u.guiBusyCount++
 		u.log.Infof("GUI busy on attempt %d", u.guiBusyCount)
 	}
 
-	return guistate.IsUserActive, nil
+	return isActive, nil
 }
 
 func report(ctx Context, err error, update *Update, options UpdateOptions) {
