@@ -57,7 +57,7 @@ func terminateExisting(programs []Program, log Log) {
 		matcher := process.NewMatcher(program.Path, process.PathEqual, log)
 		matcher.ExceptPID(ospid)
 		log.Infof("Terminating %s", program.Path)
-		process.TerminateAll(matcher, 3*time.Second, log)
+		process.TerminateAll(matcher, time.Second, log)
 	}
 }
 
