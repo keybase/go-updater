@@ -16,6 +16,7 @@ import (
 	"unsafe"
 
 	"github.com/kardianos/osext"
+	"github.com/keybase/go-ps"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/process"
@@ -303,7 +304,7 @@ func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
 type KeybaseCommand string
 
 const (
-	KeybaseCommandStart KeybaseCommand = "watchdog2"
+	KeybaseCommandStart KeybaseCommand = "watchdog"
 	KeybaseCommandStop  KeybaseCommand = "stop"
 )
 
@@ -418,6 +419,77 @@ func (c context) IsCheckCommand() bool {
 	return c.isCheckCommand
 }
 
+// findWatchdogPid looks up all of the running keybase processes and finds the
+// one that's a parent of another. This one is the watchdog.
+func (c context) findWatchdogPid() (watchdogPid int, found bool, err error) {
+	c.log.Infof("findWatchdogPid")
+	path, err := Dir("Keybase")
+	if err != nil {
+		return 0, false, err
+	}
+	// find all of the keybase processes
+	keybaseBinPath := filepath.Join(path, "keybase.exe")
+	matcher := process.NewMatcher(keybaseBinPath, process.PathEqual, c.log)
+	kbProcesses, err := process.FindProcesses(matcher, time.Second, 200*time.Millisecond, c.log)
+	if err != nil {
+		return 0, false, err
+	}
+	// build a map of pid -> process
+	pidLookup := make(map[int]ps.Process, len(kbProcesses))
+	for _, proc := range kbProcesses {
+		pidLookup[proc.Pid()] = proc
+	}
+	// find the process whose parent process (ppid) is the pid of one of the other processes
+	myPid := os.Getpid()
+	var parentProcessPids []int
+	for _, proc := range pidLookup {
+		parentPid := proc.PPid()
+		if parentPid == myPid {
+			// under no circumstances should we accidentally terminate this process
+			c.log.Warningf("findWatchdogPid: this process appears to have children keybase processes, which is unexpected")
+			continue
+		}
+		if _, parentIsAlsoInList := pidLookup[parentPid]; parentIsAlsoInList {
+			parentProcessPids = append(parentProcessPids, parentPid)
+		}
+	}
+	if len(parentProcessPids) == 0 {
+		c.log.Infof("findWatchdogPid: no keybase processes have children")
+		return 0, false, nil
+	}
+	if len(parentProcessPids) > 1 {
+		c.log.Errorf("findWatchdogPid: found %d candidate processes for the watchdog, but there should only be 1", len(parentProcessPids))
+		return 0, false, nil
+	}
+	c.log.Infof("findWatchdogPid: %d", parentProcessPids[0])
+	return parentProcessPids[0], true, nil
+}
+
+// stopTheWatchdog looks for a keybase process which is the parent of the
+// running keybase service. if such a process is running, it might kill this update
+// when it terminates after the service, so stop the watchdog first.
+func (c context) stopTheWatchdog() error {
+	c.log.Infof("stopTheWatchdog: looking for the watchdog process to stop it")
+
+	watchdogPid, found, err := c.findWatchdogPid()
+	if err != nil {
+		c.log.Errorf("error finding watchdog pid: %v", err.Error())
+		return err
+	}
+	if !found {
+		c.log.Infof("keybase appears to be running without the watchdog, if update fails, please try again")
+		return nil
+	}
+	c.log.Infof("found the watchdog process at pid %d, terminating it...", watchdogPid)
+	err = process.TerminatePID(watchdogPid, 0*time.Second /*unused on windows*/, c.log)
+	if err != nil {
+		c.log.Errorf("error terminating the watchdog: %f", err.Error())
+		return err
+	}
+	time.Sleep(5 * time.Second)
+	return nil
+}
+
 // copied from watchdog
 func (c context) stopKeybaseProcesses() error {
 	path, err := Dir("Keybase")
@@ -426,6 +498,13 @@ func (c context) stopKeybaseProcesses() error {
 		return err
 	}
 
+	c.log.Infof("attempting to stop the watchdog")
+	err = c.stopTheWatchdog()
+	if err != nil {
+		c.log.Infof("Error stopping the watchdog: %s", err.Error())
+		return err
+	}
+	c.log.Infof("watchdog is down, time to take down everything but the updater")
 	c.runKeybase(KeybaseCommandStop)
 	time.Sleep(time.Second)
 
@@ -443,7 +522,7 @@ func (c context) stopKeybaseProcesses() error {
 		exes = append(exes, guiExes...)
 	}
 
-	c.log.Infof("Terminating any existing programs we will be updating")
+	c.log.Infof("Terminating any existing programs we will be updating %+v", exes)
 	for _, program := range exes {
 		matcher := process.NewMatcher(program, process.PathEqual, c.log)
 		matcher.ExceptPID(ospid)
