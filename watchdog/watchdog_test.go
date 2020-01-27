@@ -4,10 +4,12 @@
 package watchdog
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -83,6 +85,61 @@ func TestTerminateBeforeWatch(t *testing.T) {
 	t.Logf("Pid after: %d", pidAfter)
 
 	assert.NotEqual(t, pidBefore, pidAfter)
+}
+
+func TestTerminateDeletePidFile(t *testing.T) {
+	name := "TestTerminateDeletePidFile"
+	procProgram := procProgram(t, name, "sleep")
+	defer util.RemoveFileAtPath(procProgram.Path)
+	pidPath := filepath.Join(os.TempDir(), name+".pid")
+	procProgram.PidFile = pidPath
+	defer util.RemoveFileAtPath(pidPath)
+	matcher := process.NewMatcher(procProgram.Path, process.PathEqual, testLog)
+
+	// launch a program
+	err := exec.Command(procProgram.Path, procProgram.Args...).Start()
+	require.NoError(t, err)
+
+	lockPid := func(pidToLock int) {
+		err = ioutil.WriteFile(pidPath, []byte(strconv.Itoa(pidToLock)), os.FileMode(0644))
+		require.NoError(t, err, "error writing pid file")
+		pidFileExists, err := util.FileExists(pidPath)
+		require.NoError(t, err)
+		require.True(t, pidFileExists, "pidfile should be here")
+	}
+
+	// lock the pid of the program
+	procsBefore, err := process.FindProcesses(matcher, time.Second, time.Millisecond, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(procsBefore))
+	pidBefore := procsBefore[0].Pid()
+	lockPid(pidBefore)
+	t.Logf("locked pid for the running program: %d", pidBefore)
+
+	// start watching it!
+	err = Watch([]Program{procProgram}, 10*time.Millisecond, testLog)
+	require.NoError(t, err)
+
+	// the process should now be running with a different pid (tested above)
+	// and the pidfile should be gone
+	procs, err := process.FindProcesses(matcher, time.Second, time.Millisecond, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(procs))
+	pidFileExists, err := util.FileExists(pidPath)
+	require.NoError(t, err)
+	require.False(t, pidFileExists, "pidfile shouldn't exist anymore, but it does")
+	t.Logf("watchdog starting a program with the correct pid locked deletes the pidfile")
+
+	// lock a different pid to verify that the watchdog only deletes pidfiles that match
+	anUnmatchingPid := os.Getpid()
+	lockPid(anUnmatchingPid)
+	t.Logf("locked a different pid in the program's pidfile")
+
+	err = Watch([]Program{procProgram}, 10*time.Millisecond, testLog)
+	require.NoError(t, err)
+	pidFileExists, err = util.FileExists(pidPath)
+	require.NoError(t, err)
+	require.True(t, pidFileExists, "pidfile should still exist, but it doesnt")
 }
 
 func TestExitOnSuccess(t *testing.T) {
