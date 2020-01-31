@@ -58,7 +58,7 @@ func TestReportBadResponse(t *testing.T) {
 }
 
 func TestReportTimeout(t *testing.T) {
-	server := newServerWithDelay(updateJSONResponse, 5*time.Millisecond)
+	server := newServerWithDelay(updateJSONResponse, 100*time.Millisecond)
 	defer server.Close()
 
 	ctx := testContext(t)
