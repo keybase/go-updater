@@ -188,6 +188,9 @@ func downloadURL(urlString string, destinationPath string, options DownloadURLOp
 		
 		if options.RequireDigest {
 			if err := CheckDigest(options.Digest, destinationPath); err != nil {
+				if rerr := os.Remove(destinationPath); rerr != nil {
+					return cached, fmt.Errorf("Error removing existing download (after digest failure): %s", rerr)
+				}
 				return cached, err
 			}
 		}
