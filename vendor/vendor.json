@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "mpnc3OImPOYwkPvP1R8Vs3mgXqU=",
+			"path": "github.com/blang/semver",
+			"revision": "1a9109f8c4a1d669a78442f567dfe8eedf982793",
+			"revisionTime": "2019-04-14T16:59:03Z"
+		},
+		{
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
 			"revisionTime": "2015-11-05T15:09:06-06:00"
