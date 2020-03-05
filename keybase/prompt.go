@@ -10,6 +10,7 @@ import (
 
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"github.com/keybase/go-updater/util"
 )
 
 type updaterPromptInput struct {
@@ -32,8 +33,11 @@ func (c context) promptInput(update updater.Update, options updater.UpdateOption
 		description = "Please visit https://keybase.io for more information."
 	}
 	promptJSONInput, err := json.Marshal(updaterPromptInput{
-		Title:       fmt.Sprintf("Keybase Update: Version %s", update.Version),
-		Message:     fmt.Sprintf("The version you are currently running (%s) is outdated.", options.Version),
+		// Note we use util.Semver to shorten to the Major.Minor.Patch format
+		// because of spacing restrictions of 700 characters on macOS and
+		// better readability.
+		Title:       fmt.Sprintf("Keybase Update: Version %s", util.Semver(update.Version)),
+		Message:     fmt.Sprintf("The version you are currently running (%s) is outdated.", util.Semver(options.Version)),
 		Description: description,
 		AutoUpdate:  promptOptions.AutoUpdate,
 		OutPath:     promptOptions.OutPath,
