@@ -50,6 +50,9 @@ func (r RemoteUpdateSource) sourceURL(options updater.UpdateOptions) string {
 func (r RemoteUpdateSource) FindUpdate(options updater.UpdateOptions) (*updater.Update, error) {
 	sourceURL := r.sourceURL(options)
 	req, err := http.NewRequest("GET", sourceURL, nil)
+	if err != nil {
+		return nil, err
+	}
 	client := &http.Client{
 		Timeout: time.Minute,
 	}

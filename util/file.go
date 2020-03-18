@@ -120,7 +120,7 @@ func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.F
 		return "", nil, err
 	}
 	if suffix != "" {
-		filename = filename + suffix
+		filename += suffix
 	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	if mode == 0 {
@@ -330,9 +330,7 @@ func PathFromURL(u *url.URL) string {
 	path := u.Path
 	if runtime.GOOS == "windows" && u.Scheme == fileScheme {
 		// Remove leading slash for Windows
-		if strings.HasPrefix(path, "/") {
-			path = path[1:]
-		}
+		path = strings.TrimPrefix(path, "/")
 		path = filepath.FromSlash(path)
 	}
 	return path

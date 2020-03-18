@@ -58,7 +58,7 @@ func TestReportBadResponse(t *testing.T) {
 }
 
 func TestReportTimeout(t *testing.T) {
-	server := newServerWithDelay(updateJSONResponse, 5*time.Millisecond)
+	server := newServerWithDelay(updateJSONResponse, 100*time.Millisecond)
 	defer server.Close()
 
 	ctx := testContext(t)
@@ -72,7 +72,12 @@ func TestReportActionApply(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	err := ctx.reportAction(updater.UpdateActionApply, &testUpdate, testOptions, server.URL, testReportTimeout)
+	actionResponse := updater.UpdatePromptResponse{
+		Action:         updater.UpdateActionApply,
+		AutoUpdate:     false,
+		SnoozeDuration: 0,
+	}
+	err := ctx.reportAction(actionResponse, &testUpdate, testOptions, server.URL, testReportTimeout)
 	assert.NoError(t, err)
 }
 
@@ -81,7 +86,12 @@ func TestReportActionEmpty(t *testing.T) {
 	defer server.Close()
 
 	ctx := testContext(t)
-	err := ctx.reportAction("", &testUpdate, testOptions, server.URL, testReportTimeout)
+	actionResponse := updater.UpdatePromptResponse{
+		Action:         "",
+		AutoUpdate:     false,
+		SnoozeDuration: 0,
+	}
+	err := ctx.reportAction(actionResponse, &testUpdate, testOptions, server.URL, testReportTimeout)
 	assert.NoError(t, err)
 }
 

@@ -42,34 +42,71 @@ type Log interface {
 // Watch monitors programs and restarts them if they aren't running
 func Watch(programs []Program, restartDelay time.Duration, log Log) error {
 	// Terminate any existing programs that we are supposed to monitor
+	log.Infof("Terminating any existing programs we will be monitoring")
 	terminateExisting(programs, log)
 
+	// any program can terminate everything if it's ExitAllOnSuccess
+	exitAll := func() {
+		log.Infof("Terminating any other programs we are monitoring")
+		terminateExisting(programs, log)
+		os.Exit(0)
+	}
 	// Start monitoring all the programs
-	watchPrograms(programs, restartDelay, log)
+	watchPrograms(programs, restartDelay, log, exitAll)
+
 	return nil
 }
 
+func includesARealProcess(pids []int) bool {
+	for _, p := range pids {
+		if p > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// terminateExisting sends a kill signal to every pid that matches the executables of the
+// programs. It then loops and tries to send these kill signals again to mitigate a race
+// condition where another instance of the watchdog can start another instance of a program
+// while this instance of the watchdog is sending its kill signals.
 func terminateExisting(programs []Program, log Log) {
+	log.Infof("Terminate existing programs")
+	var killedPids []int
+	for i := 1; i <= 3; i++ {
+		killedPids = sendKillToPrograms(programs, log)
+		if !includesARealProcess(killedPids) {
+			log.Infof("none of these programs are running")
+			return
+		}
+		log.Infof("Terminated pids %v", killedPids)
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
+func sendKillToPrograms(programs []Program, log Log) (killedPids []int) {
 	// Terminate any monitored processes
+	// this logic also exists in the updater, so if you want to change it, look there too.
 	ospid := os.Getpid()
-	log.Infof("Terminating any existing programs we will be monitoring")
 	for _, program := range programs {
 		matcher := process.NewMatcher(program.Path, process.PathEqual, log)
 		matcher.ExceptPID(ospid)
 		log.Infof("Terminating %s", program.Path)
-		process.TerminateAll(matcher, time.Second, log)
+		pids := process.TerminateAll(matcher, time.Second, log)
+		killedPids = append(killedPids, pids...)
 	}
+	return killedPids
 }
 
-func watchPrograms(programs []Program, delay time.Duration, log Log) {
+func watchPrograms(programs []Program, delay time.Duration, log Log, exitAll func()) {
 	for _, program := range programs {
-		go watchProgram(program, delay, log)
+		go watchProgram(program, delay, log, exitAll)
 	}
 }
 
 // watchProgram will monitor a program and restart it if it exits.
 // This method will run forever.
-func watchProgram(program Program, restartDelay time.Duration, log Log) {
+func watchProgram(program Program, restartDelay time.Duration, log Log, exitAll func()) {
 	for {
 		start := time.Now()
 		log.Infof("Starting %#v", program)
@@ -84,8 +121,7 @@ func watchProgram(program Program, restartDelay time.Duration, log Log) {
 				break
 			} else if program.ExitOn == ExitAllOnSuccess {
 				log.Infof("Program configured to exit on success, exiting")
-				// presumably the other watches are sleeping anyway
-				os.Exit(0)
+				exitAll()
 			}
 		}
 		log.Infof("Program ran for %s", time.Since(start))

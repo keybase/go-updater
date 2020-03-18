@@ -67,6 +67,9 @@ type UpdateOptions struct {
 	OSVersion string `json:"osVersion"`
 	// UpdaterVersion is the version of the updater service
 	UpdaterVersion string `json:"updaterVersion"`
+	// IgnoreSnooze tells the server to send update despite we have snoozed
+	// recently or not.
+	IgnoreSnooze bool `json:"ignoreSnooze"`
 }
 
 // UpdateAction is the update action requested by the user
@@ -102,8 +105,9 @@ type UpdatePromptOptions struct {
 
 // UpdatePromptResponse is the result for UpdatePrompt
 type UpdatePromptResponse struct {
-	Action     UpdateAction `json:"action"`
-	AutoUpdate bool         `json:"autoUpdate"`
+	Action         UpdateAction `json:"action"`
+	AutoUpdate     bool         `json:"autoUpdate"`
+	SnoozeDuration int          `json:"snooze_duration"`
 }
 
 // UpdateUI is a UI interface

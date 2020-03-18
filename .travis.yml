@@ -1,6 +1,8 @@
 language: go
 go:
-  - 1.8.3
+  - 1.11.x
+  - 1.12.x
+  - 1.13.x
 os:
   - linux
   - osx
@@ -11,6 +13,9 @@ before_install:
   - go get github.com/modocache/gover
   - go get github.com/keybase/go-updater/test
 script:
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.23.6
+  - golangci-lint run
+  - go vet ./...
   - go test -v -coverprofile=command.coverprofile ./command
   - go test -v -coverprofile=keybase.coverprofile ./keybase
   - go test -v -coverprofile=process.coverprofile ./process

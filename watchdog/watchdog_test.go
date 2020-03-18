@@ -85,11 +85,51 @@ func TestTerminateBeforeWatch(t *testing.T) {
 	assert.NotEqual(t, pidBefore, pidAfter)
 }
 
-func cleanupProc(cmd *exec.Cmd, procPath string) {
-	if cmd != nil && cmd.Process != nil {
-		_ = cmd.Process.Kill()
+// TestTerminateBeforeWatchRace verifies protection from the following scenario:
+// 		watchdog1 starts up
+// 		watchdog1 looks up existing processes to terminate and sees none
+// 		watchdog2 starts up
+// 		watchdog2 looks up existing processes to terminate and sees watchdog1
+// 		watchdog1 starts PROGRAM
+// 		watchdog1 receives kill signal from watchdog2 and dies
+// 		watchdog2 starts a second PROGRAM
+// 		PROGRAM has a bad time
+// The test doesn't protect us from the race condition generically, rather only when:
+// 		(1) PROGRAM is only started by a watchdog, and
+// 		(2) PROGRAM and watchdog share a path to the same executable. When a
+// 			watchdog looks up existing processes to terminate, it needs to be able
+// 			to find another watchdog.
+func TestTerminateBeforeWatchRace(t *testing.T) {
+	var err error
+	// set up a bunch of iterations of the same program
+	programName := "TestTerminateBeforeWatchRace"
+	otherIterations := make([]Program, 6)
+	for i := 0; i < 6; i++ {
+		otherIterations[i] = procProgram(t, programName, "sleep")
 	}
-	_ = os.Remove(procPath)
+	mainProgram := procProgram(t, programName, "sleep")
+	defer util.RemoveFileAtPath(mainProgram.Path)
+	blocker := make(chan struct{})
+	go func() {
+		for _, p := range otherIterations[:3] {
+			_ = exec.Command(p.Path, p.Args...).Start()
+		}
+		blocker <- struct{}{}
+		for _, p := range otherIterations[3:] {
+			_ = exec.Command(p.Path, p.Args...).Start()
+		}
+	}()
+
+	// block until we definitely have something to kill
+	<-blocker
+	err = Watch([]Program{mainProgram}, 10*time.Millisecond, testLog)
+	require.NoError(t, err)
+
+	// Check and make sure there's only one of these processes running
+	matcher := process.NewMatcher(mainProgram.Path, process.PathEqual, testLog)
+	procsAfter, err := process.FindProcesses(matcher, time.Second, time.Millisecond, testLog)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(procsAfter))
 }
 
 func TestExitOnSuccess(t *testing.T) {

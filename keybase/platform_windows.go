@@ -16,8 +16,10 @@ import (
 	"unsafe"
 
 	"github.com/kardianos/osext"
+	"github.com/keybase/go-ps"
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
+	"github.com/keybase/go-updater/process"
 	"github.com/keybase/go-updater/util"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
@@ -211,10 +213,165 @@ func (c context) PausedPrompt() bool {
 	return false
 }
 
+type componentProductFunc func(componentKey registry.Key, productValueName, componentPath string)
+
+type ComponentsChecker struct {
+	context
+	RegAccess    uint32
+	RegWow       uint32
+	PerComponent componentProductFunc
+}
+
+func (i *ComponentsChecker) deleteProductsFunc(componentKey registry.Key, productValueName, componentPath string) {
+	i.log.Infof("Found Keybase component %s, deleting\n", componentPath)
+	err := componentKey.DeleteValue(productValueName)
+	if err != nil {
+		i.log.Infof("Error DeleteValue %s: %s\n", productValueName, err.Error())
+	}
+}
+
+// checkRegistryComponents returns true if any component has more than one keybase product code
+func (c *ComponentsChecker) checkRegistryComponents() (result bool) {
+	// e.g.
+	// [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-21-2398092721-582601651-115936829-1001\Components\024E69EF1A837C752BFB37F494D86925]
+	// "D6A082CFDEED2984C8688664C76174BC"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
+	// "50DC76D18793BC24DA7D4D681AE74262"="C:\\Users\\chris\\AppData\\Local\\Keybase\\Gui\\resources\\app\\images\\icons\\icon-facebook-visibility.gif"
+
+	readAccess := registry.ENUMERATE_SUB_KEYS | registry.QUERY_VALUE | c.RegWow
+
+	rootName := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData"
+
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, rootName, readAccess)
+	if err != nil {
+		c.log.Infof("Error opening uninstall subkeys: %s\n", err.Error())
+		return
+	}
+	defer k.Close()
+
+	UIDs, err := k.ReadSubKeyNames(-1)
+	if err != nil {
+		c.log.Infof("Error reading subkeys: %s\n", err.Error())
+		return
+	}
+	for _, UID := range UIDs {
+		componentsKey, err := registry.OpenKey(k, UID+"\\Components", readAccess)
+		if err != nil {
+			c.log.Infof("Error opening subkey %s: %s\n", UID+"\\Components", err.Error())
+			continue
+		}
+
+		componentKeyNames, err := componentsKey.ReadSubKeyNames(-1)
+		if err != nil {
+			c.log.Infof("Error reading subkeys: %s\n", err.Error())
+			continue
+		}
+
+		for _, componentKeyName := range componentKeyNames {
+			componentKey, err := registry.OpenKey(componentsKey, componentKeyName, readAccess|c.RegAccess)
+			if err != nil {
+				c.log.Infof("Error opening subkey %s: %s\n", componentKeyName, err.Error())
+				// No need to list all the components we couldn't open in write mode.
+				// This is expected when run without elevated permissions.
+				c.log.Infof("skipping subsequent subkeys of  %s\n", UID+"\\Components")
+				continue
+			}
+
+			productValueNames, err := componentKey.ReadValueNames(-1)
+			if err != nil {
+				c.log.Infof("Error reading values: %s\n", err.Error())
+				continue
+			}
+
+			for n, productValueName := range productValueNames {
+				componentPath, _, err := componentKey.GetStringValue(productValueName)
+				if err == nil && strings.Contains(componentPath, "\\AppData\\Local\\Keybase\\") {
+					if c.PerComponent != nil {
+						c.PerComponent(componentKey, productValueName, componentPath)
+					}
+					if n > 0 {
+						result = true
+						c.log.Infof("Found multiple Keybase product codes on %s\n", componentPath)
+					}
+				}
+			}
+			componentKey.Close()
+		}
+		componentsKey.Close()
+	}
+	return result
+}
+
+type KeybaseCommand string
+
+const (
+	KeybaseCommandStart KeybaseCommand = "watchdog"
+	KeybaseCommandStop  KeybaseCommand = "stop"
+)
+
+func (c context) runKeybase(cmd KeybaseCommand) {
+	path, err := Dir("Keybase")
+	if err != nil {
+		c.log.Infof("Error getting Keybase directory: %s", err.Error())
+		return
+	}
+
+	args := []string{filepath.Join(path, "keybase.exe"), "ctl", string(cmd)}
+
+	_, err = command.Exec(filepath.Join(path, "keybaserq.exe"), args, time.Minute, c.log)
+	if err != nil {
+		c.log.Infof("Error %s'ing keybase", cmd, err.Error())
+	}
+}
+
+func (c context) deleteProductFiles() {
+	path, err := Dir("Keybase")
+	if err != nil {
+		c.log.Infof("Error getting Keybase directory: %s", err.Error())
+		return
+	}
+	c.stopKeybaseProcesses()
+
+	err = os.RemoveAll(filepath.Join(path, "Gui"))
+	if err != nil {
+		c.log.Infof("Error removing Gui directory: %s", err.Error())
+	}
+
+	files, err := filepath.Glob(filepath.Join(path, "*.exe"))
+	if err != nil {
+		c.log.Infof("Error getting exe files: %s", err.Error())
+	} else {
+		for _, f := range files {
+			c.log.Infof("Removing %s", f)
+			if err = os.Remove(f); err != nil {
+				c.log.Infof("Error removing file: %s", err.Error())
+			}
+		}
+	}
+}
+
+// DeepClean is only invoked from the command line, for now.
+// Eventually we may need to do full uninstalls but that is kind of risky
+func (c context) DeepClean() {
+	i := &ComponentsChecker{context: c, RegAccess: registry.SET_VALUE}
+	i.PerComponent = i.deleteProductsFunc
+	i.checkRegistryComponents()
+	i.RegWow = registry.WOW64_32KEY
+	i.checkRegistryComponents()
+	c.deleteProductFiles()
+}
+
 func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmpDir string) error {
+	skipSilent := false
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
+	c.stopKeybaseProcesses()
+	if c.config.GetLastAppliedVersion() == update.Version {
+		c.log.Info("Previously applied version detected")
+		c.config.SetLastAppliedVersion("")
+		skipSilent = true
+	}
+
 	runCommand := update.Asset.LocalPath
 	args := []string{}
 	if strings.HasSuffix(runCommand, "msi") || strings.HasSuffix(runCommand, "MSI") {
@@ -237,13 +394,16 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 		runCommand = "msiexec.exe"
 	}
 	auto, _ := c.config.GetUpdateAuto()
-	if auto && !c.config.GetUpdateAutoOverride() {
+	if auto && !c.config.GetUpdateAutoOverride() && !skipSilent {
 		args = append(args, "/quiet", "/norestart")
 	}
+	c.config.SetLastAppliedVersion(update.Version)
 	_, err := command.Exec(runCommand, args, time.Hour, c.log)
 	return err
 }
 
+// Note that when a Windows installer runs, it kills the running updater, even
+// before AfterApply() runs
 func (c context) AfterApply(update updater.Update) error {
 	return nil
 }
@@ -257,4 +417,117 @@ func (c context) GetAppStatePath() string {
 
 func (c context) IsCheckCommand() bool {
 	return c.isCheckCommand
+}
+
+// findWatchdogPid looks up all of the running keybase processes and finds the
+// one that's a parent of another. This one is the watchdog.
+func (c context) findWatchdogPid() (watchdogPid int, found bool, err error) {
+	c.log.Infof("findWatchdogPid")
+	path, err := Dir("Keybase")
+	if err != nil {
+		return 0, false, err
+	}
+	// find all of the keybase processes
+	keybaseBinPath := filepath.Join(path, "keybase.exe")
+	matcher := process.NewMatcher(keybaseBinPath, process.PathEqual, c.log)
+	kbProcesses, err := process.FindProcesses(matcher, time.Second, 200*time.Millisecond, c.log)
+	if err != nil {
+		return 0, false, err
+	}
+	// build a map of pid -> process
+	pidLookup := make(map[int]ps.Process, len(kbProcesses))
+	for _, proc := range kbProcesses {
+		pidLookup[proc.Pid()] = proc
+	}
+	// find the process whose parent process (ppid) is the pid of one of the other processes
+	myPid := os.Getpid()
+	var parentProcessPids []int
+	for _, proc := range pidLookup {
+		parentPid := proc.PPid()
+		if parentPid == myPid {
+			// under no circumstances should we accidentally terminate this process
+			c.log.Warningf("findWatchdogPid: this process appears to have children keybase processes, which is unexpected")
+			continue
+		}
+		if _, parentIsAlsoInList := pidLookup[parentPid]; parentIsAlsoInList {
+			parentProcessPids = append(parentProcessPids, parentPid)
+		}
+	}
+	if len(parentProcessPids) == 0 {
+		c.log.Infof("findWatchdogPid: no keybase processes have children")
+		return 0, false, nil
+	}
+	if len(parentProcessPids) > 1 {
+		c.log.Errorf("findWatchdogPid: found %d candidate processes for the watchdog, but there should only be 1", len(parentProcessPids))
+		return 0, false, nil
+	}
+	c.log.Infof("findWatchdogPid: %d", parentProcessPids[0])
+	return parentProcessPids[0], true, nil
+}
+
+// stopTheWatchdog looks for a keybase process which is the parent of the
+// running keybase service. if such a process is running, it might kill this update
+// when it terminates after the service, so stop the watchdog first.
+func (c context) stopTheWatchdog() error {
+	c.log.Infof("stopTheWatchdog: looking for the watchdog process to stop it")
+
+	watchdogPid, found, err := c.findWatchdogPid()
+	if err != nil {
+		c.log.Errorf("error finding watchdog pid: %v", err.Error())
+		return err
+	}
+	if !found {
+		c.log.Infof("keybase appears to be running without the watchdog, if update fails, please try again")
+		return nil
+	}
+	c.log.Infof("found the watchdog process at pid %d, terminating it...", watchdogPid)
+	err = process.TerminatePID(watchdogPid, 0*time.Second /*unused on windows*/, c.log)
+	if err != nil {
+		c.log.Errorf("error terminating the watchdog: %f", err.Error())
+		return err
+	}
+	time.Sleep(5 * time.Second)
+	return nil
+}
+
+// copied from watchdog
+func (c context) stopKeybaseProcesses() error {
+	path, err := Dir("Keybase")
+	if err != nil {
+		c.log.Infof("Error getting Keybase directory: %s", err.Error())
+		return err
+	}
+
+	c.log.Infof("attempting to stop the watchdog")
+	err = c.stopTheWatchdog()
+	if err != nil {
+		c.log.Infof("Error stopping the watchdog: %s", err.Error())
+		return err
+	}
+	c.log.Infof("watchdog is down, time to take down everything but the updater")
+	c.runKeybase(KeybaseCommandStop)
+	time.Sleep(time.Second)
+
+	// Terminate any executing processes
+	ospid := os.Getpid()
+
+	exes, err := filepath.Glob(filepath.Join(path, "*.exe"))
+	if err != nil {
+		c.log.Errorf("Unable to glob exe files: %s", err)
+	}
+	guiExes, err := filepath.Glob(filepath.Join(path, "Gui", "*.exe"))
+	if err != nil {
+		c.log.Errorf("Unable to glob exe files: %s", err)
+	} else {
+		exes = append(exes, guiExes...)
+	}
+
+	c.log.Infof("Terminating any existing programs we will be updating %+v", exes)
+	for _, program := range exes {
+		matcher := process.NewMatcher(program, process.PathEqual, c.log)
+		matcher.ExceptPID(ospid)
+		c.log.Infof("Terminating %s", program)
+		process.TerminateAll(matcher, time.Second, c.log)
+	}
+	return nil
 }

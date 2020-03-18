@@ -21,8 +21,7 @@ func testEnvFn(k, v string) func(e string) string {
 }
 
 func TestEnvDuration(t *testing.T) {
-	var duration time.Duration
-	duration = envDuration(testEnvFn("TEST", "1s"), "TEST", time.Minute)
+	duration := envDuration(testEnvFn("TEST", "1s"), "TEST", time.Minute)
 	assert.Equal(t, time.Second, duration)
 	duration = envDuration(testEnvFn("TEST", ""), "TEST", time.Minute)
 	assert.Equal(t, time.Minute, duration)
@@ -33,8 +32,7 @@ func TestEnvDuration(t *testing.T) {
 }
 
 func TestEnvBool(t *testing.T) {
-	var b bool
-	b = envBool(testEnvFn("TEST", "true"), "TEST", false)
+	b := envBool(testEnvFn("TEST", "true"), "TEST", false)
 	assert.True(t, b)
 	b = envBool(testEnvFn("TEST", "1"), "TEST", false)
 	assert.True(t, b)

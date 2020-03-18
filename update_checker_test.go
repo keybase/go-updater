@@ -75,19 +75,21 @@ func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
 	return newDefaultTestUpdateOptions()
 }
 
-func (u testUpdateCheckUI) ReportAction(_ UpdateAction, _ *Update, _ UpdateOptions) {}
+func (u testUpdateCheckUI) ReportAction(_ UpdatePromptResponse, _ *Update, _ UpdateOptions) {}
 
 func (u testUpdateCheckUI) ReportError(_ error, _ *Update, _ UpdateOptions) {}
 
 func (u testUpdateCheckUI) ReportSuccess(_ *Update, _ UpdateOptions) {}
 
-func (c testUpdateCheckUI) GetAppStatePath() string {
+func (u testUpdateCheckUI) GetAppStatePath() string {
 	return ""
 }
 
-func (c testUpdateCheckUI) IsCheckCommand() bool {
+func (u testUpdateCheckUI) IsCheckCommand() bool {
 	return true
 }
+
+func (u testUpdateCheckUI) DeepClean() {}
 
 func TestUpdateCheckerError(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)

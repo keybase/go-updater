@@ -5,6 +5,8 @@ package updater
 
 import "time"
 
+const DefaultTickDuration = time.Hour
+
 // UpdateChecker runs updates checks every check duration
 type UpdateChecker struct {
 	updater      *Updater

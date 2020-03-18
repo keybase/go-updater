@@ -98,7 +98,11 @@ func (c context) BeforeUpdatePrompt(update updater.Update, options updater.Updat
 	if err != nil {
 		c.log.Warningf("Error running notify-send: %s (%s)", err, result.CombinedOutput())
 	}
-	c.ReportAction(updater.UpdateActionSnooze, &update, options)
+	c.ReportAction(updater.UpdatePromptResponse{
+		Action:         updater.UpdateActionSnooze,
+		AutoUpdate:     false,
+		SnoozeDuration: 0,
+	}, &update, options)
 	return updater.CancelErr(fmt.Errorf("Linux uses system package manager"))
 }
 
@@ -127,3 +131,6 @@ func (c context) GetAppStatePath() string {
 func (c context) IsCheckCommand() bool {
 	return c.isCheckCommand
 }
+
+// DeepClean is called when a faulty upgrade has been detected
+func (c context) DeepClean() {}

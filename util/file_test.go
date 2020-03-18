@@ -32,7 +32,7 @@ func TestNewFile(t *testing.T) {
 	assert.False(t, fileInfo.IsDir())
 
 	if runtime.GOOS != "windows" {
-		assert.True(t, 0600 == fileInfo.Mode().Perm())
+		assert.EqualValues(t, 0600, fileInfo.Mode().Perm())
 	}
 }
 
@@ -54,7 +54,7 @@ func TestMakeParentDirs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.IsDir())
 	if runtime.GOOS != "windows" {
-		assert.True(t, 0700 == fileInfo.Mode().Perm())
+		assert.EqualValues(t, 0700, fileInfo.Mode().Perm())
 	}
 
 	// Test making dir that already exists
@@ -285,6 +285,7 @@ func TestFileExists(t *testing.T) {
 func TestReadFile(t *testing.T) {
 	dataIn := []byte("test")
 	sourcePath, err := WriteTempFile("TestReadFile", dataIn, 0600)
+	require.NoError(t, err)
 
 	dataOut, err := ReadFile(sourcePath)
 	require.NoError(t, err)

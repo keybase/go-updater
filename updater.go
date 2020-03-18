@@ -6,8 +6,10 @@ package updater
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.4.0"
+const Version = "0.3.6"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -23,6 +25,7 @@ type Updater struct {
 	config       Config
 	log          Log
 	guiBusyCount int
+	tickDuration time.Duration
 }
 
 // UpdateSource defines where the updater can find updates
@@ -44,11 +47,12 @@ type Context interface {
 	Apply(update Update, options UpdateOptions, tmpDir string) error
 	AfterApply(update Update) error
 	ReportError(err error, update *Update, options UpdateOptions)
-	ReportAction(action UpdateAction, update *Update, options UpdateOptions)
+	ReportAction(updatePromptResponse UpdatePromptResponse, update *Update, options UpdateOptions)
 	ReportSuccess(update *Update, options UpdateOptions)
 	AfterUpdateCheck(update *Update)
 	GetAppStatePath() string
 	IsCheckCommand() bool
+	DeepClean()
 }
 
 // Config defines configuration for the Updater
@@ -61,6 +65,8 @@ type Config interface {
 	SetInstallID(installID string) error
 	IsLastUpdateCheckTimeRecent(d time.Duration) bool
 	SetLastUpdateCheckTime()
+	SetLastAppliedVersion(string) error
+	GetLastAppliedVersion() string
 }
 
 // Log is the logging interface for this package
@@ -76,10 +82,15 @@ type Log interface {
 // NewUpdater constructs an Updater
 func NewUpdater(source UpdateSource, config Config, log Log) *Updater {
 	return &Updater{
-		source: source,
-		config: config,
-		log:    log,
+		source:       source,
+		config:       config,
+		log:          log,
+		tickDuration: DefaultTickDuration,
 	}
+}
+
+func (u *Updater) SetTickDuration(dur time.Duration) {
+	u.tickDuration = dur
 }
 
 // Update checks, downloads and performs an update
@@ -111,15 +122,14 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return update, nil
 	}
 
+	if err := u.CleanupPreviousUpdates(); err != nil {
+		u.log.Infof("Error cleaning up previous downloads: %v", err)
+	}
+
 	tmpDir := u.tempDir()
 	defer u.Cleanup(tmpDir)
 	if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
 		return update, downloadErr(err)
-	}
-
-	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
-	if err := ctx.Verify(*update); err != nil {
-		return update, verifyErr(err)
 	}
 
 	err = ctx.BeforeUpdatePrompt(*update, options)
@@ -128,27 +138,43 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 
 	// Prompt for update
-	updateAction, err := u.promptForUpdateAction(ctx, *update, options)
+	updatePromptResponse, err := u.promptForUpdateAction(ctx, *update, options)
 	if err != nil {
 		return update, promptErr(err)
 	}
-	switch updateAction {
+	switch updatePromptResponse.Action {
 	case UpdateActionApply:
-		ctx.ReportAction(UpdateActionApply, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 	case UpdateActionAuto:
-		ctx.ReportAction(UpdateActionAuto, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 	case UpdateActionSnooze:
-		ctx.ReportAction(UpdateActionSnooze, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 		return update, CancelErr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
-		ctx.ReportAction(UpdateActionCancel, update, options)
+		ctx.ReportAction(updatePromptResponse, update, options)
 		return update, CancelErr(fmt.Errorf("Canceled"))
 	case UpdateActionError:
 		return update, promptErr(fmt.Errorf("Unknown prompt error"))
 	case UpdateActionContinue:
 		// Continue
 	case UpdateActionUIBusy:
-		return update, guiBusyErr(fmt.Errorf("User active, retrying later"))
+		// Return nil so that AfterUpdateCheck won't exit the service
+		return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
+	}
+
+	// If we are auto-updating, do a final check if the user is active before
+	// killing the app. Note this can cause some churn with re-downloading the
+	// update on the next attempt.
+	if updatePromptResponse.Action == UpdateActionAuto && !ctx.IsCheckCommand() {
+		isActive, err := u.checkUserActive(ctx)
+		if err == nil && isActive {
+			return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
+		}
+	}
+
+	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
+	if err := ctx.Verify(*update); err != nil {
+		return update, verifyErr(err)
 	}
 
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
@@ -166,6 +192,7 @@ func (u *Updater) apply(ctx Context, update Update, options UpdateOptions, tmpDi
 
 	u.log.Info("Applying update")
 	if err := ctx.Apply(update, options, tmpDir); err != nil {
+		u.log.Info("Apply error: %v", err)
 		return applyErr(err)
 	}
 
@@ -227,8 +254,17 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 	return update, nil
 }
 
+// NeedUpdate returns true if we are out-of-date.
+func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
+	update, err := u.checkForUpdate(ctx, ctx.UpdateOptions())
+	if err != nil {
+		return false, err
+	}
+	return update.NeedUpdate, nil
+}
+
 // promptForUpdateAction prompts the user for permission to apply an update
-func (u *Updater) promptForUpdateAction(ctx Context, update Update, options UpdateOptions) (UpdateAction, error) {
+func (u *Updater) promptForUpdateAction(ctx Context, update Update, options UpdateOptions) (UpdatePromptResponse, error) {
 	u.log.Debug("Prompt for update")
 
 	auto, autoSet := u.config.GetUpdateAuto()
@@ -239,11 +275,11 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 			// If there's an error getting active status, we'll just update
 			isActive, err := u.checkUserActive(ctx)
 			if err == nil && isActive {
-				return UpdateActionUIBusy, nil
+				return UpdatePromptResponse{UpdateActionUIBusy, false, 0}, nil
 			}
 			u.guiBusyCount = 0
 		}
-		return UpdateActionAuto, nil
+		return UpdatePromptResponse{UpdateActionAuto, false, 0}, nil
 	}
 
 	updateUI := ctx.GetUpdateUI()
@@ -253,10 +289,10 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 	promptOptions := UpdatePromptOptions{AutoUpdate: autoUpdate}
 	updatePromptResponse, err := updateUI.UpdatePrompt(update, options, promptOptions)
 	if err != nil {
-		return UpdateActionError, err
+		return UpdatePromptResponse{UpdateActionError, false, 0}, err
 	}
 	if updatePromptResponse == nil {
-		return UpdateActionError, fmt.Errorf("No response")
+		return UpdatePromptResponse{UpdateActionError, false, 0}, fmt.Errorf("No response")
 	}
 
 	if updatePromptResponse.Action != UpdateActionContinue {
@@ -267,16 +303,16 @@ func (u *Updater) promptForUpdateAction(ctx Context, update Update, options Upda
 		}
 	}
 
-	return updatePromptResponse.Action, nil
+	return *updatePromptResponse, nil
 }
 
 type guiAppState struct {
-	IsUserActive bool `json:"isUserActive"`
+	IsUserActive bool  `json:"isUserActive"`
+	ChangedAtMs  int64 `json:"changedAtMs"`
 }
 
 func (u *Updater) checkUserActive(ctx Context) (bool, error) {
-
-	if u.guiBusyCount >= 3 {
+	if time.Duration(u.guiBusyCount)*u.tickDuration >= time.Hour*6 { // Allow the update through after 6 hours
 		u.log.Warningf("Waited for GUI %d times - ignoring busy", u.guiBusyCount)
 		return false, nil
 	}
@@ -289,23 +325,25 @@ func (u *Updater) checkUserActive(ctx Context) (bool, error) {
 	}
 
 	guistate := guiAppState{}
-	err = json.Unmarshal(rawState, &guistate)
-	if err != nil {
+	if err = json.Unmarshal(rawState, &guistate); err != nil {
 		u.log.Warningf("Error parsing GUI state - proceeding", err)
 		return false, err
 	}
-	if guistate.IsUserActive {
+	// check if the user is currently active or was active in the last 5
+	// minutes.
+	isActive := guistate.IsUserActive || time.Since(time.Unix(guistate.ChangedAtMs/1000, 0)) <= time.Minute*5
+	if isActive {
 		u.guiBusyCount++
+		u.log.Infof("GUI busy on attempt %d", u.guiBusyCount)
 	}
 
-	return guistate.IsUserActive, nil
+	return isActive, nil
 }
 
 func report(ctx Context, err error, update *Update, options UpdateOptions) {
 	if err != nil {
 		// Don't report cancels or GUI busy
-		switch e := err.(type) {
-		case Error:
+		if e, ok := err.(Error); ok {
 			if e.IsCancel() || e.IsGUIBusy() {
 				return
 			}
@@ -327,7 +365,35 @@ func (u *Updater) tempDir() string {
 	return tmpDir
 }
 
-// Cleanup removes temporary files
+var tempDirRE = regexp.MustCompile(`^KeybaseUpdater.([ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{52}|\d{18,})$`)
+
+// CleanupPreviousUpdates removes temporary files from previous updates.
+func (u *Updater) CleanupPreviousUpdates() (err error) {
+	parent := os.TempDir()
+	if parent == "" || parent == "." {
+		return fmt.Errorf("temp directory is '%v'", parent)
+	}
+	files, err := ioutil.ReadDir(parent)
+	if err != nil {
+		return fmt.Errorf("listing parent directory: %v", err)
+	}
+	for _, fi := range files {
+		if !fi.IsDir() {
+			continue
+		}
+		if tempDirRE.MatchString(fi.Name()) {
+			targetPath := filepath.Join(parent, fi.Name())
+			u.log.Debugf("Cleaning old download: %v", targetPath)
+			err = os.RemoveAll(targetPath)
+			if err != nil {
+				u.log.Infof("Error deleting old temp dir %v: %v", fi.Name(), err)
+			}
+		}
+	}
+	return nil
+}
+
+// Cleanup removes temporary files from this update
 func (u *Updater) Cleanup(tmpDir string) {
 	if tmpDir != "" {
 		u.log.Debugf("Remove temporary directory: %q", tmpDir)
