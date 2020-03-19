@@ -17,7 +17,7 @@ import (
 )
 
 // Version is the updater version
-const Version = "0.3.5"
+const Version = "0.3.6"
 
 // Updater knows how to find and apply updates
 type Updater struct {
@@ -115,6 +115,23 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 	u.log.Infof("Got update with version: %s", update.Version)
 
+	// Linux updates don't have assets so it's ok to prompt for update above before
+	// we check for nil asset.
+	if update.Asset == nil || update.Asset.URL == "" {
+		u.log.Info("No update asset to apply")
+		return update, nil
+	}
+
+	if err := u.CleanupPreviousUpdates(); err != nil {
+		u.log.Infof("Error cleaning up previous downloads: %v", err)
+	}
+
+	tmpDir := u.tempDir()
+	defer u.Cleanup(tmpDir)
+	if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
+		return update, downloadErr(err)
+	}
+
 	err = ctx.BeforeUpdatePrompt(*update, options)
 	if err != nil {
 		return update, err
@@ -145,28 +162,6 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
 	}
 
-	// Linux updates don't have assets so it's ok to prompt for update above before
-	// we check for nil asset.
-	if update.Asset == nil || update.Asset.URL == "" {
-		u.log.Info("No update asset to apply")
-		return update, nil
-	}
-
-	if err := u.CleanupPreviousUpdates(); err != nil {
-		u.log.Infof("Error cleaning up previous downloads: %v", err)
-	}
-
-	tmpDir := u.tempDir()
-	defer u.Cleanup(tmpDir)
-	if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
-		return update, downloadErr(err)
-	}
-
-	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
-	if err := ctx.Verify(*update); err != nil {
-		return update, verifyErr(err)
-	}
-
 	// If we are auto-updating, do a final check if the user is active before
 	// killing the app. Note this can cause some churn with re-downloading the
 	// update on the next attempt.
@@ -175,6 +170,11 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 		if err == nil && isActive {
 			return nil, guiBusyErr(fmt.Errorf("User active, retrying later"))
 		}
+	}
+
+	u.log.Infof("Verify asset: %s", update.Asset.LocalPath)
+	if err := ctx.Verify(*update); err != nil {
+		return update, verifyErr(err)
 	}
 
 	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
