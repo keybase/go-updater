@@ -22,6 +22,7 @@ type flags struct {
 	appName       string
 	pathToKeybase string
 	command       string
+	ignoreSnooze  bool
 }
 
 func main() {
@@ -39,6 +40,7 @@ func loadFlags() (flags, []string) {
 	flag.BoolVar(&f.logToFile, "log-to-file", false, "Log to file")
 	flag.StringVar(&f.pathToKeybase, "path-to-keybase", "", "Path to keybase executable")
 	flag.StringVar(&f.appName, "app-name", defaultAppName(), "App name")
+	flag.BoolVar(&f.ignoreSnooze, "ignore-snooze", true, "Ignore snooze, if not in service mode")
 	flag.Parse()
 	args := flag.Args()
 	return f, args
@@ -97,6 +99,12 @@ func run(f flags) {
 			ulog.Error(err)
 			os.Exit(1)
 		}
+	case "snooze":
+		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.Check)
+		if err := updater.Snooze(ctx); err != nil {
+			ulog.Error(err)
+			os.Exit(1)
+		}
 	case "service", "":
 		svc := serviceFromFlags(f, ulog)
 		svc.Run()
@@ -120,7 +128,11 @@ func serviceFromFlags(f flags, ulog logger) *service {
 }
 
 func updateCheckFromFlags(f flags, ulog logger) error {
-	ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.Check)
+	mode := keybase.CheckPassive
+	if f.ignoreSnooze {
+		mode = keybase.Check
+	}
+	ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, mode)
 	_, err := updater.Update(ctx)
 	return err
 }

@@ -93,6 +93,26 @@ func (u *Updater) SetTickDuration(dur time.Duration) {
 	u.tickDuration = dur
 }
 
+// Snoozes an update if there is one
+func (u *Updater) Snooze(ctx Context) error {
+	options := ctx.UpdateOptions()
+	update, err := u.checkForUpdate(ctx, options)
+	if err != nil {
+		return findErr(err)
+	}
+	if update == nil || !update.NeedUpdate {
+		// No update available
+		return nil
+	}
+	updatePromptResponse := UpdatePromptResponse{
+		Action:         UpdateActionSnooze,
+		AutoUpdate:     false, // not used
+		SnoozeDuration: 86400, // seconds in 24 hrs
+	}
+	ctx.ReportAction(updatePromptResponse, update, options)
+	return nil
+}
+
 // Update checks, downloads and performs an update
 func (u *Updater) Update(ctx Context) (*Update, error) {
 	options := ctx.UpdateOptions()
@@ -102,7 +122,7 @@ func (u *Updater) Update(ctx Context) (*Update, error) {
 }
 
 // update returns the update received, and an error if the update was not
-// performed. The error with be of type Error. The error may be due to the user
+// performed. The error will be of type Error. The error may be due to the user
 // (or system) canceling an update, in which case error.IsCancel() will be true.
 func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	update, err := u.checkForUpdate(ctx, options)
@@ -148,6 +168,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	case UpdateActionAuto:
 		ctx.ReportAction(updatePromptResponse, update, options)
 	case UpdateActionSnooze:
+		updatePromptResponse.SnoozeDuration = 86400 // seconds in 24 hrs
 		ctx.ReportAction(updatePromptResponse, update, options)
 		return update, CancelErr(fmt.Errorf("Snoozed update"))
 	case UpdateActionCancel:
@@ -258,7 +279,7 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
 	update, err := u.checkForUpdate(ctx, ctx.UpdateOptions())
 	if err != nil {
-		return false, err
+		return false, findErr(err)
 	}
 	return update.NeedUpdate, nil
 }
