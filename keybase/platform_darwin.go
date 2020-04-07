@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -49,11 +48,11 @@ func appBundleForPath(path string) string {
 }
 
 func libraryDir() (string, error) {
-	usr, err := user.Current()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(usr.HomeDir, "Library"), nil
+	return filepath.Join(homeDir, "Library"), nil
 }
 
 // Dir returns where to store config

@@ -97,6 +97,21 @@ func run(f flags) {
 			ulog.Error(err)
 			os.Exit(1)
 		}
+	case "download-latest":
+		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.CheckPassive)
+		fmt.Println("JRY main.go download-latest", f)
+		availableAndDownloaded, err := updater.CheckAndDownload(ctx)
+		if err != nil {
+			ulog.Error(err)
+			os.Exit(1)
+		}
+		fmt.Println(availableAndDownloaded)
+	case "apply-downloaded":
+		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.Check)
+		if err := updater.ApplyDownloaded(ctx); err != nil {
+			ulog.Error(err)
+			os.Exit(1)
+		}
 	case "service", "":
 		svc := serviceFromFlags(f, ulog)
 		svc.Run()
