@@ -686,6 +686,57 @@ func TestApplyDownloaded(t *testing.T) {
 	util.RemoveFileAtPath(tmpDir)
 }
 
+func TestFindDownloadedAsset(t *testing.T) {
+	upr, err := newTestUpdater(t)
+	assert.NoError(t, err)
+	defer upr.CleanupPreviousUpdates()
+
+	// 1. empty asset
+	matchingAssetPath, err := upr.FindDownloadedAsset("")
+	assert.EqualError(t, err, "No asset name provided")
+	assert.Equal(t, "", matchingAssetPath)
+
+	// 2. assset given -> did not create KeybaseUpdate.
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, "", matchingAssetPath)
+
+	// 3. asset given -> created KeybaseUpdate. -> directory empty
+	tmpDir, err := util.MakeTempDir("KeybaseUpdater.", 0700)
+	require.NoError(t, err)
+
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, "", matchingAssetPath)
+
+	util.RemoveFileAtPath(tmpDir)
+
+	// 4. asset given -> created KeybaseUpdate. -> file exists but no match
+	tmpDir, err = util.MakeTempDir("KeybaseUpdater.", 0700)
+	tmpFile := filepath.Join(tmpDir, "nottemp")
+	err = ioutil.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
+	require.NoError(t, err)
+
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, "", matchingAssetPath)
+
+	util.RemoveFileAtPath(tmpDir)
+
+	// 5. asset given -> created KeybaseUpdate. -> file exixst and matches
+	tmpDir, err = util.MakeTempDir("KeybaseUpdater.", 0700)
+	tmpFile = filepath.Join(tmpDir, "temp")
+	err = ioutil.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
+	require.NoError(t, err)
+
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, tmpFile, matchingAssetPath)
+
+	util.RemoveFileAtPath(tmpDir)
+
+}
+
 func TestUpdaterGuiBusy(t *testing.T) {
 	testServer := testServerForUpdateFile(t, testZipPath)
 	defer testServer.Close()

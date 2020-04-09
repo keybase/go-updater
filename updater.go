@@ -545,6 +545,9 @@ func (u *Updater) Cleanup(tmpDir string) {
 
 // Inspect previously downloaded updates to avoid redownloading
 func (u *Updater) FindDownloadedAsset(assetName string) (matchingAssetPath string, err error) {
+	if assetName == "" {
+		return "", fmt.Errorf("No asset name provided")
+	}
 	parent := os.TempDir()
 
 	if parent == "" || parent == "." {
