@@ -185,23 +185,21 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 func (u *Updater) ApplyDownloaded(ctx Context) (bool, error) {
 	options := ctx.UpdateOptions()
 
-	// 1. check with the api server again for the latest update to be sure that a new update has not come out since our last call to CheckAndDownload
+	// 1. check with the api server again for the latest update to be sure that a
+	// new update has not come out since our last call to CheckAndDownload
 	u.log.Infof("Attempting to apply previously downloaded update")
 	update, err := u.checkForUpdate(ctx, options)
-
 	if err != nil {
 		return false, findErr(err)
 	}
 
 	// Only report apply success/failure
 	applied, err := u.applyDownloaded(ctx, update, options)
-	if applied {
-		report(ctx, err, update, options)
-	}
 	if err != nil {
 		report(ctx, err, update, options)
 		return false, err
 	}
+	report(ctx, err, update, options)
 	return applied, nil
 
 }
@@ -210,13 +208,12 @@ func (u *Updater) ApplyDownloaded(ctx Context) (bool, error) {
 // CheckAndDownload must be called first so that we have a download asset avaiable to apply.
 func (u *Updater) applyDownloaded(ctx Context, update *Update, options UpdateOptions) (applied bool, err error) {
 	if update == nil || !update.NeedUpdate {
-		u.log.Infof("No previously downloaded update to apply since client is update to date")
-		return false, nil
+		return false, fmt.Errorf("No previously downloaded update to apply since client is update to date")
 	}
 	u.log.Infof("Got update with version: %s", update.Version)
 
 	if u.updateMissingAsset(update) {
-		return false, nil
+		return false, fmt.Errorf("Update contained no asset to apply. Update version: %s", update.Version)
 	}
 
 	// 2. check the disk via FindDownloadedAsset. Compare our API result to this result. If the downloaded update is stale, clear it and start over.
@@ -232,8 +229,7 @@ func (u *Updater) applyDownloaded(ctx Context, update *Update, options UpdateOpt
 	}
 
 	if downloadedAssetPath == "" {
-		u.log.Infof("No downloaded asset found for version: %s", update.Version)
-		return false, nil
+		return false, fmt.Errorf("No downloaded asset found for version: %s", update.Version)
 	}
 	update.Asset.LocalPath = downloadedAssetPath
 
@@ -496,7 +492,6 @@ func (u *Updater) tempDir() string {
 
 func (u *Updater) updateMissingAsset(update *Update) bool {
 	if update.Asset == nil || update.Asset.URL == "" {
-		u.log.Info("No update asset to apply")
 		return true
 	}
 	return false

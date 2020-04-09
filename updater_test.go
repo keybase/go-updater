@@ -598,21 +598,22 @@ func TestApplyDownloaded(t *testing.T) {
 
 	// 1. NeedUpdate = false -> return nil
 	applied, err := upr.ApplyDownloaded(ctx)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "No previously downloaded update to apply since client is update to date")
 	assert.False(t, applied)
-	assert.Nil(t, ctx.errReported)
+	assert.NotNil(t, ctx.errReported)
 	assert.Nil(t, ctx.updateReported)
 	assert.False(t, ctx.successReported)
 
 	resetCtxErr()
 
 	// 2. Update missing asset
+	testUpdate.NeedUpdate = true
 	testUpdate.Asset = nil
 
 	applied, err = upr.ApplyDownloaded(ctx)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "Update contained no asset to apply. Update version: 1.0.1")
 	assert.False(t, applied)
-	assert.Nil(t, ctx.errReported)
+	assert.NotNil(t, ctx.errReported)
 	assert.Nil(t, ctx.updateReported)
 	assert.False(t, ctx.successReported)
 
@@ -622,9 +623,9 @@ func TestApplyDownloaded(t *testing.T) {
 	testUpdate.Asset.URL = ""
 
 	applied, err = upr.ApplyDownloaded(ctx)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "Update contained no asset to apply. Update version: 1.0.1")
 	assert.False(t, applied)
-	assert.Nil(t, ctx.errReported)
+	assert.NotNil(t, ctx.errReported)
 	assert.Nil(t, ctx.updateReported)
 	assert.False(t, ctx.successReported)
 
@@ -633,14 +634,13 @@ func TestApplyDownloaded(t *testing.T) {
 
 	// 3. FindDownloadedAsset = false -> return nil
 	applied, err = upr.ApplyDownloaded(ctx)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "No downloaded asset found for version: 1.0.1")
 	assert.False(t, applied)
-	assert.Nil(t, ctx.errReported)
+	assert.NotNil(t, ctx.errReported)
 	assert.Nil(t, ctx.updateReported)
 	assert.False(t, ctx.successReported)
 
 	resetCtxErr()
-	testUpdate.NeedUpdate = true
 
 	// 4. FindDownloadedAsset = true -> digest fails
 	tmpDir := makeKeybaseUpdateTempDir(t, upr, testUpdate.Asset)
