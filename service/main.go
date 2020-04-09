@@ -107,10 +107,12 @@ func run(f flags) {
 		fmt.Println(updateAvailable && updateCached)
 	case "apply-downloaded":
 		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.Check)
-		if err := updater.ApplyDownloaded(ctx); err != nil {
+		applied, err := updater.ApplyDownloaded(ctx)
+		if err != nil {
 			ulog.Error(err)
 			os.Exit(1)
 		}
+		fmt.Println(applied)
 	case "service", "":
 		svc := serviceFromFlags(f, ulog)
 		svc.Run()
