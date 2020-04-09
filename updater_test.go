@@ -604,7 +604,7 @@ func TestApplyDownloaded(t *testing.T) {
 	assert.Nil(t, ctx.updateReported)
 	assert.False(t, ctx.successReported)
 
-	ctx = newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionSnooze, AutoUpdate: true})
+	resetCtxErr()
 
 	// 2. Update missing asset
 	testUpdate.Asset = nil

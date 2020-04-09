@@ -195,10 +195,11 @@ func (u *Updater) ApplyDownloaded(ctx Context) (bool, error) {
 
 	// Only report apply success/failure
 	applied, err := u.applyDownloaded(ctx, update, options)
-	if err != nil && !applied {
+	if applied {
 		report(ctx, err, update, options)
 	}
 	if err != nil {
+		report(ctx, err, update, options)
 		return false, err
 	}
 	return applied, nil
