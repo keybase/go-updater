@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -169,5 +170,98 @@ func procProgram(t *testing.T, name string, testCommand string) Program {
 	return Program{
 		Path: procPath,
 		Args: []string{testCommand},
+		Name: name,
 	}
+}
+
+// TestExitAllOnSuccess verifies that a program with ExitAllOnSuccess that exits cleanly
+// will also cause a clean exit on another program which has been restarted by the watchdog.
+func TestExitAllOnSuccess(t *testing.T) {
+	// This test is slow and I'm sorry about that.
+	sleepTimeInTest := 10000 // 10 seconds
+	exiter := procProgram(t, "testExitAllOnSuccess", "sleep")
+	defer util.RemoveFileAtPath(exiter.Path)
+	exiter.ExitOn = ExitAllOnSuccess
+	testProgram := procProgram(t, "alice", "sleep")
+	defer util.RemoveFileAtPath(testProgram.Path)
+
+	getProgramPID := func(program Program) int {
+		matcher := process.NewMatcher(program.Path, process.PathEqual, testLog)
+		procs, err := process.FindProcesses(matcher, time.Second, 100*time.Millisecond, testLog)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(procs))
+		proc := procs[0]
+		return proc.Pid()
+	}
+
+	// watch two programs, 1 that will exit cleanly and 1 that won't
+	programs := []Program{exiter, testProgram}
+	err := Watch(programs, 0, testLog)
+	require.NoError(t, err)
+
+	// bounce the testProgram halfway through the sleep interval
+	firstPid := getProgramPID(testProgram)
+	require.NotEqual(t, 0, firstPid)
+	time.Sleep(time.Duration(sleepTimeInTest/2) * time.Second)
+	err = process.TerminatePID(firstPid, time.Millisecond, testLog)
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+	secondPid := getProgramPID(testProgram)
+	require.NotEqual(t, 0, secondPid)
+	require.NotEqual(t, firstPid, secondPid)
+
+	// sleep until the exiter program should have exited cleanly
+	// and triggered the exit of everything else
+	time.Sleep(time.Duration((sleepTimeInTest/2)+1) * time.Second)
+
+	assertProgramEnded := func(program Program) {
+		matcher := process.NewMatcher(program.Path, process.PathEqual, testLog)
+		procs, err := process.FindProcesses(matcher, time.Second, 100*time.Millisecond, testLog)
+		require.NoError(t, err)
+		require.Equal(t, 0, len(procs))
+	}
+
+	assertProgramEnded(exiter)
+	assertProgramEnded(testProgram)
+}
+
+func TestWatchdogExitAllRace(t *testing.T) {
+	exiter := procProgram(t, "TestWatchdogExitAllRace", "sleep")
+	defer util.RemoveFileAtPath(exiter.Path)
+	exiter.ExitOn = ExitAllOnSuccess
+	procProgram1 := procProgram(t, "alice", "sleep")
+	defer util.RemoveFileAtPath(procProgram1.Path)
+	procProgram2 := procProgram(t, "bob", "sleep")
+	defer util.RemoveFileAtPath(procProgram2.Path)
+
+	assertOneProcessIsRunning := func(p Program) {
+		matcher := process.NewMatcher(p.Path, process.PathEqual, testLog)
+		procs, err := process.FindProcesses(matcher, time.Second, 200*time.Millisecond, testLog)
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(procs))
+	}
+	assertOneProcessOfEachProgramIsRunning := func() {
+		assertOneProcessIsRunning(exiter)
+		assertOneProcessIsRunning(procProgram1)
+		assertOneProcessIsRunning(procProgram2)
+	}
+
+	// spin up three watchdogs at the same time withe the same three programs
+	var wg sync.WaitGroup
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := Watch([]Program{exiter, procProgram1, procProgram2}, 0, testLog)
+			require.NoError(t, err)
+		}()
+	}
+	wg.Wait()
+	assertOneProcessOfEachProgramIsRunning()
+	time.Sleep(500 * time.Millisecond)
+	assertOneProcessOfEachProgramIsRunning()
+
+	err := Watch([]Program{exiter, procProgram1, procProgram2}, 0, testLog)
+	require.NoError(t, err)
+	assertOneProcessOfEachProgramIsRunning()
 }
