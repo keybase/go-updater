@@ -101,14 +101,14 @@ func run(f flags) {
 		}
 	case "download-latest":
 		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.CheckPassive)
-		updateAvailable, updateCached, err := updater.CheckAndDownload(ctx)
+		updateAvailable, _, err := updater.CheckAndDownload(ctx)
 		if err != nil {
 			ulog.Error(err)
 			os.Exit(1)
 		}
 		// Keybase service expects to parse this output as a boolean.
 		// Do not change unless changing in both locations
-		fmt.Println(updateAvailable && updateCached)
+		fmt.Println(updateAvailable)
 	case "apply-downloaded":
 		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.Check)
 		applied, err := updater.ApplyDownloaded(ctx)

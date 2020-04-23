@@ -45,6 +45,14 @@ type Update struct {
 	NeedUpdate  bool       `json:"needUpdate"`
 }
 
+func (u Update) missingAsset() bool {
+	if u.Asset == nil || u.Asset.URL == "" {
+		return true
+	}
+	return false
+
+}
+
 // UpdateOptions are options used to find an update
 type UpdateOptions struct {
 	// Version is the current version of the app

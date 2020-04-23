@@ -116,7 +116,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 	u.log.Infof("Got update with version: %s", update.Version)
 
-	if u.updateMissingAsset(update) {
+	if update.missingAsset() {
 		return update, nil
 	}
 
@@ -212,22 +212,21 @@ func (u *Updater) applyDownloaded(ctx Context, update *Update, options UpdateOpt
 	}
 	u.log.Infof("Got update with version: %s", update.Version)
 
-	if u.updateMissingAsset(update) {
+	if update.missingAsset() {
 		return false, fmt.Errorf("Update contained no asset to apply. Update version: %s", update.Version)
 	}
 
-	// 2. check the disk via FindDownloadedAsset. Compare our API result to this result. If the downloaded update is stale, clear it and start over.
+	// 2. check the disk via FindDownloadedAsset. Compare our API result to this
+	// result. If the downloaded update is stale, clear it and start over.
 	downloadedAssetPath, err := u.FindDownloadedAsset(update.Asset.Name)
+	if err != nil {
+		return false, err
+	}
 	defer func() {
 		if err := u.CleanupPreviousUpdates(); err != nil {
 			u.log.Infof("Error cleaning up previous downloads: %v", err)
 		}
 	}()
-
-	if err != nil {
-		return false, err
-	}
-
 	if downloadedAssetPath == "" {
 		return false, fmt.Errorf("No downloaded asset found for version: %s", update.Version)
 	}
@@ -329,7 +328,7 @@ func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
 	return update.NeedUpdate, nil
 }
 
-func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateCached bool, err error) {
+func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateWasDownloaded bool, err error) {
 	options := ctx.UpdateOptions()
 	update, err := u.checkForUpdate(ctx, options)
 	if err != nil {
@@ -340,7 +339,7 @@ func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateCached b
 		return false, false, nil
 	}
 
-	if u.updateMissingAsset(update) {
+	if update.missingAsset() {
 		return false, false, nil
 	}
 
@@ -357,7 +356,6 @@ func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateCached b
 		}
 	}()
 	var digestChecked bool
-	updateAvailable = true
 	downloadedAssetPath, err := u.FindDownloadedAsset(update.Asset.Name)
 	if downloadedAssetPath == "" || err != nil {
 		u.log.Infof("Could not find existing download asset for version: %s. Downloading new asset.", update.Version)
@@ -366,11 +364,10 @@ func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateCached b
 		if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
 			return false, false, downloadErr(err)
 		}
-		updateCached = true
+		updateWasDownloaded = true
 		digestChecked = true
 		downloadedAssetPath = update.Asset.LocalPath
 	}
-	updateCached = true
 	// Verify depends on LocalPath being set to the downloaded asset
 	update.Asset.LocalPath = downloadedAssetPath
 
@@ -385,7 +382,7 @@ func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateCached b
 		}
 	}
 
-	return updateAvailable, updateCached, nil
+	return true, updateWasDownloaded, nil
 }
 
 // promptForUpdateAction prompts the user for permission to apply an update
@@ -490,13 +487,6 @@ func (u *Updater) tempDir() string {
 	return tmpDir
 }
 
-func (u *Updater) updateMissingAsset(update *Update) bool {
-	if update.Asset == nil || update.Asset.URL == "" {
-		return true
-	}
-	return false
-}
-
 var tempDirRE = regexp.MustCompile(`^KeybaseUpdater.([ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{52}|\d{18,})$`)
 var keybaseAssetRE = regexp.MustCompile(`^Keybase(-|_)(.*)$`)
 
@@ -542,19 +532,13 @@ func (u *Updater) FindDownloadedAsset(assetName string) (matchingAssetPath strin
 		return "", fmt.Errorf("No asset name provided")
 	}
 	parent := os.TempDir()
-
 	if parent == "" || parent == "." {
 		return matchingAssetPath, fmt.Errorf("temp directory is %v", parent)
 	}
 
 	files, err := ioutil.ReadDir(parent)
-
 	if err != nil {
 		return matchingAssetPath, fmt.Errorf("listing parent directory: %v", err)
-	}
-
-	stripParent := func(s string, p string) string {
-		return strings.TrimPrefix(s, p+string(filepath.Separator))
 	}
 
 	for _, fi := range files {
@@ -563,7 +547,7 @@ func (u *Updater) FindDownloadedAsset(assetName string) (matchingAssetPath strin
 		}
 
 		keybaseTempDirAbs := filepath.Join(parent, fi.Name())
-		walkErr := filepath.Walk(keybaseTempDirAbs, func(fullPath string, info os.FileInfo, inErr error) (outErr error) {
+		walkErr := filepath.Walk(keybaseTempDirAbs, func(fullPath string, info os.FileInfo, inErr error) (err error) {
 			if inErr != nil {
 				return inErr
 			}
@@ -575,8 +559,7 @@ func (u *Updater) FindDownloadedAsset(assetName string) (matchingAssetPath strin
 				return filepath.SkipDir
 			}
 
-			path := stripParent(fullPath, keybaseTempDirAbs)
-
+			path := strings.TrimPrefix(fullPath, keybaseTempDirAbs+string(filepath.Separator))
 			if path == assetName {
 				matchingAssetPath = fullPath
 				return filepath.SkipDir
