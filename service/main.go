@@ -93,6 +93,7 @@ func run(f flags) {
 		}
 		// Keybase service expects to parse this output as a boolean.
 		// Do not change unless changing in both locations
+		// https: //github.com/keybase/client/blob/master/go/client/cmd_update.go
 		fmt.Println(needUpdate)
 	case "check":
 		if err := updateCheckFromFlags(f, ulog); err != nil {
@@ -108,6 +109,7 @@ func run(f flags) {
 		}
 		// Keybase service expects to parse this output as a boolean.
 		// Do not change unless changing in both locations
+		// https: //github.com/keybase/client/blob/master/go/client/cmd_update.go
 		fmt.Println(updateAvailable)
 	case "apply-downloaded":
 		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.Check)
@@ -116,8 +118,6 @@ func run(f flags) {
 			ulog.Error(err)
 			os.Exit(1)
 		}
-		// Keybase service expects to parse this output as a boolean.
-		// Do not change unless changing in both locations
 		fmt.Println(applied)
 	case "service", "":
 		svc := serviceFromFlags(f, ulog)

@@ -46,10 +46,7 @@ type Update struct {
 }
 
 func (u Update) missingAsset() bool {
-	if u.Asset == nil || u.Asset.URL == "" {
-		return true
-	}
-	return false
+	return u.Asset == nil || u.Asset.URL == ""
 
 }
 

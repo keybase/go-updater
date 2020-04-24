@@ -195,17 +195,16 @@ func (u *Updater) ApplyDownloaded(ctx Context) (bool, error) {
 
 	// Only report apply success/failure
 	applied, err := u.applyDownloaded(ctx, update, options)
+	defer report(ctx, err, update, options)
 	if err != nil {
-		report(ctx, err, update, options)
 		return false, err
 	}
-	report(ctx, err, update, options)
 	return applied, nil
 
 }
 
 // ApplyDownloaded will look for an previously downloaded update and attempt to apply it without prompting.
-// CheckAndDownload must be called first so that we have a download asset avaiable to apply.
+// CheckAndDownload must be called first so that we have a download asset available to apply.
 func (u *Updater) applyDownloaded(ctx Context, update *Update, options UpdateOptions) (applied bool, err error) {
 	if update == nil || !update.NeedUpdate {
 		return false, fmt.Errorf("No previously downloaded update to apply since client is update to date")
@@ -335,11 +334,7 @@ func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateWasDownl
 		return false, false, err
 	}
 
-	if !update.NeedUpdate {
-		return false, false, nil
-	}
-
-	if update.missingAsset() {
+	if !update.NeedUpdate || update.missingAsset() {
 		return false, false, nil
 	}
 

@@ -29,21 +29,12 @@ var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-
 
 var testAppStatePath = filepath.Join(os.TempDir(), "KBTest_app_state.json")
 
-// shasum -a 256 test/test.zip
 const (
+	// shasum -a 256 test/test.zip
 	validDigest = "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84"
-)
-
-// keybase sign -d -i test.zip
-const (
-	validSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
-)
-
-const (
-	invalidDigest = "74970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84"
-)
-
-const (
+	// keybase sign -d -i test.zip
+	validSignature   = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+	invalidDigest    = "74970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84"
 	invalidSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. QXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
 )
 
