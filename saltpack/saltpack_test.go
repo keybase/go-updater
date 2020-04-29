@@ -6,8 +6,8 @@ package saltpack
 import (
 	"bytes"
 	"io"
-	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -33,10 +33,15 @@ const signature1 = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
   Z. END KEYBASE SALTPACK DETACHED SIGNATURE.
 `
 
-var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+var testZipPath string
 
 // keybase sign -d -i test.zip
 const testZipSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	testZipPath = filepath.Join(filepath.Dir(filename), "../test/test.zip")
+}
 
 func TestVerify(t *testing.T) {
 	reader := bytes.NewReader([]byte(message1))

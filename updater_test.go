@@ -25,9 +25,14 @@ import (
 
 var testLog = &logging.Logger{Module: "test"}
 
-var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+var testZipPath string
 
 var testAppStatePath = filepath.Join(os.TempDir(), "KBTest_app_state.json")
+
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	testZipPath = filepath.Join(filepath.Dir(filename), "test/test.zip")
+}
 
 func newTestUpdater(t *testing.T) (*Updater, error) {
 	return newTestUpdaterWithServer(t, nil, nil, &testConfig{})

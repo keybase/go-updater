@@ -169,7 +169,8 @@ func TestConfigBadType(t *testing.T) {
 }
 
 func TestKeybaseVersionInvalid(t *testing.T) {
-	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/err.sh")
+	_, filename, _, _ := runtime.Caller(0)
+	testPathToKeybase := filepath.Join(filepath.Dir(filename), "../test/err.sh")
 	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, testLog, false)
 	version := cfg.keybaseVersion()
 	assert.Equal(t, "", version)

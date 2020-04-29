@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/keybase/go-updater"
@@ -18,7 +18,8 @@ import (
 )
 
 func TestRemoteUpdateSource(t *testing.T) {
-	jsonPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/update.json")
+	_, filename, _, _ := runtime.Caller(0)
+	jsonPath := filepath.Join(filepath.Dir(filename), "../test/update.json")
 	data, err := util.ReadFile(jsonPath)
 	require.NoError(t, err)
 

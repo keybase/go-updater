@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -208,7 +207,8 @@ func TestDownloadURLError(t *testing.T) {
 }
 
 func TestDownloadURLLocal(t *testing.T) {
-	var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+	_, filename, _, _ := runtime.Caller(0)
+	testZipPath := filepath.Join(filepath.Dir(filename), "../test/test.zip")
 	destinationPath := TempPath("", "TestDownloadURLLocal.")
 	defer RemoveFileAtPath(destinationPath)
 	err := DownloadURL(URLStringForPath(testZipPath), destinationPath, DownloadURLOptions{Log: testLog})
