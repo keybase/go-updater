@@ -694,7 +694,10 @@ func TestApplyDownloaded(t *testing.T) {
 func TestFindDownloadedAsset(t *testing.T) {
 	upr, err := newTestUpdater(t)
 	assert.NoError(t, err)
-	defer upr.CleanupPreviousUpdates()
+	defer func() {
+		err = upr.CleanupPreviousUpdates()
+		assert.NoError(t, err)
+	}()
 
 	// 1. empty asset
 	matchingAssetPath, err := upr.FindDownloadedAsset("")
@@ -708,6 +711,7 @@ func TestFindDownloadedAsset(t *testing.T) {
 
 	// 3. asset given -> created KeybaseUpdate. -> directory empty
 	tmpDir, err := util.MakeTempDir("KeybaseUpdater.", 0700)
+	assert.NoError(t, err)
 	require.NoError(t, err)
 
 	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
@@ -718,6 +722,7 @@ func TestFindDownloadedAsset(t *testing.T) {
 
 	// 4. asset given -> created KeybaseUpdate. -> file exists but no match
 	tmpDir, err = util.MakeTempDir("KeybaseUpdater.", 0700)
+	assert.NoError(t, err)
 	tmpFile := filepath.Join(tmpDir, "nottemp")
 	err = ioutil.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
 	require.NoError(t, err)

@@ -483,7 +483,6 @@ func (u *Updater) tempDir() string {
 }
 
 var tempDirRE = regexp.MustCompile(`^KeybaseUpdater.([ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{52}|\d{18,})$`)
-var keybaseAssetRE = regexp.MustCompile(`^Keybase(-|_)(.*)$`)
 
 // CleanupPreviousUpdates removes temporary files from previous updates.
 func (u *Updater) CleanupPreviousUpdates() (err error) {
