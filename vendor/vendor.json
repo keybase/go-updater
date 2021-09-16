@@ -43,6 +43,18 @@
 			"revisionTime": "2018-09-28T23:00:36Z"
 		},
 		{
+			"checksumSHA1": "idJx0ckgd1LwSffToTmxF+bvCk8=",
+			"path": "github.com/keybase/go-crypto/ed25519",
+			"revision": "de78d2cb44f4360c724f681478689e314d00bf96",
+			"revisionTime": "2020-01-23T15:33:47Z"
+		},
+		{
+			"checksumSHA1": "oFj+c+T9/0PTmvpz1Vlx1L6aI98=",
+			"path": "github.com/keybase/go-crypto/ed25519/internal/edwards25519",
+			"revision": "de78d2cb44f4360c724f681478689e314d00bf96",
+			"revisionTime": "2020-01-23T15:33:47Z"
+		},
+		{
 			"checksumSHA1": "qhkwhuKIYzEZmHMtGsegm0v7KKE=",
 			"path": "github.com/keybase/go-framed-msgpack-rpc/rpc",
 			"revision": "26e5d1ace9c88d9794d620b1201b3f43939ae617",
