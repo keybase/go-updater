@@ -19,6 +19,12 @@
 			"revisionTime": "2015-05-28T07:23:15-07:00"
 		},
 		{
+			"checksumSHA1": "tBFISVudi8RzOoFhK2+p0PRicfw=",
+			"path": "github.com/keybase/backoff",
+			"revision": "726b63b835ec48ae1fac42bcba4e8c7b742fa97d",
+			"revisionTime": "2016-05-17T06:10:00Z"
+		},
+		{
 			"checksumSHA1": "+H92b8J6J26WLuXNICVraYKZd0E=",
 			"path": "github.com/keybase/client/go/kbcrypto",
 			"revision": "25e8af85f29678ec0c4639026981dd10d74d3e95",
@@ -43,6 +49,12 @@
 			"revisionTime": "2020-03-11T21:12:34Z"
 		},
 		{
+			"checksumSHA1": "RLs8GIV4e+D350pyzZh5RC3mgQg=",
+			"path": "github.com/keybase/go-framed-msgpack-rpc/rpc/resinit",
+			"revision": "26e5d1ace9c88d9794d620b1201b3f43939ae617",
+			"revisionTime": "2020-03-11T21:12:34Z"
+		},
+		{
 			"checksumSHA1": "+o+A5GsJ1DQM/xc7GKIEvJQkE6g=",
 			"path": "github.com/keybase/go-jsonw",
 			"revision": "df90f282c233fcb771aa004d3b8a30caadbc6fb3",
@@ -57,6 +69,12 @@
 			"path": "github.com/keybase/go-ps",
 			"revision": "eae146130275a0543f214777bbfa8f8f9b34ca53",
 			"revisionTime": "2016-06-23T20:06:58-07:00"
+		},
+		{
+			"checksumSHA1": "ZdePViRYZkdmfd90nl7tUu2JzsU=",
+			"path": "github.com/keybase/msgpackzip",
+			"revision": "5ef7f4879d9d4995780ee9c4e57416d925779225",
+			"revisionTime": "2020-02-18T01:45:24Z"
 		},
 		{
 			"checksumSHA1": "UT+c8olRWpXtZIw96rRFXYfBUzY=",
