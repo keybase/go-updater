@@ -19,10 +19,58 @@
 			"revisionTime": "2015-05-28T07:23:15-07:00"
 		},
 		{
+			"checksumSHA1": "tBFISVudi8RzOoFhK2+p0PRicfw=",
+			"path": "github.com/keybase/backoff",
+			"revision": "726b63b835ec48ae1fac42bcba4e8c7b742fa97d",
+			"revisionTime": "2016-05-17T06:10:00Z"
+		},
+		{
+			"checksumSHA1": "+H92b8J6J26WLuXNICVraYKZd0E=",
+			"path": "github.com/keybase/client/go/kbcrypto",
+			"revision": "25e8af85f29678ec0c4639026981dd10d74d3e95",
+			"revisionTime": "2021-09-16T16:36:01Z"
+		},
+		{
+			"checksumSHA1": "vQHVHazF7g7jqMSLlty9EhPof+I=",
+			"path": "github.com/keybase/client/go/protocol/keybase1",
+			"revision": "8bfbf062d2a99b58a4b392182855230703f0ca10",
+			"revisionTime": "2021-09-16T15:33:54Z"
+		},
+		{
 			"checksumSHA1": "AzpolYksuMdnqRhFpzPm1bEztJ0=",
 			"path": "github.com/keybase/go-codec/codec",
 			"revision": "1643975621235e11516b5722dd9475e342465adf",
 			"revisionTime": "2018-09-28T23:00:36Z"
+		},
+		{
+			"checksumSHA1": "idJx0ckgd1LwSffToTmxF+bvCk8=",
+			"path": "github.com/keybase/go-crypto/ed25519",
+			"revision": "de78d2cb44f4360c724f681478689e314d00bf96",
+			"revisionTime": "2020-01-23T15:33:47Z"
+		},
+		{
+			"checksumSHA1": "oFj+c+T9/0PTmvpz1Vlx1L6aI98=",
+			"path": "github.com/keybase/go-crypto/ed25519/internal/edwards25519",
+			"revision": "de78d2cb44f4360c724f681478689e314d00bf96",
+			"revisionTime": "2020-01-23T15:33:47Z"
+		},
+		{
+			"checksumSHA1": "qhkwhuKIYzEZmHMtGsegm0v7KKE=",
+			"path": "github.com/keybase/go-framed-msgpack-rpc/rpc",
+			"revision": "26e5d1ace9c88d9794d620b1201b3f43939ae617",
+			"revisionTime": "2020-03-11T21:12:34Z"
+		},
+		{
+			"checksumSHA1": "RLs8GIV4e+D350pyzZh5RC3mgQg=",
+			"path": "github.com/keybase/go-framed-msgpack-rpc/rpc/resinit",
+			"revision": "26e5d1ace9c88d9794d620b1201b3f43939ae617",
+			"revisionTime": "2020-03-11T21:12:34Z"
+		},
+		{
+			"checksumSHA1": "+o+A5GsJ1DQM/xc7GKIEvJQkE6g=",
+			"path": "github.com/keybase/go-jsonw",
+			"revision": "df90f282c233fcb771aa004d3b8a30caadbc6fb3",
+			"revisionTime": "2020-03-25T17:36:37Z"
 		},
 		{
 			"path": "github.com/keybase/go-logging",
@@ -33,6 +81,12 @@
 			"path": "github.com/keybase/go-ps",
 			"revision": "eae146130275a0543f214777bbfa8f8f9b34ca53",
 			"revisionTime": "2016-06-23T20:06:58-07:00"
+		},
+		{
+			"checksumSHA1": "ZdePViRYZkdmfd90nl7tUu2JzsU=",
+			"path": "github.com/keybase/msgpackzip",
+			"revision": "5ef7f4879d9d4995780ee9c4e57416d925779225",
+			"revisionTime": "2020-02-18T01:45:24Z"
 		},
 		{
 			"checksumSHA1": "UT+c8olRWpXtZIw96rRFXYfBUzY=",
@@ -103,6 +157,12 @@
 			"path": "golang.org/x/crypto/salsa20/salsa",
 			"revision": "7b428712abe956d0e9e1e9a01e163fb6c7171438",
 			"revisionTime": "2016-04-19T13:20:54-07:00"
+		},
+		{
+			"checksumSHA1": "LskOjjrTEyKVvuww7ZnM1/24t3A=",
+			"path": "golang.org/x/net/context",
+			"revision": "12bc252f5db8613b006bfd531330e1f256da625c",
+			"revisionTime": "2021-09-15T18:46:13Z"
 		},
 		{
 			"path": "golang.org/x/sys/windows",
