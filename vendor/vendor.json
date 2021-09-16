@@ -19,6 +19,12 @@
 			"revisionTime": "2015-05-28T07:23:15-07:00"
 		},
 		{
+			"checksumSHA1": "+H92b8J6J26WLuXNICVraYKZd0E=",
+			"path": "github.com/keybase/client/go/kbcrypto",
+			"revision": "25e8af85f29678ec0c4639026981dd10d74d3e95",
+			"revisionTime": "2021-09-16T16:36:01Z"
+		},
+		{
 			"checksumSHA1": "vQHVHazF7g7jqMSLlty9EhPof+I=",
 			"path": "github.com/keybase/client/go/protocol/keybase1",
 			"revision": "8bfbf062d2a99b58a4b392182855230703f0ca10",
