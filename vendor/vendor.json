@@ -37,6 +37,18 @@
 			"revisionTime": "2018-09-28T23:00:36Z"
 		},
 		{
+			"checksumSHA1": "qhkwhuKIYzEZmHMtGsegm0v7KKE=",
+			"path": "github.com/keybase/go-framed-msgpack-rpc/rpc",
+			"revision": "26e5d1ace9c88d9794d620b1201b3f43939ae617",
+			"revisionTime": "2020-03-11T21:12:34Z"
+		},
+		{
+			"checksumSHA1": "+o+A5GsJ1DQM/xc7GKIEvJQkE6g=",
+			"path": "github.com/keybase/go-jsonw",
+			"revision": "df90f282c233fcb771aa004d3b8a30caadbc6fb3",
+			"revisionTime": "2020-03-25T17:36:37Z"
+		},
+		{
 			"path": "github.com/keybase/go-logging",
 			"revision": "f3c7c3c1605e29ebcce430bb1e0d048faf4081ce",
 			"revisionTime": "2016-03-23T15:35:38-07:00"
@@ -115,6 +127,12 @@
 			"path": "golang.org/x/crypto/salsa20/salsa",
 			"revision": "7b428712abe956d0e9e1e9a01e163fb6c7171438",
 			"revisionTime": "2016-04-19T13:20:54-07:00"
+		},
+		{
+			"checksumSHA1": "LskOjjrTEyKVvuww7ZnM1/24t3A=",
+			"path": "golang.org/x/net/context",
+			"revision": "12bc252f5db8613b006bfd531330e1f256da625c",
+			"revisionTime": "2021-09-15T18:46:13Z"
 		},
 		{
 			"path": "golang.org/x/sys/windows",
