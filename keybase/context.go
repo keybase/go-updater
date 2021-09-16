@@ -16,12 +16,11 @@ import (
 
 // validCodeSigningKIDs are the list of valid code signing IDs for saltpack verify
 var validCodeSigningKIDs = map[string]bool{
-	"9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1": true, // keybot (device)
-	"d3458bbecdfc0d0ae39fec05722c6e3e897c169223835977a8aa208dfcd902d3": true, // max (device, home)
-	"65ae849d1949a8b0021b165b0edaf722e2a7a9036e07817e056e2d721bddcc0e": true, // max (paper key, cry glass)
-	"3a5a45c545ef4f661b8b7573711aaecee3fd5717053484a3a3e725cd68abaa5a": true, // chris (device, ccpro)
-	"03d86864fb20e310590042ad3d5492c3f5d06728620175b03c717c211bfaccc2": true, // chris (paper key, clay harbor)
-	"deaa8ae7d06ea9aa49cc678ec49f2b1e1dddb63683e384db539a8649c47925f9": true, // winbot (device, Build)
+	"01209092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a10a": true, // keybot (device)
+	"012045891a45f03cec001196ad05207f3f80045b2b9f0ca38288a85f8120ac74db960a": true, // max (tiber - 2019-01)
+	"012065ae849d1949a8b0021b165b0edaf722e2a7a9036e07817e056e2d721bddcc0e0a": true, // max (cry glass)
+	"01202a70fa31596ae2afabbbea827c7d1efb205c4b02b2b98b8f8c75915be433ccb50a": true, // mike (demise sort)
+	"0120f2f55c76151b3eaf91d20dfb673d8591d8b49fd5cb210a10f6e0dd8724bf34f30a": true, // mike (lisa-5k-redux)
 }
 
 // Log is the logging interface for the keybase package

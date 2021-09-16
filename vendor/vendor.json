@@ -19,6 +19,12 @@
 			"revisionTime": "2015-05-28T07:23:15-07:00"
 		},
 		{
+			"checksumSHA1": "vQHVHazF7g7jqMSLlty9EhPof+I=",
+			"path": "github.com/keybase/client/go/protocol/keybase1",
+			"revision": "8bfbf062d2a99b58a4b392182855230703f0ca10",
+			"revisionTime": "2021-09-16T15:33:54Z"
+		},
+		{
 			"checksumSHA1": "AzpolYksuMdnqRhFpzPm1bEztJ0=",
 			"path": "github.com/keybase/go-codec/codec",
 			"revision": "1643975621235e11516b5722dd9475e342465adf",
