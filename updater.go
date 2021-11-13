@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/keybase/go-updater/util"
@@ -115,10 +116,7 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 	u.log.Infof("Got update with version: %s", update.Version)
 
-	// Linux updates don't have assets so it's ok to prompt for update above before
-	// we check for nil asset.
-	if update.Asset == nil || update.Asset.URL == "" {
-		u.log.Info("No update asset to apply")
+	if update.missingAsset() {
 		return update, nil
 	}
 
@@ -182,6 +180,72 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 	}
 
 	return update, nil
+}
+
+func (u *Updater) ApplyDownloaded(ctx Context) (bool, error) {
+	options := ctx.UpdateOptions()
+
+	// 1. check with the api server again for the latest update to be sure that a
+	// new update has not come out since our last call to CheckAndDownload
+	u.log.Infof("Attempting to apply previously downloaded update")
+	update, err := u.checkForUpdate(ctx, options)
+	if err != nil {
+		return false, findErr(err)
+	}
+
+	// Only report apply success/failure
+	applied, err := u.applyDownloaded(ctx, update, options)
+	defer report(ctx, err, update, options)
+	if err != nil {
+		return false, err
+	}
+	return applied, nil
+
+}
+
+// ApplyDownloaded will look for an previously downloaded update and attempt to apply it without prompting.
+// CheckAndDownload must be called first so that we have a download asset available to apply.
+func (u *Updater) applyDownloaded(ctx Context, update *Update, options UpdateOptions) (applied bool, err error) {
+	if update == nil || !update.NeedUpdate {
+		return false, fmt.Errorf("No previously downloaded update to apply since client is update to date")
+	}
+	u.log.Infof("Got update with version: %s", update.Version)
+
+	if update.missingAsset() {
+		return false, fmt.Errorf("Update contained no asset to apply. Update version: %s", update.Version)
+	}
+
+	// 2. check the disk via FindDownloadedAsset. Compare our API result to this
+	// result. If the downloaded update is stale, clear it and start over.
+	downloadedAssetPath, err := u.FindDownloadedAsset(update.Asset.Name)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		if err := u.CleanupPreviousUpdates(); err != nil {
+			u.log.Infof("Error cleaning up previous downloads: %v", err)
+		}
+	}()
+	if downloadedAssetPath == "" {
+		return false, fmt.Errorf("No downloaded asset found for version: %s", update.Version)
+	}
+	update.Asset.LocalPath = downloadedAssetPath
+
+	// 3. otherwise use the update on disk and apply it.
+	if err = util.CheckDigest(update.Asset.Digest, downloadedAssetPath, u.log); err != nil {
+		return false, verifyErr(err)
+	}
+	u.log.Infof("Verify asset: %s", downloadedAssetPath)
+	if err := ctx.Verify(*update); err != nil {
+		return false, verifyErr(err)
+	}
+
+	tmpDir := os.TempDir()
+	if err := u.apply(ctx, *update, options, tmpDir); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (u *Updater) apply(ctx Context, update Update, options UpdateOptions, tmpDir string) error {
@@ -261,6 +325,59 @@ func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
 		return false, err
 	}
 	return update.NeedUpdate, nil
+}
+
+func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateWasDownloaded bool, err error) {
+	options := ctx.UpdateOptions()
+	update, err := u.checkForUpdate(ctx, options)
+	if err != nil {
+		return false, false, err
+	}
+
+	if !update.NeedUpdate || update.missingAsset() {
+		return false, false, nil
+	}
+
+	var tmpDir string
+	defer func() {
+		// If anything in this process errors cleanup the downloaded asset
+		if err != nil {
+			if err := u.CleanupPreviousUpdates(); err != nil {
+				u.log.Infof("Error cleaning up previous downloads: %v", err)
+			}
+		}
+		if tmpDir != "" {
+			u.Cleanup(tmpDir)
+		}
+	}()
+	var digestChecked bool
+	downloadedAssetPath, err := u.FindDownloadedAsset(update.Asset.Name)
+	if downloadedAssetPath == "" || err != nil {
+		u.log.Infof("Could not find existing download asset for version: %s. Downloading new asset.", update.Version)
+		tmpDir = u.tempDir()
+		// This will set update.Asset.LocalPath
+		if err := u.downloadAsset(update.Asset, tmpDir, options); err != nil {
+			return false, false, downloadErr(err)
+		}
+		updateWasDownloaded = true
+		digestChecked = true
+		downloadedAssetPath = update.Asset.LocalPath
+	}
+	// Verify depends on LocalPath being set to the downloaded asset
+	update.Asset.LocalPath = downloadedAssetPath
+
+	u.log.Infof("Verify asset: %s", downloadedAssetPath)
+	if err := ctx.Verify(*update); err != nil {
+		return false, false, verifyErr(err)
+	}
+
+	if !digestChecked {
+		if err = util.CheckDigest(update.Asset.Digest, downloadedAssetPath, u.log); err != nil {
+			return false, false, verifyErr(err)
+		}
+	}
+
+	return true, updateWasDownloaded, nil
 }
 
 // promptForUpdateAction prompts the user for permission to apply an update
@@ -401,4 +518,53 @@ func (u *Updater) Cleanup(tmpDir string) {
 			u.log.Warningf("Error removing temporary directory %q: %s", tmpDir, err)
 		}
 	}
+}
+
+// Inspect previously downloaded updates to avoid redownloading
+func (u *Updater) FindDownloadedAsset(assetName string) (matchingAssetPath string, err error) {
+	if assetName == "" {
+		return "", fmt.Errorf("No asset name provided")
+	}
+	parent := os.TempDir()
+	if parent == "" || parent == "." {
+		return matchingAssetPath, fmt.Errorf("temp directory is %v", parent)
+	}
+
+	files, err := ioutil.ReadDir(parent)
+	if err != nil {
+		return matchingAssetPath, fmt.Errorf("listing parent directory: %v", err)
+	}
+
+	for _, fi := range files {
+		if !fi.IsDir() || !tempDirRE.MatchString(fi.Name()) {
+			continue
+		}
+
+		keybaseTempDirAbs := filepath.Join(parent, fi.Name())
+		walkErr := filepath.Walk(keybaseTempDirAbs, func(fullPath string, info os.FileInfo, inErr error) (err error) {
+			if inErr != nil {
+				return inErr
+			}
+
+			if info.IsDir() {
+				if fullPath == keybaseTempDirAbs {
+					return nil
+				}
+				return filepath.SkipDir
+			}
+
+			path := strings.TrimPrefix(fullPath, keybaseTempDirAbs+string(filepath.Separator))
+			if path == assetName {
+				matchingAssetPath = fullPath
+				return filepath.SkipDir
+			}
+
+			return nil
+		})
+
+		if walkErr != nil {
+			return "", walkErr
+		}
+	}
+	return matchingAssetPath, nil
 }

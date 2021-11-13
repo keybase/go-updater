@@ -29,6 +29,25 @@ var testZipPath string
 
 var testAppStatePath = filepath.Join(os.TempDir(), "KBTest_app_state.json")
 
+const (
+	// shasum -a 256 test/test.zip
+	validDigest = "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84"
+	// keybase sign -d -i test.zip
+	validSignature   = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+	invalidDigest    = "74970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84"
+	invalidSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. QXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+)
+
+func makeKeybaseUpdateTempDir(t *testing.T, updater *Updater, testAsset *Asset) (tmpDir string) {
+	// This creates a real KebyaseUpdater.[ID] directory in os.TempDir
+	// Then we download the test zip to this directory from testServer
+	tmpDir, err := util.MakeTempDir("KeybaseUpdater.", 0700)
+	require.NoError(t, err)
+	err = updater.downloadAsset(testAsset, tmpDir, UpdateOptions{})
+	require.NoError(t, err)
+	return tmpDir
+}
+
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
 	testZipPath = filepath.Join(filepath.Dir(filename), "test/test.zip")
@@ -159,8 +178,8 @@ func newTestUpdate(uri string, needUpdate bool) *Update {
 		update.Asset = &Asset{
 			Name:      "test.zip",
 			URL:       uri,
-			Digest:    "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84",                                                                                                                                                                                                                       // shasum -a 256 test/test.zip
-			Signature: `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`, // keybase sign -d -i test.zip
+			Digest:    validDigest,
+			Signature: validSignature,
 		}
 	}
 	return update
@@ -473,6 +492,264 @@ func TestUpdaterNotNeeded(t *testing.T) {
 
 	assert.False(t, ctx.successReported)
 	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+}
+
+func TestUpdaterCheckAndUpdate(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	testUpdate := newTestUpdate(testServer.URL, false)
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate, &testConfig{})
+	assert.NoError(t, err)
+	defer func() {
+		err = upr.CleanupPreviousUpdates()
+		assert.NoError(t, err)
+	}()
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionSnooze, AutoUpdate: true})
+
+	// 1.No update from the server
+	// Need update = false
+	// FindDownloadedAsset = false
+	// return updateAvailable = false, updateWasDownloaded = false
+	updateAvailable, updateWasDownloaded, err := upr.CheckAndDownload(ctx)
+	assert.NoError(t, err)
+	assert.False(t, updateAvailable)
+	assert.False(t, updateWasDownloaded)
+	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	// 2. Download asset from URL
+	// Need update = true
+	testUpdate.NeedUpdate = true
+	updateAvailable, updateWasDownloaded, err = upr.CheckAndDownload(ctx)
+	assert.NoError(t, err)
+	assert.True(t, updateAvailable)
+	assert.True(t, updateWasDownloaded)
+	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	// 3.Find existing downloaded asset
+	// Need update = true
+	// FindDownloadedAsset = true
+	// return updateAvailable = true, updateWasDownloaded = true
+	tmpDir := makeKeybaseUpdateTempDir(t, upr, testUpdate.Asset)
+	updateAvailable, updateWasDownloaded, err = upr.CheckAndDownload(ctx)
+	assert.NoError(t, err)
+	assert.True(t, updateAvailable)
+	assert.False(t, updateWasDownloaded)
+	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	// Run it again to ensure we don't accidentally download again
+	updateAvailable, updateWasDownloaded, err = upr.CheckAndDownload(ctx)
+	assert.NoError(t, err)
+	assert.True(t, updateAvailable)
+	assert.False(t, updateWasDownloaded)
+	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	util.RemoveFileAtPath(tmpDir)
+
+	// 4.Verify fails b.c. bit flip
+	// Need update = true
+	// FindDownloadedAsset = true
+	// return updateAvailable = false, updateWasDownloaded = false
+	tmpDir = makeKeybaseUpdateTempDir(t, upr, testUpdate.Asset)
+	testUpdate.Asset.Signature = invalidSignature
+
+	updateAvailable, updateWasDownloaded, err = upr.CheckAndDownload(ctx)
+	assert.EqualError(t, err, "Update Error (verify): Error verifying signature: failed to read header bytes")
+	assert.False(t, updateAvailable)
+	assert.False(t, updateWasDownloaded)
+	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	util.RemoveFileAtPath(tmpDir)
+	testUpdate.Asset.Signature = validSignature
+
+	// 5.Digest fails b.c. bit flip
+	// Need update = true
+	// FindDownloadedAsset = true
+	// return updateAvailable = false, updateWasDownloaded = false
+	tmpDir = makeKeybaseUpdateTempDir(t, upr, testUpdate.Asset)
+	testUpdate.Asset.Digest = invalidDigest
+
+	updateAvailable, updateWasDownloaded, err = upr.CheckAndDownload(ctx)
+	assert.EqualError(t, err, fmt.Sprintf("Update Error (verify): Invalid digest: 54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84 != 74970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84 (%s)", filepath.Join(tmpDir, testUpdate.Asset.Name)))
+	assert.False(t, updateAvailable)
+	assert.False(t, updateWasDownloaded)
+	assert.False(t, ctx.successReported)
+	assert.Equal(t, "deadbeef", upr.config.GetInstallID())
+
+	util.RemoveFileAtPath(tmpDir)
+	testUpdate.Asset.Digest = validDigest
+}
+
+func TestApplyDownloaded(t *testing.T) {
+	testServer := testServerForUpdateFile(t, testZipPath)
+	defer testServer.Close()
+
+	testUpdate := newTestUpdate(testServer.URL, false)
+	testAsset := *testUpdate.Asset
+	upr, err := newTestUpdaterWithServer(t, testServer, testUpdate, &testConfig{})
+	assert.NoError(t, err)
+	defer func() {
+		err = upr.CleanupPreviousUpdates()
+		assert.NoError(t, err)
+	}()
+	ctx := newTestContext(newDefaultTestUpdateOptions(), upr.config, &UpdatePromptResponse{Action: UpdateActionSnooze, AutoUpdate: true})
+	resetCtxErr := func() {
+		ctx.promptErr = nil
+		ctx.verifyErr = nil
+		ctx.beforeApplyErr = nil
+		ctx.afterApplyErr = nil
+		ctx.errReported = nil
+	}
+
+	// 1. NeedUpdate = false -> return nil
+	applied, err := upr.ApplyDownloaded(ctx)
+	assert.EqualError(t, err, "No previously downloaded update to apply since client is update to date")
+	assert.False(t, applied)
+	assert.NotNil(t, ctx.errReported)
+	assert.Nil(t, ctx.updateReported)
+	assert.False(t, ctx.successReported)
+
+	resetCtxErr()
+
+	// 2. Update missing asset
+	testUpdate.NeedUpdate = true
+	testUpdate.Asset = nil
+
+	applied, err = upr.ApplyDownloaded(ctx)
+	assert.EqualError(t, err, "Update contained no asset to apply. Update version: 1.0.1")
+	assert.False(t, applied)
+	assert.NotNil(t, ctx.errReported)
+	assert.Nil(t, ctx.updateReported)
+	assert.False(t, ctx.successReported)
+
+	resetCtxErr()
+	testUpdate.Asset = &testAsset
+	tempURL := testUpdate.Asset.URL
+	testUpdate.Asset.URL = ""
+
+	applied, err = upr.ApplyDownloaded(ctx)
+	assert.EqualError(t, err, "Update contained no asset to apply. Update version: 1.0.1")
+	assert.False(t, applied)
+	assert.NotNil(t, ctx.errReported)
+	assert.Nil(t, ctx.updateReported)
+	assert.False(t, ctx.successReported)
+
+	resetCtxErr()
+	testUpdate.Asset.URL = tempURL
+
+	// 3. FindDownloadedAsset = false -> return nil
+	applied, err = upr.ApplyDownloaded(ctx)
+	assert.EqualError(t, err, "No downloaded asset found for version: 1.0.1")
+	assert.False(t, applied)
+	assert.NotNil(t, ctx.errReported)
+	assert.Nil(t, ctx.updateReported)
+	assert.False(t, ctx.successReported)
+
+	resetCtxErr()
+
+	// 4. FindDownloadedAsset = true -> digest fails
+	tmpDir := makeKeybaseUpdateTempDir(t, upr, testUpdate.Asset)
+	testUpdate.Asset.Digest = invalidDigest
+
+	applied, err = upr.ApplyDownloaded(ctx)
+	assert.EqualError(t, err, fmt.Sprintf("Update Error (verify): Invalid digest: 54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84 != 74970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84 (%s)", filepath.Join(tmpDir, testUpdate.Asset.Name)))
+	assert.False(t, applied)
+	assert.NotNil(t, ctx.errReported)
+	assert.Nil(t, ctx.updateReported)
+	assert.False(t, ctx.successReported)
+
+	resetCtxErr()
+	testUpdate.Asset.Digest = validDigest
+	util.RemoveFileAtPath(tmpDir)
+
+	// 5. FindDownloadedAsset = true -> verify fails
+	tmpDir = makeKeybaseUpdateTempDir(t, upr, testUpdate.Asset)
+	testUpdate.Asset.Signature = invalidSignature
+
+	applied, err = upr.ApplyDownloaded(ctx)
+	assert.EqualError(t, err, "Update Error (verify): Error verifying signature: failed to read header bytes")
+	assert.False(t, applied)
+	assert.NotNil(t, ctx.errReported)
+	assert.Nil(t, ctx.updateReported)
+	assert.False(t, ctx.successReported)
+
+	resetCtxErr()
+	testUpdate.Asset.Signature = validSignature
+	util.RemoveFileAtPath(tmpDir)
+
+	// 6. FindDownloadedAsset = true -> no error success
+	tmpDir = makeKeybaseUpdateTempDir(t, upr, testUpdate.Asset)
+
+	applied, err = upr.ApplyDownloaded(ctx)
+	assert.NoError(t, err)
+	assert.True(t, applied)
+	assert.Nil(t, ctx.errReported)
+	assert.NotNil(t, ctx.updateReported)
+	assert.True(t, ctx.successReported)
+
+	resetCtxErr()
+	util.RemoveFileAtPath(tmpDir)
+}
+
+func TestFindDownloadedAsset(t *testing.T) {
+	upr, err := newTestUpdater(t)
+	assert.NoError(t, err)
+	defer func() {
+		err = upr.CleanupPreviousUpdates()
+		assert.NoError(t, err)
+	}()
+
+	// 1. empty asset
+	matchingAssetPath, err := upr.FindDownloadedAsset("")
+	assert.EqualError(t, err, "No asset name provided")
+	assert.Equal(t, "", matchingAssetPath)
+
+	// 2. assset given -> did not create KeybaseUpdate.
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, "", matchingAssetPath)
+
+	// 3. asset given -> created KeybaseUpdate. -> directory empty
+	tmpDir, err := util.MakeTempDir("KeybaseUpdater.", 0700)
+	assert.NoError(t, err)
+	require.NoError(t, err)
+
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, "", matchingAssetPath)
+
+	util.RemoveFileAtPath(tmpDir)
+
+	// 4. asset given -> created KeybaseUpdate. -> file exists but no match
+	tmpDir, err = util.MakeTempDir("KeybaseUpdater.", 0700)
+	assert.NoError(t, err)
+	tmpFile := filepath.Join(tmpDir, "nottemp")
+	err = ioutil.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
+	require.NoError(t, err)
+
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, "", matchingAssetPath)
+
+	util.RemoveFileAtPath(tmpDir)
+
+	// 5. asset given -> created KeybaseUpdate. -> file exixst and matches
+	tmpDir, err = util.MakeTempDir("KeybaseUpdater.", 0700)
+	tmpFile = filepath.Join(tmpDir, "temp")
+	err = ioutil.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
+	require.NoError(t, err)
+
+	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
+	assert.NoError(t, err)
+	assert.Equal(t, tmpFile, matchingAssetPath)
+
+	util.RemoveFileAtPath(tmpDir)
+
 }
 
 func TestUpdaterGuiBusy(t *testing.T) {
