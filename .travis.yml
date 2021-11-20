@@ -1,7 +1,5 @@
 language: go
 go:
-  - 1.15.x
-  - 1.16.x
   - 1.17.x
 os:
   - linux
@@ -12,6 +10,7 @@ before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/modocache/gover
   - go get github.com/keybase/go-updater/test
+  - export GODEBUG=x509ignoreCN=0
 script:
   - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.43.0
   - golangci-lint run

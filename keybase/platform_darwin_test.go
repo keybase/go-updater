@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -129,5 +130,6 @@ func TestStartReportError(t *testing.T) {
 	defer cleanupProc(appPath)
 
 	err := ctx.start(0, 0)
-	assert.EqualError(t, err, "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs")
+	assert.True(t, strings.Contains(err.Error(), "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs"))
+
 }

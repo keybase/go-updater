@@ -77,7 +77,7 @@ func TestContextVerifyNoValidIDs(t *testing.T) {
 	ctx := testContext(t)
 	err := ctx.Verify(testContextUpdate(testMessagePath, testSignatureInvalidSigner))
 	require.Error(t, err)
-	assert.Equal(t, "error verifying signature: unknown signer KID: ad6ec4c0132ca7627b3c4d72c650323abec004da51dc086fd0ec2b4f82e6e486", err.Error())
+	assert.Equal(t, "error verifying signature: unknown signer KID: 0120ad6ec4c0132ca7627b3c4d72c650323abec004da51dc086fd0ec2b4f82e6e4860a", err.Error())
 }
 
 func TestContextVerifyBadSignature(t *testing.T) {
