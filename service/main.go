@@ -29,8 +29,9 @@ func main() {
 	if len(args) > 0 {
 		f.command = args[0]
 	}
-
-	run(f)
+	if err := run(f); err != nil {
+		os.Exit(1)
+	}
 }
 
 func loadFlags() (flags, []string) {
@@ -51,10 +52,10 @@ func defaultAppName() string {
 	return "Keybase"
 }
 
-func run(f flags) {
+func run(f flags) error {
 	if f.version {
 		fmt.Printf("%s\n", updater.Version)
-		return
+		return nil
 	}
 	ulog := logger{}
 
@@ -89,7 +90,7 @@ func run(f flags) {
 		needUpdate, err := updater.NeedUpdate(ctx)
 		if err != nil {
 			ulog.Error(err)
-			os.Exit(1)
+			return err
 		}
 		// Keybase service expects to parse this output as a boolean.
 		// Do not change unless changing in both locations
@@ -98,14 +99,14 @@ func run(f flags) {
 	case "check":
 		if err := updateCheckFromFlags(f, ulog); err != nil {
 			ulog.Error(err)
-			os.Exit(1)
+			return err
 		}
 	case "download-latest":
 		ctx, updater := keybase.NewUpdaterContext(f.appName, f.pathToKeybase, ulog, keybase.CheckPassive)
 		updateAvailable, _, err := updater.CheckAndDownload(ctx)
 		if err != nil {
 			ulog.Error(err)
-			os.Exit(1)
+			return err
 		}
 		// Keybase service expects to parse this output as a boolean.
 		// Do not change unless changing in both locations
@@ -116,7 +117,7 @@ func run(f flags) {
 		applied, err := updater.ApplyDownloaded(ctx)
 		if err != nil {
 			ulog.Error(err)
-			os.Exit(1)
+			return err
 		}
 		fmt.Println(applied)
 	case "service", "":
@@ -133,6 +134,7 @@ func run(f flags) {
 	default:
 		ulog.Errorf("Unknown command: %s", f.command)
 	}
+	return nil
 }
 
 func serviceFromFlags(f flags, ulog logger) *service {

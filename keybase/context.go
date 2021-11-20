@@ -11,7 +11,6 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/saltpack"
-	//"github.com/keybase/go-updater/sources"
 )
 
 // validCodeSigningKIDs are the list of valid code signing IDs for saltpack verify

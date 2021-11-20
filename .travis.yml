@@ -23,7 +23,7 @@ script:
   - go test -v -coverprofile=service.coverprofile ./service
   - go test -v -coverprofile=sources.coverprofile ./sources
   - go test -v -coverprofile=util.coverprofile ./util
-  - go test -v -coverprofile=watchdog.coverprofile ./watchdog
+  - go test -v -coverprofile=watchdog.coverprofile -test.paniconexit0 ./watchdog
   - go test -v -coverprofile=main.coverprofile
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci

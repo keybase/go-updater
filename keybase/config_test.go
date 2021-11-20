@@ -86,7 +86,9 @@ func TestConfig(t *testing.T) {
 	// Load new config and make sure it has the same values
 	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, testLog, true)
 	assert.NoError(t, err)
-	assert.NotEqual(t, cfg2.path, "", "No config path")
+	path, err = cfg2.path()
+	assert.NoError(t, err)
+	assert.NotEqual(t, path, "", "No config path")
 
 	expectedOptions2 := expectedOptions
 	expectedOptions2.IgnoreSnooze = true
