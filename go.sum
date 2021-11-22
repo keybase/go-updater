@@ -453,8 +453,8 @@ github.com/kevinburke/ssh_config v0.0.0-20180830205328-81db2a75821e/go.mod h1:CT
 github.com/keybase/backoff v1.0.1-0.20160517061000-726b63b835ec h1:D6qL2WCnAuxucGbmL+mDW8IKRK1pex+R1fw5rKa9nXc=
 github.com/keybase/backoff v1.0.1-0.20160517061000-726b63b835ec/go.mod h1:jeBKj+20GIDry3doFsAMYH9n7Y3l7ajE3xJrKvVB23s=
 github.com/keybase/cli v1.2.1-0.20191217150554-9323fd7ddfab/go.mod h1:SMnEAn4urqBubAINW3G9fvX07rrqk1CxAIs6SrTaBnk=
-github.com/keybase/client/go v0.0.0-20211119210509-040230869410 h1:keHmKmWISJ2xDSa8ckobrzJIYnPUPmLJXxs2lFdKJVk=
-github.com/keybase/client/go v0.0.0-20211119210509-040230869410/go.mod h1:ZzS18lD03E/4rJpkSgL1JyESqrgnzmdz9yr1XbHKofQ=
+github.com/keybase/client/go v0.0.0-20211122170721-a66861b2e521 h1:FhqkjvUqYlLsewEnpbEcu339Sfwp4A5ii+GuYVbd4t0=
+github.com/keybase/client/go v0.0.0-20211122170721-a66861b2e521/go.mod h1:ZzS18lD03E/4rJpkSgL1JyESqrgnzmdz9yr1XbHKofQ=
 github.com/keybase/clockwork v0.1.1-0.20161209210251-976f45f4a979 h1:WABVkjKJ3UjbSTgGayemkXfUyZrDwFShivsoIikbM3c=
 github.com/keybase/clockwork v0.1.1-0.20161209210251-976f45f4a979/go.mod h1:2j97e0ZjlWYV7dDdV8BjKwMUmBbXu6zZF8FAa9gXRss=
 github.com/keybase/colly v1.1.1-0.20190207010505-9a56fbe6c0e6/go.mod h1:3snKIsJiqivo/Dk6EoBi8+s3a6fAUIrXSZnLm0UuAls=

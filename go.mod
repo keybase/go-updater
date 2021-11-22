@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/kardianos/osext v0.0.0-20150528142315-6e7f84366347
-	github.com/keybase/client/go v0.0.0-20211119210509-040230869410
+	github.com/keybase/client/go v0.0.0-20211122170721-a66861b2e521
 	github.com/keybase/go-logging v0.0.0-20211118164508-35a15a9fa71a
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/keybase/saltpack v0.0.0-20211118165207-4039c5df46c0
