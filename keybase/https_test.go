@@ -14,7 +14,7 @@ import (
 )
 
 func TestHTTPClient(t *testing.T) {
-	req, err := http.NewRequest("GET", "https://api.keybase.io/_/api/1.0/user/lookup.json?github=gabriel", nil)
+	req, err := http.NewRequest("GET", "https://api-0.core.keybaseapi.com/_/api/1.0/user/lookup.json?github=gabriel", nil)
 	require.NoError(t, err)
 	client, err := httpClient(time.Minute)
 	require.NoError(t, err)
@@ -69,11 +69,11 @@ tUa2UA5ETydhoj3BcgHJoiP7m+GZABeyaFwtuf4fD2Dm8FtG1owFubUkGo8Bulv4
 OtWvrDGSUA==
 -----END CERTIFICATE-----`
 
-	req, err := http.NewRequest("GET", "https://api.keybase.io/_/api/1.0/user/lookup.json?github=gabriel", nil)
+	req, err := http.NewRequest("GET", "https://api-0.core.keybaseapi.com/_/api/1.0/user/lookup.json?github=gabriel", nil)
 	require.NoError(t, err)
 	client, err := httpClientWithCert(otherCert, time.Minute)
 	require.NoError(t, err)
 	resp, err := client.Do(req)
 	defer util.DiscardAndCloseBodyIgnoreError(resp)
-	require.EqualError(t, err, "Get https://api.keybase.io/_/api/1.0/user/lookup.json?github=gabriel: x509: certificate signed by unknown authority")
+	require.EqualError(t, err, `Get "https://api-0.core.keybaseapi.com/_/api/1.0/user/lookup.json?github=gabriel": x509: certificate signed by unknown authority`)
 }
