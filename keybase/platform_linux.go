@@ -92,7 +92,7 @@ func (c context) BeforeUpdatePrompt(update updater.Update, options updater.Updat
 	notifyArgs := []string{
 		"-i", "/usr/share/icons/hicolor/128x128/apps/keybase.png",
 		fmt.Sprintf("New Keybase version: %s", update.Version),
-		fmt.Sprintf("Please update Keybase using your system package manager."),
+		"Please update Keybase using your system package manager.",
 	}
 	result, err := command.Exec("notify-send", notifyArgs, 5*time.Second, c.log)
 	if err != nil {

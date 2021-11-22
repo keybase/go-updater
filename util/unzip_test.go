@@ -5,7 +5,6 @@ package util
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -14,17 +13,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testZipPath is a valid zip file
-var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+var testZipPath, testSymZipPath, testCorruptedZipPath, testInvalidZipPath string
 
-// testSymZipPath is a valid zip file with a symbolic link
-var testSymZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test-with-sym.zip")
-
-// testCorruptedZipPath is a corrupted zip file (flipped a bit)
-var testCorruptedZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test-corrupted2.zip")
-
-// testInvalidZipPath is not a valid zip file
-var testInvalidZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test-invalid.zip")
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	// testZipPath is a valid zip file
+	testZipPath = filepath.Join(filepath.Dir(filename), "../test/test.zip")
+	// testSymZipPath is a valid zip file with a symbolic link
+	testSymZipPath = filepath.Join(filepath.Dir(filename), "../test/test-with-sym.zip")
+	// testCorruptedZipPath is a corrupted zip file (flipped a bit)
+	testCorruptedZipPath = filepath.Join(filepath.Dir(filename), "../test/test-corrupted2.zip")
+	// testInvalidZipPath is not a valid zip file
+	testInvalidZipPath = filepath.Join(filepath.Dir(filename), "../test/test-invalid.zip")
+}
 
 func assertFileExists(t *testing.T, path string) {
 	t.Logf("Checking %s", path)

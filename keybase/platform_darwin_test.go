@@ -1,6 +1,7 @@
 // Copyright 2015 Keybase, Inc. All rights reserved. Use of
 // this source code is governed by the included BSD license.
 
+//go:build darwin
 // +build darwin
 
 package keybase
@@ -8,6 +9,8 @@ package keybase
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +36,8 @@ type testConfigDarwin struct {
 }
 
 func (c testConfigDarwin) destinationPath() string {
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "../test/Test.app")
 }
 
 func TestUpdatePrompt(t *testing.T) {
@@ -50,7 +54,8 @@ func TestUpdatePrompt(t *testing.T) {
 }
 
 func TestOpenDarwin(t *testing.T) {
-	appPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
+	_, filename, _, _ := runtime.Caller(0)
+	appPath := filepath.Join(filepath.Dir(filename), "../test/Test.app")
 	matcher := process.NewMatcher(appPath, process.PathPrefix, testLog)
 	defer process.TerminateAll(matcher, 200*time.Millisecond, testLog)
 	err := OpenAppDarwin(appPath, testLog)
@@ -58,8 +63,9 @@ func TestOpenDarwin(t *testing.T) {
 }
 
 func TestOpenDarwinError(t *testing.T) {
-	binErr := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/err.sh")
-	appPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app")
+	_, filename, _, _ := runtime.Caller(0)
+	binErr := filepath.Join(filepath.Dir(filename), "../test/err.sh")
+	appPath := filepath.Join(filepath.Dir(filename), "../test/Test.app")
 	err := openAppDarwin(binErr, appPath, time.Millisecond, testLog)
 	assert.Error(t, err)
 }
@@ -88,7 +94,8 @@ func TestApplyAsset(t *testing.T) {
 	defer util.RemoveFileAtPath(tmpDir)
 	require.NoError(t, err)
 
-	zipPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/Test.app.zip")
+	_, filename, _, _ := runtime.Caller(0)
+	zipPath := filepath.Join(filepath.Dir(filename), "../test/Test.app.zip")
 	update := updater.Update{
 		Asset: &updater.Asset{
 			LocalPath: zipPath,
@@ -123,5 +130,6 @@ func TestStartReportError(t *testing.T) {
 	defer cleanupProc(appPath)
 
 	err := ctx.start(0, 0)
-	assert.EqualError(t, err, "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs")
+	assert.True(t, strings.Contains(err.Error(), "There were multiple errors: No process found for Test.app/Contents/SharedSupport/bin/keybase; No process found for Test.app/Contents/SharedSupport/bin/kbfs"))
+
 }

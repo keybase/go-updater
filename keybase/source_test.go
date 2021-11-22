@@ -95,7 +95,7 @@ func TestUpdateSourceTimeout(t *testing.T) {
 	updateSource := newUpdateSource(cfg, server.URL, testLog)
 	update, err := updateSource.findUpdate(testOptions, 2*time.Millisecond)
 	require.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "net/http: request canceled"))
+	assert.True(t, strings.Contains(err.Error(), "context deadline exceeded"), err.Error())
 	assert.Nil(t, update)
 }
 

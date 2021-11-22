@@ -11,7 +11,6 @@ import (
 	"github.com/keybase/go-updater"
 	"github.com/keybase/go-updater/command"
 	"github.com/keybase/go-updater/saltpack"
-	//"github.com/keybase/go-updater/sources"
 )
 
 // validCodeSigningKIDs are the list of valid code signing IDs for saltpack verify
@@ -53,10 +52,10 @@ type endpoints struct {
 }
 
 var defaultEndpoints = endpoints{
-	update:  "https://api.keybase.io/_/api/1.0/pkg/update.json",
-	action:  "https://api.keybase.io/_/api/1.0/pkg/act.json",
-	success: "https://api.keybase.io/_/api/1.0/pkg/success.json",
-	err:     "https://api.keybase.io/_/api/1.0/pkg/error.json",
+	update:  "https://api-0.core.keybaseapi.com/_/api/1.0/pkg/update.json",
+	action:  "https://api-0.core.keybaseapi.com/_/api/1.0/pkg/act.json",
+	success: "https://api-0.core.keybaseapi.com/_/api/1.0/pkg/success.json",
+	err:     "https://api-0.core.keybaseapi.com/_/api/1.0/pkg/error.json",
 }
 
 func newContext(cfg Config, log Log) *context {

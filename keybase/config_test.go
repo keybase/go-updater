@@ -86,7 +86,9 @@ func TestConfig(t *testing.T) {
 	// Load new config and make sure it has the same values
 	cfg2, err := newConfig(cfg.appName, cfg.pathToKeybase, testLog, true)
 	assert.NoError(t, err)
-	assert.NotEqual(t, cfg2.path, "", "No config path")
+	path, err = cfg2.path()
+	assert.NoError(t, err)
+	assert.NotEqual(t, path, "", "No config path")
 
 	expectedOptions2 := expectedOptions
 	expectedOptions2.IgnoreSnooze = true
@@ -169,7 +171,8 @@ func TestConfigBadType(t *testing.T) {
 }
 
 func TestKeybaseVersionInvalid(t *testing.T) {
-	testPathToKeybase := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/err.sh")
+	_, filename, _, _ := runtime.Caller(0)
+	testPathToKeybase := filepath.Join(filepath.Dir(filename), "../test/err.sh")
 	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, testLog, false)
 	version := cfg.keybaseVersion()
 	assert.Equal(t, "", version)

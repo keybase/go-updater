@@ -306,7 +306,7 @@ func ReadFile(path string) ([]byte, error) {
 }
 
 func convertPathForWindows(path string) string {
-	return "/" + strings.Replace(path, `\`, `/`, -1)
+	return "/" + strings.ReplaceAll(path, `\`, `/`)
 }
 
 // URLStringForPath returns an URL as string with file scheme for path.

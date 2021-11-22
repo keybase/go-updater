@@ -4,8 +4,8 @@
 package sources
 
 import (
-	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/keybase/go-logging"
@@ -17,8 +17,9 @@ import (
 var log = &logging.Logger{Module: "test"}
 
 func TestLocalUpdateSource(t *testing.T) {
-	path := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
-	jsonPath := filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/update.json")
+	_, filename, _, _ := runtime.Caller(0)
+	path := filepath.Join(filepath.Dir(filename), "../test/test.zip")
+	jsonPath := filepath.Join(filepath.Dir(filename), "../test/update.json")
 	local := NewLocalUpdateSource(path, jsonPath, log)
 	assert.Equal(t, local.Description(), "Local")
 

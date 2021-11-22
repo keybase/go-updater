@@ -1,6 +1,7 @@
 // Copyright 2015 Keybase, Inc. All rights reserved. Use of
 // this source code is governed by the included BSD license.
 
+//go:build darwin
 // +build darwin
 
 package keybase
@@ -8,6 +9,7 @@ package keybase
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/keybase/go-updater"
@@ -35,10 +37,11 @@ func (c testConfigPausedPrompt) promptProgram() (command.Program, error) {
 }
 
 func (c testConfigPausedPrompt) keybasePath() string {
+	_, filename, _, _ := runtime.Caller(0)
 	if c.inUse {
-		return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-check-in-use-true.sh")
+		return filepath.Join(filepath.Dir(filename), "../test/keybase-check-in-use-true.sh")
 	}
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/keybase-check-in-use-false.sh")
+	return filepath.Join(filepath.Dir(filename), "../test/keybase-check-in-use-false.sh")
 }
 
 func (c testConfigPausedPrompt) updaterOptions() updater.UpdateOptions {

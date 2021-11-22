@@ -4,8 +4,8 @@
 package keybase
 
 import (
-	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/keybase/go-updater"
@@ -21,8 +21,13 @@ const testSignatureKeybot = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
 	Z. END KEYBASE SALTPACK DETACHED SIGNATURE.
 `
 
-var testMessagePath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/message1.txt")
-var testMessage2Path = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/message2.txt")
+var testMessagePath, testMessage2Path string
+
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	testMessagePath = filepath.Join(filepath.Dir(filename), "../test/message1.txt")
+	testMessage2Path = filepath.Join(filepath.Dir(filename), "../test/message2.txt")
+}
 
 // testSignatureInvalidSigner is "This is a test message" signed by gabrielh who
 // is not in valid signing IDs.
@@ -72,7 +77,7 @@ func TestContextVerifyNoValidIDs(t *testing.T) {
 	ctx := testContext(t)
 	err := ctx.Verify(testContextUpdate(testMessagePath, testSignatureInvalidSigner))
 	require.Error(t, err)
-	assert.Equal(t, "Error verifying signature: Unknown signer KID: ad6ec4c0132ca7627b3c4d72c650323abec004da51dc086fd0ec2b4f82e6e486", err.Error())
+	assert.Equal(t, "error verifying signature: unknown signer KID: 0120ad6ec4c0132ca7627b3c4d72c650323abec004da51dc086fd0ec2b4f82e6e4860a", err.Error())
 }
 
 func TestContextVerifyBadSignature(t *testing.T) {

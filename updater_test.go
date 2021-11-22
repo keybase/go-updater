@@ -25,7 +25,7 @@ import (
 
 var testLog = &logging.Logger{Module: "test"}
 
-var testZipPath = filepath.Join(os.Getenv("GOPATH"), "src/github.com/keybase/go-updater/test/test.zip")
+var testZipPath string
 
 var testAppStatePath = filepath.Join(os.TempDir(), "KBTest_app_state.json")
 
@@ -33,9 +33,16 @@ const (
 	// shasum -a 256 test/test.zip
 	validDigest = "54970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84"
 	// keybase sign -d -i test.zip
-	validSignature   = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+	validSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
+kXR7VktZdyH7rvq v5weRa8moXPeKBe e2YLT0PnyHzCrVi RbC1J5uJtYgYyLW eGg4qzsWqkb7hcX
+GTVc0vsEUVwBCly qhPdOL0mE19kfxg A4fMqpNGNTY0jtO iMpjwwuIyLBxkCC jHzMiJFskzluz2S
+otWUI0nTu2vG2Fx Mgeyqm20Ug8j7Bi N. END KEYBASE SALTPACK DETACHED SIGNATURE.`
 	invalidDigest    = "74970995e4d02da631e0634162ef66e2663e0eee7d018e816ac48ed6f7811c84"
-	invalidSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. QXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END KEYBASE SALTPACK DETACHED SIGNATURE.`
+	invalidSignature = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE.
+	QXR7VktZdyH7rvq v5wcIkPOwDJ1n11 M8RnkLKQGO2f3Bb fzCeMYz4S6oxLAy
+	Cco4N255JFzv2PX E6WWdobANV4guJI iEE8XJb6uudCX4x QWZfnamVAaZpXuW
+	vdz65rE7oZsLSdW oxMsbBgG9NVpSJy x3CD6LaC9GlZ4IS ofzkHe401mHjr7M M. END
+	KEYBASE SALTPACK DETACHED SIGNATURE.`
 )
 
 func makeKeybaseUpdateTempDir(t *testing.T, updater *Updater, testAsset *Asset) (tmpDir string) {
@@ -46,6 +53,11 @@ func makeKeybaseUpdateTempDir(t *testing.T, updater *Updater, testAsset *Asset) 
 	err = updater.downloadAsset(testAsset, tmpDir, UpdateOptions{})
 	require.NoError(t, err)
 	return tmpDir
+}
+
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	testZipPath = filepath.Join(filepath.Dir(filename), "test/test.zip")
 }
 
 func newTestUpdater(t *testing.T) (*Updater, error) {
@@ -108,7 +120,7 @@ func (u testUpdateUI) Verify(update Update) error {
 		return u.verifyErr
 	}
 	var validCodeSigningKIDs = map[string]bool{
-		"9092ae4e790763dc7343851b977930f35b16cf43ab0ad900a2af3d3ad5cea1a1": true,
+		"0120d7539e27e83a9c8caf8701199c6985c0a96801ff7cb69456e9b3a8a8446c66080a": true, // joshblum (saltine)
 	}
 	return saltpack.VerifyDetachedFileAtPath(update.Asset.LocalPath, update.Asset.Signature, validCodeSigningKIDs, testLog)
 }
@@ -553,7 +565,7 @@ func TestUpdaterCheckAndUpdate(t *testing.T) {
 	testUpdate.Asset.Signature = invalidSignature
 
 	updateAvailable, updateWasDownloaded, err = upr.CheckAndDownload(ctx)
-	assert.EqualError(t, err, "Update Error (verify): Error verifying signature: failed to read header bytes")
+	assert.EqualError(t, err, "Update Error (verify): error verifying signature: failed to read header bytes")
 	assert.False(t, updateAvailable)
 	assert.False(t, updateWasDownloaded)
 	assert.False(t, ctx.successReported)
@@ -667,7 +679,7 @@ func TestApplyDownloaded(t *testing.T) {
 	testUpdate.Asset.Signature = invalidSignature
 
 	applied, err = upr.ApplyDownloaded(ctx)
-	assert.EqualError(t, err, "Update Error (verify): Error verifying signature: failed to read header bytes")
+	assert.EqualError(t, err, "Update Error (verify): error verifying signature: failed to read header bytes")
 	assert.False(t, applied)
 	assert.NotNil(t, ctx.errReported)
 	assert.Nil(t, ctx.updateReported)
