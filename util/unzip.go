@@ -22,8 +22,7 @@ import (
 //
 // To unzip Keybase-1.2.3.zip and move the contents Keybase.app to /Applications/Keybase.app
 //
-//   UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, "", log)
-//
+//	UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, "", log)
 func UnzipOver(sourcePath string, path string, destinationPath string, check func(sourcePath, destinationPath string) error, tmpDir string, log Log) error {
 	unzipPath := fmt.Sprintf("%s.unzipped", sourcePath)
 	defer RemoveFileAtPath(unzipPath)
