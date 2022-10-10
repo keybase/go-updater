@@ -6,7 +6,6 @@ package util
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,7 +15,7 @@ import (
 const fileScheme = "file"
 
 func discardAndClose(rc io.ReadCloser) error {
-	_, _ = io.Copy(ioutil.Discard, rc)
+	_, _ = io.Copy(io.Discard, rc)
 	return rc.Close()
 }
 

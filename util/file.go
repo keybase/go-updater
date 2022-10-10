@@ -6,7 +6,6 @@ package util
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -194,7 +193,7 @@ func TempPath(tempDir string, prefix string) string {
 //	WriteTempFile("Test.", byte[]("test data"), 0600)
 func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error) {
 	path := TempPath("", prefix)
-	if err := ioutil.WriteFile(path, data, mode); err != nil {
+	if err := os.WriteFile(path, data, mode); err != nil {
 		return "", err
 	}
 	return path, nil
@@ -301,7 +300,7 @@ func ReadFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	defer Close(file)
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,6 @@ package updater
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -490,7 +489,7 @@ func (u *Updater) CleanupPreviousUpdates() (err error) {
 	if parent == "" || parent == "." {
 		return fmt.Errorf("temp directory is '%v'", parent)
 	}
-	files, err := ioutil.ReadDir(parent)
+	files, err := os.ReadDir(parent)
 	if err != nil {
 		return fmt.Errorf("listing parent directory: %v", err)
 	}
@@ -530,7 +529,7 @@ func (u *Updater) FindDownloadedAsset(assetName string) (matchingAssetPath strin
 		return matchingAssetPath, fmt.Errorf("temp directory is %v", parent)
 	}
 
-	files, err := ioutil.ReadDir(parent)
+	files, err := os.ReadDir(parent)
 	if err != nil {
 		return matchingAssetPath, fmt.Errorf("listing parent directory: %v", err)
 	}

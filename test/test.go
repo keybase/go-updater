@@ -6,7 +6,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -75,7 +74,7 @@ func echo(s string) {
 }
 
 func writeToFile(s string, path string) {
-	err := ioutil.WriteFile(path, []byte(s), 0700)
+	err := os.WriteFile(path, []byte(s), 0700)
 	if err != nil {
 		log.Fatalf("Error writing to file: %s", err)
 	}
@@ -83,12 +82,12 @@ func writeToFile(s string, path string) {
 
 func copyFakeLayout(dst string) {
 	// Read all content of src to data
-	data, err := ioutil.ReadFile("winlayout.log")
+	data, err := os.ReadFile("winlayout.log")
 	if err != nil {
 		log.Fatalf("Error reading winlayout.log: %s", err)
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(dst, data, 0644)
+	err = os.WriteFile(dst, data, 0644)
 	if err != nil {
 		log.Fatalf("Error writing to %s: %s", dst, err)
 	}

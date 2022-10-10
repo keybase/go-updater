@@ -7,7 +7,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -114,7 +113,7 @@ func Unzip(sourcePath, destinationPath string, log Log) error {
 			}
 
 			if fileInfo.Mode()&os.ModeSymlink != 0 {
-				linkName, readErr := ioutil.ReadAll(rc)
+				linkName, readErr := io.ReadAll(rc)
 				if readErr != nil {
 					return readErr
 				}

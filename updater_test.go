@@ -6,7 +6,6 @@ package updater
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -736,7 +735,7 @@ func TestFindDownloadedAsset(t *testing.T) {
 	tmpDir, err = util.MakeTempDir("KeybaseUpdater.", 0700)
 	assert.NoError(t, err)
 	tmpFile := filepath.Join(tmpDir, "nottemp")
-	err = ioutil.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
+	err = os.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
 	require.NoError(t, err)
 
 	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
@@ -748,7 +747,7 @@ func TestFindDownloadedAsset(t *testing.T) {
 	// 5. asset given -> created KeybaseUpdate. -> file exixst and matches
 	tmpDir, err = util.MakeTempDir("KeybaseUpdater.", 0700)
 	tmpFile = filepath.Join(tmpDir, "temp")
-	err = ioutil.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
+	err = os.WriteFile(tmpFile, []byte("Contents of temp file"), 0700)
 	require.NoError(t, err)
 
 	matchingAssetPath, err = upr.FindDownloadedAsset("temp")
@@ -772,14 +771,14 @@ func TestUpdaterGuiBusy(t *testing.T) {
 
 	// Now put the config file there and make sure the right error is returned
 	now := time.Now().Unix() * 1000
-	err = ioutil.WriteFile(testAppStatePath, []byte(fmt.Sprintf(`{"isUserActive":true, "changedAtMs":%d}`, now)), 0644)
+	err = os.WriteFile(testAppStatePath, []byte(fmt.Sprintf(`{"isUserActive":true, "changedAtMs":%d}`, now)), 0644)
 	assert.NoError(t, err)
 	defer util.RemoveFileAtPath(testAppStatePath)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (guiBusy): User active, retrying later")
 
 	// If the user was recently active, they are still considered busy.
-	err = ioutil.WriteFile(testAppStatePath, []byte(fmt.Sprintf(`{"isUserActive":false, "changedAtMs":%d}`, now)), 0644)
+	err = os.WriteFile(testAppStatePath, []byte(fmt.Sprintf(`{"isUserActive":false, "changedAtMs":%d}`, now)), 0644)
 	assert.NoError(t, err)
 	_, err = upr.Update(ctx)
 	assert.EqualError(t, err, "Update Error (guiBusy): User active, retrying later")
@@ -792,7 +791,7 @@ func TestUpdaterGuiBusy(t *testing.T) {
 	// If the user wasn't recently active, they are not considered busy
 	ctx.isCheckCommand = false
 	later := time.Now().Add(-5*time.Minute).Unix() * 1000
-	err = ioutil.WriteFile(testAppStatePath, []byte(fmt.Sprintf(`{"isUserActive":false, "changedAtMs":%d}`, later)), 0644)
+	err = os.WriteFile(testAppStatePath, []byte(fmt.Sprintf(`{"isUserActive":false, "changedAtMs":%d}`, later)), 0644)
 	assert.NoError(t, err)
 	_, err = upr.Update(ctx)
 	assert.NoError(t, err)

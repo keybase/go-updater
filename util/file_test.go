@@ -5,7 +5,6 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -139,7 +138,7 @@ func TestMoveFileValid(t *testing.T) {
 	exists, err := FileExists(destinationPath)
 	assert.NoError(t, err)
 	assert.True(t, exists)
-	data, err := ioutil.ReadFile(destinationPath)
+	data, err := os.ReadFile(destinationPath)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test"), data)
 	srcExists, err := FileExists(sourcePath)
@@ -154,7 +153,7 @@ func TestMoveFileValid(t *testing.T) {
 	exists, err = FileExists(destinationPath)
 	assert.NoError(t, err)
 	assert.True(t, exists)
-	data2, err := ioutil.ReadFile(destinationPath)
+	data2, err := os.ReadFile(destinationPath)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test2"), data2)
 	srcExists2, err := FileExists(sourcePath2)
@@ -222,7 +221,7 @@ func TestCopyFileValid(t *testing.T) {
 	exists, err := FileExists(destinationPath)
 	assert.NoError(t, err)
 	assert.True(t, exists)
-	data, err := ioutil.ReadFile(destinationPath)
+	data, err := os.ReadFile(destinationPath)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test"), data)
 
@@ -234,7 +233,7 @@ func TestCopyFileValid(t *testing.T) {
 	exists, err = FileExists(destinationPath)
 	assert.NoError(t, err)
 	assert.True(t, exists)
-	data2, err := ioutil.ReadFile(destinationPath)
+	data2, err := os.ReadFile(destinationPath)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test2"), data2)
 }
