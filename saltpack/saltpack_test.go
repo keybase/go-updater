@@ -25,7 +25,8 @@ var validCodeSigningKIDs = map[string]bool{
 const message1 = "This is a test message\n"
 
 // This is the output of running:
-//   echo "This is a test message" | keybase sign -d
+//
+//	echo "This is a test message" | keybase sign -d
 const signature1 = `BEGIN KEYBASE SALTPACK DETACHED SIGNATURE. kXR7VktZdyH7rvq
 v5weRa8moXPeKBe e2YLT0PnyHzCrVi RbC1J5uJtYgYyLW eGg4qzsWqkXuVtJ yTsutKVn8DT97Oe
 mnvASPWsbU2VjnR t4EChFoYF1RSi75 MvyyWify9iZldeI 0OTYM5yKLpbCrX5 yD0Tmjf2txwg7Jx

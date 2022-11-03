@@ -6,7 +6,6 @@ package util
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,7 +15,7 @@ import (
 const fileScheme = "file"
 
 func discardAndClose(rc io.ReadCloser) error {
-	_, _ = io.Copy(ioutil.Discard, rc)
+	_, _ = io.Copy(io.Discard, rc)
 	return rc.Close()
 }
 
@@ -29,13 +28,13 @@ func discardAndClose(rc io.ReadCloser) error {
 //
 // Instead of doing:
 //
-//   res, _ := ...
-//   defer res.Body.Close()
+//	res, _ := ...
+//	defer res.Body.Close()
 //
 // do
 //
-//   res, _ := ...
-//   defer DiscardAndCloseBody(res)
+//	res, _ := ...
+//	defer DiscardAndCloseBody(res)
 //
 // instead.
 func DiscardAndCloseBody(resp *http.Response) error {
@@ -67,8 +66,9 @@ func SaveHTTPResponse(resp *http.Response, savePath string, mode os.FileMode, lo
 // DiscardAndCloseBodyIgnoreError calls DiscardAndCloseBody.
 // This satisfies lint checks when using with defer and you don't care if there
 // is an error, so instead of:
-//   defer func() { _ = DiscardAndCloseBody(resp) }()
-//   defer DiscardAndCloseBodyIgnoreError(resp)
+//
+//	defer func() { _ = DiscardAndCloseBody(resp) }()
+//	defer DiscardAndCloseBodyIgnoreError(resp)
 func DiscardAndCloseBodyIgnoreError(resp *http.Response) {
 	_ = DiscardAndCloseBody(resp)
 }

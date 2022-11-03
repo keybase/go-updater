@@ -87,19 +87,22 @@ func TestTerminateBeforeWatch(t *testing.T) {
 }
 
 // TestTerminateBeforeWatchRace verifies protection from the following scenario:
-// 		watchdog1 starts up
-// 		watchdog1 looks up existing processes to terminate and sees none
-// 		watchdog2 starts up
-// 		watchdog2 looks up existing processes to terminate and sees watchdog1
-// 		watchdog1 starts PROGRAM
-// 		watchdog1 receives kill signal from watchdog2 and dies
-// 		watchdog2 starts a second PROGRAM
-// 		PROGRAM has a bad time
+//
+//	watchdog1 starts up
+//	watchdog1 looks up existing processes to terminate and sees none
+//	watchdog2 starts up
+//	watchdog2 looks up existing processes to terminate and sees watchdog1
+//	watchdog1 starts PROGRAM
+//	watchdog1 receives kill signal from watchdog2 and dies
+//	watchdog2 starts a second PROGRAM
+//	PROGRAM has a bad time
+//
 // The test doesn't protect us from the race condition generically, rather only when:
-// 		(1) PROGRAM is only started by a watchdog, and
-// 		(2) PROGRAM and watchdog share a path to the same executable. When a
-// 			watchdog looks up existing processes to terminate, it needs to be able
-// 			to find another watchdog.
+//
+//	(1) PROGRAM is only started by a watchdog, and
+//	(2) PROGRAM and watchdog share a path to the same executable. When a
+//		watchdog looks up existing processes to terminate, it needs to be able
+//		to find another watchdog.
 func TestTerminateBeforeWatchRace(t *testing.T) {
 	var err error
 	// set up a bunch of iterations of the same program

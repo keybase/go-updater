@@ -4,7 +4,6 @@
 package keybase
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -135,7 +134,7 @@ func TestConfigExtra(t *testing.T) {
 	}`
 	path := filepath.Join(os.TempDir(), "TestConfigExtra")
 	defer util.RemoveFileAtPath(path)
-	err := ioutil.WriteFile(path, []byte(data), 0644)
+	err := os.WriteFile(path, []byte(data), 0644)
 	assert.NoError(t, err)
 
 	cfg := newDefaultConfig("", "", testLog, false)
@@ -159,7 +158,7 @@ func TestConfigBadType(t *testing.T) {
 	}`
 	path := filepath.Join(os.TempDir(), "TestConfigBadType")
 	defer util.RemoveFileAtPath(path)
-	err := ioutil.WriteFile(path, []byte(data), 0644)
+	err := os.WriteFile(path, []byte(data), 0644)
 	assert.NoError(t, err)
 
 	cfg := newDefaultConfig("", "", testLog, false)

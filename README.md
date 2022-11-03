@@ -1,6 +1,6 @@
 # Updater
 
-[![Build Status](https://travis-ci.org/keybase/go-updater.svg?branch=master)](https://travis-ci.org/keybase/go-updater)
+[![Build Status](https://app.travis-ci.com/keybase/go-updater.svg?branch=master)](https://app.travis-ci.com/github/keybase/go-updater)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/keybase/go-updater?branch=master&svg=true)](https://ci.appveyor.com/project/keybase/go-updater)
 [![Coverage Status](https://coveralls.io/repos/github/keybase/go-updater/badge.svg?branch=master)](https://coveralls.io/github/keybase/go-updater?branch=master)
 [![GoDoc](https://godoc.org/github.com/keybase/go-updater?status.svg)](https://godoc.org/github.com/keybase/go-updater)
@@ -24,7 +24,6 @@ The goals of this library are to provide an updater that:
 This updater library is used to support updating (in background and on-demand)
 for Keybase apps and services.
 
-
 ### Packages
 
 The main package is the updater core, there are other support packages:
@@ -41,7 +40,6 @@ The main package is the updater core, there are other support packages:
 - watchdog: Utility to monitor processes and restart them (like launchd), for use with updater service
 - windows: Windows specific UI
 
-
 ### Development
 
 This library should pass the [gometalinter](https://github.com/alecthomas/gometalinter).
@@ -55,4 +53,3 @@ gometalinter --install --update
 pre-commit install
 pre-commit run -a
 ```
-

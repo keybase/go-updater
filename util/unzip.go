@@ -7,7 +7,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -22,8 +21,7 @@ import (
 //
 // To unzip Keybase-1.2.3.zip and move the contents Keybase.app to /Applications/Keybase.app
 //
-//   UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, "", log)
-//
+//	UnzipOver("/tmp/Keybase-1.2.3.zip", "Keybase.app", "/Applications/Keybase.app", check, "", log)
 func UnzipOver(sourcePath string, path string, destinationPath string, check func(sourcePath, destinationPath string) error, tmpDir string, log Log) error {
 	unzipPath := fmt.Sprintf("%s.unzipped", sourcePath)
 	defer RemoveFileAtPath(unzipPath)
@@ -115,7 +113,7 @@ func Unzip(sourcePath, destinationPath string, log Log) error {
 			}
 
 			if fileInfo.Mode()&os.ModeSymlink != 0 {
-				linkName, readErr := ioutil.ReadAll(rc)
+				linkName, readErr := io.ReadAll(rc)
 				if readErr != nil {
 					return readErr
 				}

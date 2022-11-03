@@ -6,9 +6,9 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -68,7 +68,7 @@ func TestSaveHTTPResponse(t *testing.T) {
 	err = SaveHTTPResponse(resp, savePath, 0600, testLog)
 	assert.NoError(t, err)
 
-	saved, err := ioutil.ReadFile(savePath)
+	saved, err := os.ReadFile(savePath)
 	assert.NoError(t, err)
 
 	assert.Equal(t, string(saved), data+"\n")
@@ -150,7 +150,7 @@ func TestDownloadURLValid(t *testing.T) {
 		fileExists, fileErr := FileExists(destinationPath)
 		assert.NoError(t, fileErr)
 		assert.True(t, fileExists)
-		data, readErr := ioutil.ReadFile(destinationPath)
+		data, readErr := os.ReadFile(destinationPath)
 		assert.NoError(t, readErr)
 		assert.Equal(t, []byte("ok\n"), data)
 	}
@@ -165,7 +165,7 @@ func TestDownloadURLValid(t *testing.T) {
 		fileExists2, err := FileExists(destinationPath)
 		assert.NoError(t, err)
 		assert.True(t, fileExists2)
-		data2, err := ioutil.ReadFile(destinationPath)
+		data2, err := os.ReadFile(destinationPath)
 		assert.NoError(t, err)
 		assert.Equal(t, []byte("ok2\n"), data2)
 	}
@@ -225,7 +225,7 @@ func TestDownloadURLETag(t *testing.T) {
 	server := testServerWithETag(t, "ok", 0, etag)
 	defer server.Close()
 	destinationPath := TempPath("", "TestDownloadURLETag.")
-	err := ioutil.WriteFile(destinationPath, data, 0600)
+	err := os.WriteFile(destinationPath, data, 0600)
 	require.NoError(t, err)
 	digest, err := Digest(bytes.NewReader(data))
 	assert.NoError(t, err)

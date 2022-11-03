@@ -6,7 +6,6 @@ package util
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -87,8 +86,9 @@ func safeWriteToFile(t SafeWriter, mode os.FileMode, log Log) error {
 // Close closes a file and ignores the error.
 // This satisfies lint checks when using with defer and you don't care if there
 // is an error, so instead of:
-//   defer func() { _ = f.Close() }()
-//   defer Close(f)
+//
+//	defer func() { _ = f.Close() }()
+//	defer Close(f)
 func Close(f io.Closer) {
 	if f == nil {
 		return
@@ -100,8 +100,9 @@ func Close(f io.Closer) {
 // We do nothing if path == "".
 // This satisfies lint checks when using with defer and you don't care if there
 // is an error, so instead of:
-//   defer func() { _ = os.Remove(path) }()
-//   defer RemoveFileAtPath(path)
+//
+//	defer func() { _ = os.Remove(path) }()
+//	defer RemoveFileAtPath(path)
 func RemoveFileAtPath(path string) {
 	if path == "" {
 		return
@@ -111,9 +112,8 @@ func RemoveFileAtPath(path string) {
 
 // openTempFile creates an opened temporary file.
 //
-//   openTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
-//   openTempFile(path.Join(os.TempDir(), "foo"), "", 0600) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
-//
+//	openTempFile("foo", ".zip", 0755) => "foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL.zip"
+//	openTempFile(path.Join(os.TempDir(), "foo"), "", 0600) => "/tmp/foo.RCG2KUSCGYOO3PCKNWQHBOXBKACOPIKL"
 func openTempFile(prefix string, suffix string, mode os.FileMode) (string, *os.File, error) {
 	filename, err := RandomID(prefix)
 	if err != nil {
@@ -189,10 +189,11 @@ func TempPath(tempDir string, prefix string) string {
 // WriteTempFile creates a unique temp file with data.
 //
 // For example:
-//   WriteTempFile("Test.", byte[]("test data"), 0600)
+//
+//	WriteTempFile("Test.", byte[]("test data"), 0600)
 func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error) {
 	path := TempPath("", prefix)
-	if err := ioutil.WriteFile(path, data, mode); err != nil {
+	if err := os.WriteFile(path, data, mode); err != nil {
 		return "", err
 	}
 	return path, nil
@@ -201,7 +202,8 @@ func WriteTempFile(prefix string, data []byte, mode os.FileMode) (string, error)
 // MakeTempDir creates a unique temp directory.
 //
 // For example:
-//   MakeTempDir("Test.", 0700)
+//
+//	MakeTempDir("Test.", 0700)
 func MakeTempDir(prefix string, mode os.FileMode) (string, error) {
 	path := TempPath("", prefix)
 	if err := os.MkdirAll(path, mode); err != nil {
@@ -298,7 +300,7 @@ func ReadFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	defer Close(file)
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
@@ -311,8 +313,9 @@ func convertPathForWindows(path string) string {
 
 // URLStringForPath returns an URL as string with file scheme for path.
 // For example,
-//     /usr/local/go/bin => file:///usr/local/go/bin
-//     C:\Go\bin => file:///C:/Go/bin
+//
+//	/usr/local/go/bin => file:///usr/local/go/bin
+//	C:\Go\bin => file:///C:/Go/bin
 func URLStringForPath(path string) string {
 	if runtime.GOOS == "windows" {
 		path = convertPathForWindows(path)
@@ -324,8 +327,9 @@ func URLStringForPath(path string) string {
 
 // PathFromURL returns path for file URL scheme
 // For example,
-//     file:///usr/local/go/bin => /usr/local/go/bin
-//     file:///C:/Go/bin => C:\Go\bin
+//
+//	file:///usr/local/go/bin => /usr/local/go/bin
+//	file:///C:/Go/bin => C:\Go\bin
 func PathFromURL(u *url.URL) string {
 	path := u.Path
 	if runtime.GOOS == "windows" && u.Scheme == fileScheme {

@@ -8,7 +8,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -55,7 +55,7 @@ func main() {
 		return
 	}
 
-	result, err := ioutil.ReadFile(outPathName)
+	result, err := os.ReadFile(outPathName)
 	if err != nil {
 		testLog.Errorf("Error opening result file: %v", err)
 		return
