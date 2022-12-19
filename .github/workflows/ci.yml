@@ -16,6 +16,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.50
+          args: --timeout=15m
       - run: go vet ./...
       - run: go install github.com/keybase/go-updater/test
       - run: echo "{GOPATH}=$HOME/go" >> $GITHUB_ENV
