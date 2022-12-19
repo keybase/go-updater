@@ -20,4 +20,4 @@ jobs:
       - run: go install github.com/keybase/go-updater/test
       - run: go test -v -test.paniconexit0 ./...
         env:
-          GOPATH: /home/runner/go
+          GOPATH: $(go env GOPATH)
