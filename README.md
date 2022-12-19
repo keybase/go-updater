@@ -1,8 +1,6 @@
 # Updater
 
-[![Build Status](https://app.travis-ci.com/keybase/go-updater.svg?branch=master)](https://app.travis-ci.com/github/keybase/go-updater)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/keybase/go-updater?branch=master&svg=true)](https://ci.appveyor.com/project/keybase/go-updater)
-[![Coverage Status](https://coveralls.io/repos/github/keybase/go-updater/badge.svg?branch=master)](https://coveralls.io/github/keybase/go-updater?branch=master)
+[![Build Status](https://github.com/keybase/go-updater/actions/workflows/ci.yml/badge.svg)](https://github.com/keybase/go-updater/actions)
 [![GoDoc](https://godoc.org/github.com/keybase/go-updater?status.svg)](https://godoc.org/github.com/keybase/go-updater)
 
 **Warning**: This isn't ready for non-Keybase libraries to use yet!
