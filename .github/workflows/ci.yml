@@ -18,6 +18,5 @@ jobs:
           version: v1.50
       - run: go vet ./...
       - run: go install github.com/keybase/go-updater/test
+      - run: echo "{GOPATH}=$HOME/go" >> $GITHUB_ENV
       - run: go test -v -test.paniconexit0 ./...
-        env:
-          GOPATH: $HOME/go
