@@ -227,10 +227,14 @@ func (c config) updaterOptions() updater.UpdateOptions {
 	version := c.keybaseVersion()
 	osVersion := c.osVersion()
 	osArch := c.osArch()
+	platform := runtime.GOOS
+	if platform == "darwin" && osArch == "arm64" {
+		platform = "darwin-arm64"
+	}
 
 	return updater.UpdateOptions{
 		Version:         version,
-		Platform:        runtime.GOOS,
+		Platform:        platform,
 		Arch:            osArch,
 		DestinationPath: c.destinationPath(),
 		Env:             "prod",
