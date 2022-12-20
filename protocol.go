@@ -54,7 +54,7 @@ func (u Update) missingAsset() bool {
 type UpdateOptions struct {
 	// Version is the current version of the app
 	Version string `json:"version"`
-	// Platform is the os type (darwin, windows, linux)
+	// Platform is the os type (darwin, darwin-arm64, windows, linux)
 	Platform string `json:"platform"`
 	// DestinationPath is where to apply the update to
 	DestinationPath string `json:"destinationPath"`
