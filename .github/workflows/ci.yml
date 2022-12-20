@@ -25,15 +25,6 @@ jobs:
         with:
           version: ${{ matrix.golangci }}
           args: "--out-${NO_FUTURE}format colored-line-number --timeout=15m"
-      - name: Go Lint Windows
-        if: runner.os == 'Windows'
-        uses: golangci/golangci-lint-action@v3
-        env:
-          nofuture: out-format
-        with:
-          skip-cache: true
-          version: ${{ matrix.golangci }}
-          args: "--%nofuture% colored-line-number --timeout=15m"
       - run: go vet ./...
       - run: go install github.com/keybase/go-updater/test
       - run: echo "{GOPATH}=$HOME/go" >> $GITHUB_ENV
