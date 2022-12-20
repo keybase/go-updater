@@ -1,5 +1,11 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 jobs:
   test:
     strategy:
@@ -25,6 +31,7 @@ jobs:
         env:
           nofuture: out-format
         with:
+          skip-cache: true
           version: ${{ matrix.golangci }}
           args: "--%nofuture% colored-line-number --timeout=15m"
       - run: go vet ./...
