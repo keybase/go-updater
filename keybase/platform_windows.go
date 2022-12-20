@@ -49,9 +49,10 @@ var (
 	procCoTaskMemFree        = modOle32.NewProc("CoTaskMemFree")
 )
 
-func coTaskMemFree(pv uintptr) error {
-	_, _, err := syscall.Syscall(procCoTaskMemFree.Addr(), 1, uintptr(pv), 0, 0)
-	if err != nil {
+func coTaskMemFree(pv uintptr) (err error) {
+	_, _, errno := syscall.Syscall(procCoTaskMemFree.Addr(), 1, uintptr(pv), 0, 0)
+	if errno != 0 {
+		err = errno
 		return err
 	}
 	return nil
