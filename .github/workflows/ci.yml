@@ -26,7 +26,7 @@ jobs:
           nofuture: out-format
         with:
           version: ${{ matrix.golangci }}
-          args: "--%nofuture% colored-line-number -timeout=15m"
+          args: "--%nofuture% colored-line-number --timeout=15m"
       - run: go vet ./...
       - run: go install github.com/keybase/go-updater/test
       - run: echo "{GOPATH}=$HOME/go" >> $GITHUB_ENV
