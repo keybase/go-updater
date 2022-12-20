@@ -49,24 +49,26 @@ var (
 	procCoTaskMemFree        = modOle32.NewProc("CoTaskMemFree")
 )
 
-func coTaskMemFree(pv uintptr) {
-	syscall.Syscall(procCoTaskMemFree.Addr(), 1, uintptr(pv), 0, 0)
-	return
+func coTaskMemFree(pv uintptr) (err error) {
+	_, _, errno := syscall.Syscall(procCoTaskMemFree.Addr(), 1, uintptr(pv), 0, 0)
+	if errno != 0 {
+		err = errno
+		return err
+	}
+	return nil
 }
 
-func getDataDir(id guid) (string, error) {
+func getDataDir(id guid) (folder string, err error) {
 
 	var pszPath uintptr
 	r0, _, _ := procSHGetKnownFolderPath.Call(uintptr(unsafe.Pointer(&id)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(&pszPath)))
 	if r0 != 0 {
 		return "", errors.New("can't get known folder")
 	}
-
-	defer coTaskMemFree(pszPath)
+	defer func() { err = coTaskMemFree(pszPath) }()
 
 	// go vet: "possible misuse of unsafe.Pointer"
-	folder := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(pszPath))[:])
-
+	folder = syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(pszPath))[:])
 	if len(folder) == 0 {
 		return "", errors.New("can't get known folder")
 	}
@@ -329,7 +331,11 @@ func (c context) deleteProductFiles() {
 		c.log.Infof("Error getting Keybase directory: %s", err.Error())
 		return
 	}
-	c.stopKeybaseProcesses()
+	err = c.stopKeybaseProcesses()
+	if err != nil {
+		c.log.Infof("Error stopping keybase processes: %s", err.Error())
+		return
+	}
 
 	err = os.RemoveAll(filepath.Join(path, "Gui"))
 	if err != nil {
@@ -365,10 +371,16 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if update.Asset == nil || update.Asset.LocalPath == "" {
 		return fmt.Errorf("No asset")
 	}
-	c.stopKeybaseProcesses()
+	err := c.stopKeybaseProcesses()
+	if err != nil {
+		return err
+	}
 	if c.config.GetLastAppliedVersion() == update.Version {
 		c.log.Info("Previously applied version detected")
-		c.config.SetLastAppliedVersion("")
+		err = c.config.SetLastAppliedVersion("")
+		if err != nil {
+			return err
+		}
 		skipSilent = true
 	}
 
@@ -397,8 +409,11 @@ func (c context) Apply(update updater.Update, options updater.UpdateOptions, tmp
 	if auto && !c.config.GetUpdateAutoOverride() && !skipSilent {
 		args = append(args, "/quiet", "/norestart")
 	}
-	c.config.SetLastAppliedVersion(update.Version)
-	_, err := command.Exec(runCommand, args, time.Hour, c.log)
+	err = c.config.SetLastAppliedVersion(update.Version)
+	if err != nil {
+		return err
+	}
+	_, err = command.Exec(runCommand, args, time.Hour, c.log)
 	return err
 }
 
