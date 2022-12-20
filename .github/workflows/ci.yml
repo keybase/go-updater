@@ -25,7 +25,9 @@ jobs:
         with:
           version: ${{ matrix.golangci }}
           args: "--out-${NO_FUTURE}format colored-line-number --timeout=15m"
-      - run: go vet ./...
+      - name: govet
+        if: runner.os != 'Windows'
+        run: go vet ./...
       - run: go install github.com/keybase/go-updater/test
       - run: echo "{GOPATH}=$HOME/go" >> $GITHUB_ENV
       - run: go test -v -test.paniconexit0 ./...
