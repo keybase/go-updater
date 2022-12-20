@@ -6,17 +6,27 @@ jobs:
       matrix:
         go-version: [1.19.x]
         os: [ubuntu-latest, macos-latest, windows-latest]
+        golangci-lint: [v1.50]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
       - uses: actions/checkout@v3
-      - name: golangci-lint
+      - name: Go Lint Standard
+        if: runner.os != 'Windows'
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.50
-          args: --timeout=15m
+          version: ${{ matrix.golangci }}
+          args: "--out-${NO_FUTURE}format colored-line-number --timeout=15m"
+      - name: Go Lint Windows
+        if: runner.os == 'Windows'
+        uses: golangci/golangci-lint-action@v3
+        env:
+          nofuture: out-format
+        with:
+          version: ${{ matrix.golangci }}
+          args: "--%nofuture% colored-line-number -timeout=15m"
       - run: go vet ./...
       - run: go install github.com/keybase/go-updater/test
       - run: echo "{GOPATH}=$HOME/go" >> $GITHUB_ENV
