@@ -4,13 +4,12 @@
 package keybase
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/kardianos/osext"
@@ -94,15 +93,18 @@ func (c config) osVersion() string {
 }
 
 func (c config) osArch() string {
-	cmd := exec.Command("uname", "-m")
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	err := cmd.Run()
+	_, err := syscall.Sysctl("sysctl.proc_translated")
 	if err != nil {
-		c.log.Warningf("Error trying to determine OS arch, falling back to compile time arch: %s (%s)", err, cmd.Stderr)
-		return runtime.GOARCH
+		if err.Error() == "no such file or directory" {
+			// running on an intel mac, preserve behavior of `uname -m` instead of using `amd64`
+			return "x86_64"
+		} else {
+			c.log.Warningf("Error trying to determine OS arch, falling back to compile time arch: %s", err)
+			return runtime.GOARCH
+		}
 	}
-	return strings.TrimSuffix(buf.String(), "\n")
+	// running on apple silicon
+	return "arm64"
 }
 
 func (c config) promptProgram() (command.Program, error) {
