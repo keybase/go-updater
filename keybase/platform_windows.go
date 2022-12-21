@@ -143,7 +143,7 @@ func (c config) osArch() string {
 	if len(words) < 1 {
 		return "empty"
 	}
-	return words[0]
+	return strings.TrimSuffix(words[0], "\n")
 }
 
 func (c config) notifyProgram() string {

@@ -77,7 +77,7 @@ func (c config) osArch() string {
 	if err != nil {
 		return runtime.GOARCH
 	}
-	return buf.String()
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 func (c config) promptProgram() (command.Program, error) {
