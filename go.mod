@@ -1,16 +1,16 @@
 module github.com/keybase/go-updater
 
-go 1.17
+go 1.19
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/kardianos/osext v0.0.0-20150528142315-6e7f84366347
-	github.com/keybase/client/go v0.0.0-20211122170721-a66861b2e521
+	github.com/keybase/client/go v0.0.0-20221220155337-b9905a530067
 	github.com/keybase/go-logging v0.0.0-20211118164508-35a15a9fa71a
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/keybase/saltpack v0.0.0-20211118165207-4039c5df46c0
-	github.com/stretchr/testify v1.7.0
-	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1
+	github.com/stretchr/testify v1.8.0
+	golang.org/x/sys v0.1.0
 )
 
 require (
@@ -25,10 +25,10 @@ require (
 	github.com/keybase/msgpackzip v0.0.0-20211109205514-10e4bc329851 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871 // indirect
-	golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4 // indirect
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
+	golang.org/x/net v0.1.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 // keybase maintained forks
