@@ -4,8 +4,10 @@
 package keybase
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -94,21 +96,23 @@ func (c config) osVersion() string {
 
 func (c config) osArch() string {
 	r, err := syscall.Sysctl("sysctl.proc_translated")
-	if err != nil {
-		if err.Error() == "no such file or directory" {
-			// running on an intel mac, preserve behavior of `uname -m` instead of using `amd64`
-			return "x86_64"
-		} else {
-			c.log.Warningf("Error trying to determine OS arch, falling back to compile time arch: %s", err)
-			return runtime.GOARCH
+	if err == nil {
+		if r == "\x00\x00\x00" || r == "\x01\x00\x00" {
+			// running on apple silicon, maybe in rosetta mode.
+			// return arm64 here to upgrade users to the arm64 built version
+			return "arm64"
 		}
 	}
-	if r == "\x00\x00\x00" || r == "\x01\x00\x00" {
-		// running on apple silicon, maybe in rosetta mode. return arm64 here to upgrade users to the arm64 built version
-		return "arm64"
+	c.log.Warningf("Error trying to determine OS arch: %s sysct.proc_translated=%s", err, r)
+	cmd := exec.Command("uname", "-m")
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	err = cmd.Run()
+	if err != nil {
+		c.log.Warningf("Error trying to determine OS arch, falling back to compile time arch: %s (%s)", err, cmd.Stderr)
+		return runtime.GOARCH
 	}
-	c.log.Warningf("Error trying to determine OS arch, falling back to compile time arch: %s sysct.proc_translated=%s", err, r)
-	return runtime.GOARCH
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 func (c config) promptProgram() (command.Program, error) {
