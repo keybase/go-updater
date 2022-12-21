@@ -99,6 +99,7 @@ func (c config) osArch() string {
 	cmd.Stdout = &buf
 	err := cmd.Run()
 	if err != nil {
+		c.log.Warningf("Error trying to determine OS arch, falling back to compile time arch: %s (%s)", err, cmd.Stderr)
 		return runtime.GOARCH
 	}
 	return strings.TrimSuffix(buf.String(), "\n")
