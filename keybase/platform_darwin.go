@@ -93,7 +93,7 @@ func (c config) osVersion() string {
 }
 
 func (c config) osArch() string {
-	_, err := syscall.Sysctl("sysctl.proc_translated")
+	r, err := syscall.Sysctl("sysctl.proc_translated")
 	if err != nil {
 		if err.Error() == "no such file or directory" {
 			// running on an intel mac, preserve behavior of `uname -m` instead of using `amd64`
@@ -103,8 +103,12 @@ func (c config) osArch() string {
 			return runtime.GOARCH
 		}
 	}
-	// running on apple silicon
-	return "arm64"
+	if r == "\x00\x00\x00" || r == "\x01\x00\x00" {
+		// running on apple silicon, maybe in rosetta mode. return arm64 here to upgrade users to the arm64 built version
+		return "arm64"
+	}
+	c.log.Warningf("Error trying to determine OS arch, falling back to compile time arch: %s sysct.proc_translated=%s", err, r)
+	return runtime.GOARCH
 }
 
 func (c config) promptProgram() (command.Program, error) {
