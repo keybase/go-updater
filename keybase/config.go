@@ -25,7 +25,7 @@ type Config interface {
 	promptProgram() (command.Program, error)
 	notifyProgram() string
 	destinationPath() string
-	updaterOptions() updater.UpdateOptions
+	updaterOptions() (updater.UpdateOptions, error)
 }
 
 type config struct {
@@ -223,8 +223,11 @@ func (c *config) SetInstallID(installID string) error {
 	return c.save()
 }
 
-func (c config) updaterOptions() updater.UpdateOptions {
-	version := c.keybaseVersion()
+func (c config) updaterOptions() (updater.UpdateOptions, error) {
+	version, err := c.keybaseVersion()
+	if err != nil {
+		return updater.UpdateOptions{}, err
+	}
 	osVersion := c.osVersion()
 	osArch := c.osArch()
 	platform := runtime.GOOS
@@ -241,18 +244,18 @@ func (c config) updaterOptions() updater.UpdateOptions {
 		OSVersion:       osVersion,
 		UpdaterVersion:  updater.Version,
 		IgnoreSnooze:    c.ignoreSnooze,
-	}
+	}, nil
 }
 
 func (c config) keybasePath() string {
 	return c.pathToKeybase
 }
 
-func (c config) keybaseVersion() string {
+func (c config) keybaseVersion() (string, error) {
 	result, err := command.Exec(c.keybasePath(), []string{"version", "-S"}, 20*time.Second, c.log)
 	if err != nil {
 		c.log.Warningf("Couldn't get keybase version: %s (%s)", err, result.CombinedOutput())
-		return ""
+		return "", err
 	}
-	return strings.TrimSpace(result.Stdout.String())
+	return strings.TrimSpace(result.Stdout.String()), nil
 }

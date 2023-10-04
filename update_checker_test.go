@@ -71,8 +71,8 @@ func (u testUpdateCheckUI) Verify(update Update) error {
 
 func (u testUpdateCheckUI) AfterUpdateCheck(update *Update) {}
 
-func (u testUpdateCheckUI) UpdateOptions() UpdateOptions {
-	return newDefaultTestUpdateOptions()
+func (u testUpdateCheckUI) UpdateOptions() (UpdateOptions, error) {
+	return newDefaultTestUpdateOptions(), nil
 }
 
 func (u testUpdateCheckUI) ReportAction(_ UpdatePromptResponse, _ *Update, _ UpdateOptions) {}
