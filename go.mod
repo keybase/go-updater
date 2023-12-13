@@ -6,11 +6,11 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/kardianos/osext v0.0.0-20150528142315-6e7f84366347
 	github.com/keybase/client/go v0.0.0-20221220155337-b9905a530067
-	github.com/keybase/go-logging v0.0.0-20211118164508-35a15a9fa71a
+	github.com/keybase/go-logging v0.0.0-20231213204715-4b3ff33ba5b6
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
-	github.com/keybase/saltpack v0.0.0-20211118165207-4039c5df46c0
-	github.com/stretchr/testify v1.8.0
-	golang.org/x/sys v0.1.0
+	github.com/keybase/saltpack v0.0.0-20231213211625-726bb684c617
+	github.com/stretchr/testify v1.8.4
+	golang.org/x/sys v0.15.0
 )
 
 require (
@@ -25,8 +25,8 @@ require (
 	github.com/keybase/msgpackzip v0.0.0-20211109205514-10e4bc329851 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
