@@ -57,7 +57,7 @@ func TestContext(t *testing.T) {
 	ctx := testContext(t)
 
 	// Check options not empty
-	options := ctx.UpdateOptions()
+	options, _ := ctx.UpdateOptions()
 	assert.NotEqual(t, options.Version, "")
 }
 

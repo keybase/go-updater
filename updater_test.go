@@ -142,8 +142,8 @@ func (u *testUpdateUI) ReportSuccess(update *Update, options UpdateOptions) {
 
 func (u *testUpdateUI) AfterUpdateCheck(update *Update) {}
 
-func (u testUpdateUI) UpdateOptions() UpdateOptions {
-	return u.options
+func (u testUpdateUI) UpdateOptions() (UpdateOptions, error) {
+	return u.options, nil
 }
 
 func (u testUpdateUI) GetAppStatePath() string {

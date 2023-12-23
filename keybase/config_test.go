@@ -64,7 +64,7 @@ func TestConfig(t *testing.T) {
 	override = cfg.GetUpdateAutoOverride()
 	assert.True(t, override, "AutoOverride should be set")
 
-	options := cfg.updaterOptions()
+	options, _ := cfg.updaterOptions()
 	t.Logf("Options: %#v", options)
 
 	expectedOptions := updater.UpdateOptions{
@@ -92,7 +92,7 @@ func TestConfig(t *testing.T) {
 	expectedOptions2 := expectedOptions
 	expectedOptions2.IgnoreSnooze = true
 
-	options2 := cfg2.updaterOptions()
+	options2, _ := cfg2.updaterOptions()
 	assert.Equal(t, options2, expectedOptions2)
 
 	auto2, autoSet2 := cfg2.GetUpdateAuto()
@@ -173,6 +173,6 @@ func TestKeybaseVersionInvalid(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	testPathToKeybase := filepath.Join(filepath.Dir(filename), "../test/err.sh")
 	cfg, _ := newConfig("KeybaseTest", testPathToKeybase, testLog, false)
-	version := cfg.keybaseVersion()
+	version, _ := cfg.keybaseVersion()
 	assert.Equal(t, "", version)
 }

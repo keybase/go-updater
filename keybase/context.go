@@ -119,7 +119,7 @@ func NewUpdaterContext(appName string, pathToKeybase string, log Log, mode Updat
 }
 
 // UpdateOptions returns update options
-func (c *context) UpdateOptions() updater.UpdateOptions {
+func (c *context) UpdateOptions() (updater.UpdateOptions, error) {
 	return c.config.updaterOptions()
 }
 

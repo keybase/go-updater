@@ -44,8 +44,8 @@ func (c testConfigPausedPrompt) keybasePath() string {
 	return filepath.Join(filepath.Dir(filename), "../test/keybase-check-in-use-false.sh")
 }
 
-func (c testConfigPausedPrompt) updaterOptions() updater.UpdateOptions {
-	return updater.UpdateOptions{}
+func (c testConfigPausedPrompt) updaterOptions() (updater.UpdateOptions, error) {
+	return updater.UpdateOptions{}, nil
 }
 
 func (c testConfigPausedPrompt) destinationPath() string {
