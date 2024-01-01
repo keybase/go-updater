@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/kardianos/osext v0.0.0-20150528142315-6e7f84366347
-	github.com/keybase/client/go v0.0.0-20221220155337-b9905a530067
 	github.com/keybase/go-logging v0.0.0-20231213204715-4b3ff33ba5b6
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/keybase/saltpack v0.0.0-20231213211625-726bb684c617
@@ -17,16 +16,17 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/keybase/backoff v1.0.1-0.20160517061000-726b63b835ec // indirect
+	github.com/keybase/client/go v0.0.0-20231231190721-fbebbc9f1ba2 // indirect
 	github.com/keybase/clockwork v0.1.1-0.20161209210251-976f45f4a979 // indirect
 	github.com/keybase/go-codec v0.0.0-20180928230036-164397562123 // indirect
 	github.com/keybase/go-crypto v0.0.0-20200123153347-de78d2cb44f4 // indirect
-	github.com/keybase/go-framed-msgpack-rpc v0.0.0-20211118173254-f892386581e8 // indirect
+	github.com/keybase/go-framed-msgpack-rpc v0.0.0-20230103225103-1f052922b096 // indirect
 	github.com/keybase/go-jsonw v0.0.0-20200325173637-df90f282c233 // indirect
-	github.com/keybase/msgpackzip v0.0.0-20211109205514-10e4bc329851 // indirect
+	github.com/keybase/msgpackzip v0.0.0-20221220225959-4abf538d2b9c // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
