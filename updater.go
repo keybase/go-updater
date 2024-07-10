@@ -40,7 +40,7 @@ type UpdateSource interface {
 // This is where you can define custom behavior specific to your apps.
 type Context interface {
 	GetUpdateUI() UpdateUI
-	UpdateOptions() UpdateOptions
+	UpdateOptions() (UpdateOptions, error)
 	Verify(update Update) error
 	BeforeUpdatePrompt(update Update, options UpdateOptions) error
 	BeforeApply(update Update) error
@@ -95,7 +95,10 @@ func (u *Updater) SetTickDuration(dur time.Duration) {
 
 // Update checks, downloads and performs an update
 func (u *Updater) Update(ctx Context) (*Update, error) {
-	options := ctx.UpdateOptions()
+	options, err := ctx.UpdateOptions()
+	if err != nil {
+		return nil, err
+	}
 	update, err := u.update(ctx, options)
 	report(ctx, err, update, options)
 	return update, err
@@ -182,7 +185,11 @@ func (u *Updater) update(ctx Context, options UpdateOptions) (*Update, error) {
 }
 
 func (u *Updater) ApplyDownloaded(ctx Context) (bool, error) {
-	options := ctx.UpdateOptions()
+	options, err := ctx.UpdateOptions()
+	if err != nil {
+		u.log.Infof("Cannot launch update due to error in reading update options")
+		return false, err
+	}
 
 	// 1. check with the api server again for the latest update to be sure that a
 	// new update has not come out since our last call to CheckAndDownload
@@ -319,7 +326,11 @@ func (u *Updater) checkForUpdate(ctx Context, options UpdateOptions) (*Update, e
 
 // NeedUpdate returns true if we are out-of-date.
 func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
-	update, err := u.checkForUpdate(ctx, ctx.UpdateOptions())
+	options, err := ctx.UpdateOptions()
+	if err != nil {
+		return false, err
+	}
+	update, err := u.checkForUpdate(ctx, options)
 	if err != nil {
 		return false, err
 	}
@@ -327,7 +338,10 @@ func (u *Updater) NeedUpdate(ctx Context) (upToDate bool, err error) {
 }
 
 func (u *Updater) CheckAndDownload(ctx Context) (updateAvailable, updateWasDownloaded bool, err error) {
-	options := ctx.UpdateOptions()
+	options, err := ctx.UpdateOptions()
+	if err != nil {
+		return false, false, err
+	}
 	update, err := u.checkForUpdate(ctx, options)
 	if err != nil {
 		return false, false, err

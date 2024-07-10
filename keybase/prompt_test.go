@@ -25,7 +25,7 @@ func testPromptWithProgram(t *testing.T, promptProgram command.Program, timeout 
 		Description: "Bug fixes",
 	}
 
-	updaterOptions := cfg.updaterOptions()
+	updaterOptions, _ := cfg.updaterOptions()
 
 	promptOptions := updater.UpdatePromptOptions{AutoUpdate: false}
 	return ctx.updatePrompt(promptProgram, update, updaterOptions, promptOptions, timeout)
